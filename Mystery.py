@@ -159,7 +159,7 @@ def roll_settings(weights):
     entrance_shuffle = get_choice('entrance_shuffle')
     ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
     door_shuffle = get_choice('door_shuffle')
-    ret.door_shuffle = door_shuffle if door_shuffle != 'none' else 'vanilla'
+    ret.door_shuffle = door_shuffle if door_shuffle else 'vanilla'
 
     goal = get_choice('goals')
     ret.goal = {'ganon': 'ganon',

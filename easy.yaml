@@ -29,6 +29,11 @@ entrance_shuffle:
   full: 0 # mixes caves and dungeons freely, except for confining all entrances to one world
   crossed: 0 #introduces cross world connectors
   insanity: 0 #any entrance can lead to any other entrance
+door_shuffle:
+  vanilla: 1 # everything should be like in vanilla
+  basic: 0 # dungeons are shuffled within themselves
+  crossed: 0 # dungeons are shuffled across each other
+  experimental: 0 #don't
 goals:
   ganon: 5 #beat GT and then Ganon
   fast_ganon: 4 # Just kill Ganon
