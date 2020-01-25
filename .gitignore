@@ -17,6 +17,8 @@ EnemizerCLI/
 .mypy_cache/
 RaceRom.py
 weights/
+/MultiMystery/
+/Players/
 
 venv
 test

@@ -1,16 +1,19 @@
-import aioconsole
 import argparse
 import asyncio
-import colorama
 import json
 import logging
 import shlex
 import urllib.parse
+
+import ModuleUpdate
+ModuleUpdate.update()
+
+import colorama
 import websockets
+import aioconsole
 
 import Items
 import Regions
-
 
 class ReceivedItem:
     def __init__(self, item, location, player):
