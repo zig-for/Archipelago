@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 seedname = segment
                 break
 
-        multidataname = f"ER_{seedname}_multidata"
+        multidataname = f"DR_{seedname}_multidata"
 
         romfilename = ""
         if player_name:
@@ -109,7 +109,7 @@ if __name__ == "__main__":
             except IndexError:
                 print(f"Could not find Player {player_name}")
             else:
-                romfilename = os.path.join(outputpath, f"ER_{seedname}_P{index+1}_{player_name}.sfc")
+                romfilename = os.path.join(outputpath, f"DR_{seedname}_P{index + 1}_{player_name}.sfc")
                 import webbrowser
                 if os.path.exists(romfilename):
                     print(f"Launching ROM file {romfilename}")
