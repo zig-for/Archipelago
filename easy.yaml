@@ -31,9 +31,8 @@ entrance_shuffle:
   insanity: 0 #any entrance can lead to any other entrance
 door_shuffle:
   vanilla: 1 # everything should be like in vanilla
-  basic: 0 # dungeons are shuffled within themselves
-  crossed: 0 # dungeons are shuffled across each other
-  experimental: 0 #don't
+  basic: 0 # dungeons are shuffled within themselves. Reported to be broken with retro and inverted, I suggest not mixing it.
+  crossed: 0 # dungeons are shuffled across each other. Currently broken. Check status of brokenness here: https://github.com/aerinon/ALttPDoorRandomizer/issues/27
 goals:
   ganon: 5 #beat GT and then Ganon
   fast_ganon: 4 # Just kill Ganon
@@ -100,7 +99,7 @@ enemy_health:
   easy: 0
   hard: 0
   expert: 0
-pot_shuffle:
+pot_shuffle: # Shuffle pots, their contents and whatever is hiding under them. Door Shuffle does not have this option, so presumably mixing these is broken.
   'on': 0
   'off': 1
 beemizer:
