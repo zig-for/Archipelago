@@ -1,4 +1,6 @@
 #More general info here: https://docs.google.com/document/d/1r7qs1-MK7YbFf2d-mEUeTy2wHykIf1ALG9pLtVvUbSw/edit
+#comments don't work if the host uses bonta's remove all stuff behind # if you want this to be compatible with bonta's for some reason
+#I'd suggest keeping seperate files
 description: Easy/Open/Normal #please describe your options. Especially useful when you have multiple yamls for different occasions
 glitches_required: none #there is also no_logic.
 item_placement: basic #this is based on Entrance Randomizer, which does not (yet?) support advanced
@@ -29,10 +31,10 @@ entrance_shuffle:
   full: 0 # mixes caves and dungeons freely, except for confining all entrances to one world
   crossed: 0 #introduces cross world connectors
   insanity: 0 #any entrance can lead to any other entrance
-door_shuffle:
+door_shuffle: # not available if the host uses bonta's
   vanilla: 1 # everything should be like in vanilla
   basic: 0 # dungeons are shuffled within themselves. Reported to be broken with retro and inverted, I suggest not mixing it.
-  crossed: 0 # dungeons are shuffled across each other. Currently broken. Check status of brokenness here: https://github.com/aerinon/ALttPDoorRandomizer/issues/27
+  crossed: 0 # dungeons are shuffled across each other.
 goals:
   ganon: 5 #beat GT and then Ganon
   fast_ganon: 4 # Just kill Ganon
@@ -114,29 +116,29 @@ rom:
     randomonhit: 1
     link: 1
   disablemusic: off
-  extendedmsu: off #turn on to have V31 extended MSU support
+  extendedmsu: off #turn on to have V31 extended MSU support, not available if the host uses bonta's
   quickswap:
     on: 1
     off: 0
   menuspeed:
     normal: 1
-    instant: 1
-    double: 1
-    triple: 1
-    quadruple: 1
+    instant: 0
+    double: 0
+    triple: 0
+    quadruple: 0
     half: 0
   heartcolor:
     red: 1
-    blue: 1
-    green: 1
-    yellow: 1
+    blue: 0
+    green: 0
+    yellow: 0
     random: 0
   heartbeep:
-    double: 1
+    double: 0
     normal: 1
-    half: 1
-    quarter: 1
-    off: 1
+    half: 0
+    quarter: 0
+    off: 0
   ow_palettes:
     default: 1
     random: 1
