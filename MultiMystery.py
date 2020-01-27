@@ -101,22 +101,34 @@ if __name__ == "__main__":
         import time
         start = time.perf_counter()
 
-        tasks = []
+
         if parallel_attempts < 1:
             import multiprocessing
             parallel_attempts = multiprocessing.cpu_count()
         pool = concurrent.futures.ThreadPoolExecutor()
-        for x in range(parallel_attempts):
+        task_mapping = {}
+        for x in range(1, parallel_attempts+1):
             folder = tempfile.TemporaryDirectory()
             command = basecommand + f" --outputpath {folder.name}"
-            tasks.append((pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True), folder))
+            task = pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True)
+            task.task_id = x
+            task.folder = folder
+            task_mapping[x] = task
         success = False
         errors = []
-        i = 0
-        tasks.reverse()
-        while tasks:
-            i += 1
-            task, folder = tasks.pop()
+
+        dead_or_alive = {}
+
+        def check_if_done():
+            for x in range(1, parallel_attempts+1):
+                result = dead_or_alive.get(x, None)
+                if result:
+                    return x
+                elif result is None:
+                    return False
+            return False
+
+        for task in concurrent.futures.as_completed(task_mapping.values()):
             try:
                 result = task.result()
                 if result.returncode:
@@ -125,34 +137,46 @@ if __name__ == "__main__":
                 error = io.StringIO()
                 traceback.print_exc(file=error)
                 errors.append(error.getvalue())
-                folder.cleanup()
-                print(f"Seed Attempt #{i} died.")
+                task.folder.cleanup()
+                dead_or_alive[task.task_id] = False
+                print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
+                done = check_if_done()
+                if done:
+                    success = True
+                    break
             else:
-                print(f"Seed Attempt #{i} was succesful.")
-                success = True
-                break
+                msg = f"Seed Attempt #{task.task_id} was successful."
+
+                dead_or_alive[task.task_id] = True
+                done = check_if_done()
+                if done:
+                    success = True
+                    print(msg)
+                    break
+                else:
+                    print(msg+"However, an earlier logical seed is still generating. Waiting for that one to finish.")
+
         if not success:
             input("No seed was successful. Press enter to get errors.")
             for error in errors:
                 print(error)
             input("Press Enter to exit.")
             sys.exit()
-        # noinspection PyUnboundLocalVariable
-        text = result.stdout
-        print(text)
-        for task, _ in tasks:
-            task.cancel()
-        # noinspection PyUnboundLocalVariable
-        shutil.copytree(folder.name, outputpath, dirs_exist_ok=True)
-        print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
+
+        task_id = check_if_done()
+        task = task_mapping[task_id]
         seedname = ""
+        for file in os.listdir(task.folder.name):
+            shutil.copy(os.path.join(task.folder.name, file), os.path.join(outputpath, file))
+            if file.endswith("_multidata"):
+                seedname = file[4:-10]
 
-        for segment in text.split():
-            if segment.startswith("M"):
-                seedname = segment
-                break
+        for task in task_mapping.values():
+            task.cancel()
 
-        multidataname = f"DR_{seedname}_multidata"
+        print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
+
+        multidataname = f"DR_M{seedname}_multidata"
 
         romfilename = ""
         if player_name:
@@ -168,7 +192,7 @@ if __name__ == "__main__":
                     webbrowser.open(romfilename)
 
         if zip_roms:
-            zipname = os.path.join(outputpath, f"ER_{seedname}.zip")
+            zipname = os.path.join(outputpath, f"DR_M{seedname}.zip")
             print(f"Creating zipfile {zipname}")
             import zipfile
             with zipfile.ZipFile(zipname, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
