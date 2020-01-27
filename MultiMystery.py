@@ -44,6 +44,10 @@ race:bool= False
 # set to 0 for it to mimic the amount of hardware threads you have, otherwise use a positive number for the amount of attempts it should do at once
 parallel_attempts = 0
 
+#When using parallel_attempts, this controls if the first one that works in order of starting should be taken, or the first one in order of completion time should be taken
+#keep in mind, that turning this on, will skew the randomness into "simpler" seeds, as they generate quicker
+take_first_working = False
+
 #Version of python to use for Bonta Multiworld. Probably leave this as is, if you don't know what this does.
 #can be tagged for bitness, for example "3.8-32" would be latest installed 3.8 on 32 bits
 #special case: None -> use the python which was used to launch this file.
@@ -100,79 +104,83 @@ if __name__ == "__main__":
         print(basecommand)
         import time
         start = time.perf_counter()
-
-
-        if parallel_attempts < 1:
-            import multiprocessing
-            parallel_attempts = multiprocessing.cpu_count()
-        pool = concurrent.futures.ThreadPoolExecutor()
-        task_mapping = {}
-        for x in range(1, parallel_attempts+1):
-            folder = tempfile.TemporaryDirectory()
-            command = basecommand + f" --outputpath {folder.name}"
-            task = pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True)
-            task.task_id = x
-            task.folder = folder
-            task_mapping[x] = task
-        success = False
-        errors = []
-
-        dead_or_alive = {}
-
-        def check_if_done():
+        def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
+            global parallel_attempts
+            if parallel_attempts < 1:
+                import multiprocessing
+                parallel_attempts = multiprocessing.cpu_count()
+            pool = concurrent.futures.ThreadPoolExecutor()
+            task_mapping = {}
             for x in range(1, parallel_attempts+1):
-                result = dead_or_alive.get(x, None)
-                if result:
-                    return x
-                elif result is None:
-                    return False
-            return False
+                folder = tempfile.TemporaryDirectory()
+                command = basecommand + f" --outputpath {folder.name}"
+                task = pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True)
+                task.task_id = x
+                task.folder = folder
+                task_mapping[x] = task
 
-        for task in concurrent.futures.as_completed(task_mapping.values()):
-            try:
-                result = task.result()
-                if result.returncode:
-                    raise Exception(result.stderr)
-            except:
-                error = io.StringIO()
-                traceback.print_exc(file=error)
-                errors.append(error.getvalue())
-                task.folder.cleanup()
-                dead_or_alive[task.task_id] = False
-                print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
-                done = check_if_done()
-                if done:
-                    success = True
-                    break
-            else:
-                msg = f"Seed Attempt #{task.task_id} was successful."
+            errors = []
 
-                dead_or_alive[task.task_id] = True
-                done = check_if_done()
-                if done:
-                    success = True
-                    print(msg)
-                    break
+            dead_or_alive = {}
+
+            def check_if_done():
+                for x in range(1, parallel_attempts+1):
+                    result = dead_or_alive.get(x, None)
+                    if result:
+                        return x
+                    elif result is None:
+                        return False
+                return False
+
+            for task in concurrent.futures.as_completed(task_mapping.values()):
+                try:
+                    result = task.result()
+                    if result.returncode:
+                        raise Exception(result.stderr)
+                except:
+                    error = io.StringIO()
+                    traceback.print_exc(file=error)
+                    errors.append(error.getvalue())
+                    task.folder.cleanup()
+                    dead_or_alive[task.task_id] = False
+                    print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
+                    done = check_if_done()
+                    if done:
+                        break
                 else:
-                    print(msg+"However, an earlier logical seed is still generating. Waiting for that one to finish.")
+                    msg = f"Seed Attempt #{task.task_id:4} was successful."
 
-        if not success:
-            input("No seed was successful. Press enter to get errors.")
-            for error in errors:
-                print(error)
-            input("Press Enter to exit.")
-            sys.exit()
+                    dead_or_alive[task.task_id] = True
+                    done = check_if_done()
+                    if done:
+                        print(msg)
+                        break
+                    elif take_first_working:
+                        print(msg)
+                        def check_if_done():
+                            return task.task_id
+                        break
+                    else:
+                        print(msg+" However, waiting for an earlier logical seed that is still generating.")
 
-        task_id = check_if_done()
-        task = task_mapping[task_id]
+
+            task_id = check_if_done()
+            if not task_id:
+                input("No seed was successful. Press enter to get errors.")
+                for error in errors:
+                    print(error)
+                sys.exit()
+
+            return task_mapping[task_id]
+
+        task = get_working_seed()
         seedname = ""
         for file in os.listdir(task.folder.name):
             shutil.copy(os.path.join(task.folder.name, file), os.path.join(outputpath, file))
             if file.endswith("_multidata"):
                 seedname = file[4:-10]
 
-        for task in task_mapping.values():
-            task.cancel()
+
 
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
 
