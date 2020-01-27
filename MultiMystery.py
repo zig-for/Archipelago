@@ -15,7 +15,7 @@ This script itself should be placed within the Bonta Multiworld folder, that you
 
 ####config####
 #location of your Enemizer CLI, available here: https://github.com/Bonta0/Enemizer/releases
-enemizer_location:str = "EnemizerCLI/EnemizerCLI.Core.exe"
+enemizer_location:str = r"EnemizerCLI/EnemizerCLI.Core.exe"
 
 #Where to place the resulting files
 outputpath:str = "MultiMystery"
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         if parallel_attempts < 1:
             import multiprocessing
             parallel_attempts = multiprocessing.cpu_count()
-        pool = concurrent.futures.ThreadPoolExecutor(parallel_attempts)
+        pool = concurrent.futures.ThreadPoolExecutor()
         for x in range(parallel_attempts):
             folder = tempfile.TemporaryDirectory()
             command = basecommand + f" --outputpath {folder.name}"
@@ -121,6 +121,8 @@ if __name__ == "__main__":
                 error = io.StringIO()
                 traceback.print_exc(file=error)
                 errors.append(error.getvalue())
+                folder.cleanup()
+                print(f"Seed Attempt #{i+1} died.")
             else:
                 print(f"Seed Attempt #{i+1} was succesful.")
                 success = True
