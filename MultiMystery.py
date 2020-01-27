@@ -20,6 +20,9 @@ enemizer_location:str = "EnemizerCLI/EnemizerCLI.Core.exe"
 #Where to place the resulting files
 outputpath:str = "MultiMystery"
 
+#folder from which the player yaml files are pulled from
+player_files_folder:str = "Players"
+
 #automatically launches {player_name}.yaml's ROM file using the OS's default program once generation completes. (likely your emulator)
 #does nothing if the name is not found
 #example: player_name = "Berserker"
@@ -37,8 +40,9 @@ create_spoiler:bool = True
 #create roms as race coms
 race:bool= False
 
-#folder from which the player yaml files are pulled from
-player_files_folder:str = "Players"
+# How many seeds should be rolled in parallel. This is useful for Door Rando, since some to many of them can fail.
+# set to 0 for it to mimic the amount of hardware threads you have, otherwise use a positive number for the amount of attempts it should do at once
+parallel_attempts = 0
 
 #Version of python to use for Bonta Multiworld. Probably leave this as is, if you don't know what this does.
 #can be tagged for bitness, for example "3.8-32" would be latest installed 3.8 on 32 bits
@@ -49,6 +53,11 @@ py_version:str = None
 import os
 import subprocess
 import sys
+import tempfile
+import shutil
+import traceback
+import io
+import concurrent.futures
 
 def feedback(text:str):
     print(text)
@@ -85,13 +94,50 @@ if __name__ == "__main__":
 
         player_names = list(file[:-5] for file in player_files)
 
-        command = f"py -{py_version} Mystery.py --multi {len(player_files)} {player_string} " \
-                  f"--names {','.join(player_names)} --enemizercli {enemizer_location} " \
-                  f"--outputpath {outputpath}" + " --create_spoiler" if create_spoiler else "" + " --race" if race else ""
-        print(command)
+        basecommand = f"py -{py_version} Mystery.py --multi {len(player_files)} {player_string}" \
+                  f" --names {','.join(player_names)} --enemizercli {enemizer_location} " \
+                  " --create_spoiler" if create_spoiler else "" + " --race" if race else ""
+        print(basecommand)
         import time
         start = time.perf_counter()
-        text = subprocess.check_output(command, shell=True).decode()
+
+        tasks = []
+        if parallel_attempts < 1:
+            import multiprocessing
+            parallel_attempts = multiprocessing.cpu_count()
+        pool = concurrent.futures.ThreadPoolExecutor(parallel_attempts)
+        for x in range(parallel_attempts):
+            folder = tempfile.TemporaryDirectory()
+            command = basecommand + f" --outputpath {folder.name}"
+            tasks.append((pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True), folder))
+        success = False
+        errors = []
+        for i, (task, folder) in enumerate(tasks):
+            try:
+                result = task.result()
+                if result.returncode:
+                    raise Exception(result.stderr)
+            except:
+                error = io.StringIO()
+                traceback.print_exc(file=error)
+                errors.append(error.getvalue())
+            else:
+                print(f"Seed Attempt #{i+1} was succesful.")
+                success = True
+                break
+        if not success:
+            input("No seed was successful. Press enter to get errors.")
+            for error in errors:
+                print(error)
+            input("Press Enter to exit.")
+            sys.exit()
+        # noinspection PyUnboundLocalVariable
+        text = result.stdout
+        print(text)
+        for task, _ in tasks:
+            task.cancel()
+        # noinspection PyUnboundLocalVariable
+        shutil.copytree(folder.name, outputpath, dirs_exist_ok=True)
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
         seedname = ""
 
@@ -130,6 +176,5 @@ if __name__ == "__main__":
 
         subprocess.call(f"py -{py_version} MultiServer.py --multidata {os.path.join(outputpath, multidataname)}")
     except:
-        import traceback
         traceback.print_exc()
         input("Press enter to close")
