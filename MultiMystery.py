@@ -112,7 +112,11 @@ if __name__ == "__main__":
             tasks.append((pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True), folder))
         success = False
         errors = []
-        for i, (task, folder) in enumerate(tasks):
+        i = 0
+        tasks.reverse()
+        while tasks:
+            i += 1
+            task, folder = tasks.pop()
             try:
                 result = task.result()
                 if result.returncode:
@@ -122,9 +126,9 @@ if __name__ == "__main__":
                 traceback.print_exc(file=error)
                 errors.append(error.getvalue())
                 folder.cleanup()
-                print(f"Seed Attempt #{i+1} died.")
+                print(f"Seed Attempt #{i} died.")
             else:
-                print(f"Seed Attempt #{i+1} was succesful.")
+                print(f"Seed Attempt #{i} was succesful.")
                 success = True
                 break
         if not success:
