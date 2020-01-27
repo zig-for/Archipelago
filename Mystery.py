@@ -4,6 +4,7 @@ import random
 import urllib.request
 import urllib.parse
 import functools
+import os
 
 import ModuleUpdate
 
@@ -16,6 +17,7 @@ try:
 except ImportError:
     from yaml import Loader
 
+from Rom import get_sprite_from_name
 from DungeonRandomizer import parse_arguments
 from Main import main as DRMain
 
@@ -71,7 +73,7 @@ def main():
 
     erargs = parse_arguments(['--multi', str(args.multi)])
     erargs.seed = seed
-    erargs.names = args.names
+    erargs.name = {x+1: name for x,name in enumerate(args.names.split(","))}
     erargs.create_spoiler = args.create_spoiler
     erargs.race = args.race
     erargs.outputname = seedname
@@ -88,7 +90,7 @@ def main():
         path = getattr(args, f'p{player}') if getattr(args, f'p{player}') else args.weights
         if path:
             try:
-                settings = settings_cache[path] if settings_cache[path] else roll_settings(weights_cache[path])
+                settings = settings_cache[path] if settings_cache[path] else roll_settings(weights_cache[path], path)
                 for k, v in vars(settings).items():
                     if v is not None:
                         getattr(erargs, k)[player] = v
@@ -96,10 +98,10 @@ def main():
                 raise ValueError(f"File {path} is destroyed. Please fix your yaml.")
         else:
             raise RuntimeError(f'No weights specified for player {player}')
-
     # set up logger
     loglevel = {'error': logging.ERROR, 'info': logging.INFO, 'warning': logging.WARNING, 'debug': logging.DEBUG}[erargs.loglevel]
     logging.basicConfig(format='%(message)s', level=loglevel)
+    erargs.names = ",".join(erargs.name[i] for i in sorted(erargs.name.keys()))
 
     DRMain(erargs, seed)
 
@@ -123,7 +125,7 @@ def interpret_on_off(value):
 def convert_to_on_off(value):
     return {True: "on", False: "off"}.get(value, value)
 
-def roll_settings(weights):
+def roll_settings(weights, path):
     def get_choice(option, root=weights):
         if option not in root:
             return None
@@ -135,7 +137,7 @@ def roll_settings(weights):
             random.choices(list(root[option].keys()), weights=list(map(int, root[option].values())))[0])
 
     ret = argparse.Namespace()
-
+    ret.name = get_choice('name')
     glitches_required = get_choice('glitches_required')
     if glitches_required not in ['none', 'no_logic']:
         print("Only NMG and No Logic supported")
@@ -232,6 +234,8 @@ def roll_settings(weights):
     if 'rom' in weights:
         romweights = weights['rom']
         ret.sprite = get_choice('sprite', romweights)
+        if ret.sprite is not None and not os.path.isfile(ret.sprite) and not get_sprite_from_name(ret.sprite):
+            logging.Logger('').warning(f"Warning: In yaml file \"{path}\", The choson sprite, \"{ret.sprite}\" does not exist.")
         ret.disablemusic = get_choice('disablemusic', romweights)
         ret.extendedmsu = get_choice('extendedmsu', romweights)
         ret.quickswap = get_choice('quickswap', romweights)
