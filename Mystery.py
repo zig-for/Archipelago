@@ -3,32 +3,24 @@ import logging
 import random
 import urllib.request
 import urllib.parse
-import re
+import functools
+
+import ModuleUpdate
+
+ModuleUpdate.update()
+
+from yaml import load
+
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 from DungeonRandomizer import parse_arguments
 from Main import main as DRMain
 
-def parse_yaml(txt):
-    def strip(s):
-        s = s.strip()
-        return '' if not s else s.strip('"') if s[0] == '"' else s.strip("'") if s[0] == "'" else s
-    ret = {}
-    indents = {len(txt) - len(txt.lstrip(' ')): ret}
-    for line in txt.splitlines():
-        line = re.sub(r'#.*', '', line)
-        if not line:
-            continue
-        name, val = line.split(':', 1)
-        val = strip(val)
-        spaces = len(name) - len(name.lstrip(' '))
-        name = strip(name)
-        if val:
-            indents[spaces][name] = val
-        else:
-            newdict = {}
-            indents[spaces][name] = newdict
-            indents[spaces+2] = newdict
-    return ret
+parse_yaml = functools.partial(load, Loader=Loader)
+
 
 def main():
     parser = argparse.ArgumentParser(add_help=False)
@@ -36,8 +28,10 @@ def main():
     multiargs, _ = parser.parse_known_args()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', help='Path to the weights file to use for rolling game settings, urls are also valid')
-    parser.add_argument('--samesettings', help='Rolls settings per weights file rather than per player', action='store_true')
+    parser.add_argument('--weights',
+                        help='Path to the weights file to use for rolling game settings, urls are also valid')
+    parser.add_argument('--samesettings', help='Rolls settings per weights file rather than per player',
+                        action='store_true')
     parser.add_argument('--seed', help='Define seed number to generate.', type=int)
     parser.add_argument('--multi', default=1, type=lambda value: min(max(int(value), 1), 255))
     parser.add_argument('--names', default='')
@@ -46,6 +40,7 @@ def main():
     parser.add_argument('--rom')
     parser.add_argument('--enemizercli')
     parser.add_argument('--outputpath')
+    parser.add_argument('--race', action='store_true')
     for player in range(1, multiargs.multi + 1):
         parser.add_argument(f'--p{player}', help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -68,14 +63,17 @@ def main():
         path = getattr(args, f'p{player}')
         if path:
             if path not in weights_cache:
-                weights_cache[path] = get_weights(path)
+                try:
+                    weights_cache[path] = get_weights(path)
+                except:
+                    raise ValueError(f"File {path} is destroyed. Please fix your yaml.")
             print(f"P{player} Weights: {path} >> {weights_cache[path]['description']}")
 
     erargs = parse_arguments(['--multi', str(args.multi)])
     erargs.seed = seed
     erargs.names = args.names
     erargs.create_spoiler = args.create_spoiler
-    erargs.race = True
+    erargs.race = args.race
     erargs.outputname = seedname
     erargs.outputpath = args.outputpath
 
@@ -89,10 +87,13 @@ def main():
     for player in range(1, args.multi + 1):
         path = getattr(args, f'p{player}') if getattr(args, f'p{player}') else args.weights
         if path:
-            settings = settings_cache[path] if settings_cache[path] else roll_settings(weights_cache[path])
-            for k, v in vars(settings).items():
-                if v is not None:
-                    getattr(erargs, k)[player] = v
+            try:
+                settings = settings_cache[path] if settings_cache[path] else roll_settings(weights_cache[path])
+                for k, v in vars(settings).items():
+                    if v is not None:
+                        getattr(erargs, k)[player] = v
+            except:
+                raise ValueError(f"File {path} is destroyed. Please fix your yaml.")
         else:
             raise RuntimeError(f'No weights specified for player {player}')
 
@@ -115,15 +116,23 @@ def get_weights(path):
 
     return parse_yaml(yaml)
 
+
+def interpret_on_off(value):
+    return {"on": True, "off": False}.get(value, value)
+
+def convert_to_on_off(value):
+    return {True: "on", False: "off"}.get(value, value)
+
 def roll_settings(weights):
     def get_choice(option, root=weights):
         if option not in root:
             return None
         if type(root[option]) is not dict:
-            return root[option]
+            return interpret_on_off(root[option])
         if not root[option]:
             return None
-        return random.choices(list(root[option].keys()), weights=list(map(int,root[option].values())))[0]
+        return interpret_on_off(
+            random.choices(list(root[option].keys()), weights=list(map(int, root[option].values())))[0])
 
     ret = argparse.Namespace()
 
@@ -133,21 +142,26 @@ def roll_settings(weights):
         glitches_required = 'none'
     ret.logic = {'none': 'noglitches', 'no_logic': 'nologic'}[glitches_required]
 
-    item_placement = get_choice('item_placement')
+    # item_placement = get_choice('item_placement')
     # not supported in ER
 
     dungeon_items = get_choice('dungeon_items')
-    ret.mapshuffle = get_choice('map_shuffle') == 'on' if 'map_shuffle' in weights else dungeon_items in ['mc', 'mcs', 'full']
-    ret.compassshuffle = get_choice('compass_shuffle') == 'on' if 'compass_shuffle' in weights else dungeon_items in ['mc', 'mcs', 'full']
-    ret.keyshuffle = get_choice('smallkey_shuffle') == 'on' if 'smallkey_shuffle' in weights else dungeon_items in ['mcs', 'full']
-    ret.bigkeyshuffle = get_choice('bigkey_shuffle') == 'on' if 'bigkey_shuffle' in weights else dungeon_items in ['full']
+    if dungeon_items == 'full' or dungeon_items == True:
+        dungeon_items = 'mcsb'
+    elif not dungeon_items:
+        dungeon_items = ""
+
+    ret.mapshuffle = get_choice('map_shuffle') if 'map_shuffle' in weights else 'm' in dungeon_items
+    ret.compassshuffle = get_choice('compass_shuffle') if 'compass_shuffle' in weights else 'c' in dungeon_items
+    ret.keyshuffle = get_choice('smallkey_shuffle') if 'smallkey_shuffle' in weights else 's' in dungeon_items
+    ret.bigkeyshuffle = get_choice('bigkey_shuffle') if 'bigkey_shuffle' in weights else 'b' in dungeon_items
 
     ret.accessibility = get_choice('accessibility')
 
     entrance_shuffle = get_choice('entrance_shuffle')
     ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
     door_shuffle = get_choice('door_shuffle')
-    ret.door_shuffle = door_shuffle if door_shuffle != 'none' else 'vanilla'
+    ret.door_shuffle = door_shuffle if door_shuffle else 'vanilla'
 
     goal = get_choice('goals')
     ret.goal = {'ganon': 'ganon',
@@ -160,14 +174,14 @@ def roll_settings(weights):
 
     ret.crystals_gt = get_choice('tower_open')
 
-    ret.crystals_ganon =  get_choice('ganon_open')
+    ret.crystals_ganon = get_choice('ganon_open')
 
     ret.mode = get_choice('world_state')
     if ret.mode == 'retro':
         ret.mode = 'open'
         ret.retro = True
 
-    ret.hints = get_choice('hints') == 'on'
+    ret.hints = get_choice('hints')
 
     ret.swords = {'randomized': 'random',
                   'assured': 'assured',
@@ -197,25 +211,33 @@ def roll_settings(weights):
 
     ret.enemy_health = get_choice('enemy_health')
 
-    ret.shufflepots = get_choice('pot_shuffle') == 'on'
+    ret.shufflepots = get_choice('pot_shuffle')
 
     ret.beemizer = int(get_choice('beemizer')) if 'beemizer' in weights else 0
 
+    ret.progressive = convert_to_on_off(get_choice('progressive')) if "progressive" in weights else 'on'
     inventoryweights = weights.get('startinventory', {})
     startitems = []
     for item in inventoryweights.keys():
-        if get_choice(item, inventoryweights) == 'on':
+        itemvalue = get_choice(item, inventoryweights)
+        if item.startswith(('Progressive ', 'Small Key ', 'Rupee', 'Piece of Heart', 'Boss Heart Container', 'Sanctuary Heart Container', 'Arrow', 'Bombs ', 'Bomb ', 'Bottle')) and isinstance(itemvalue, int):
+            for i in range(int(itemvalue)):
+                startitems.append(item)
+        elif itemvalue:
             startitems.append(item)
+    if glitches_required in ['no_logic'] and 'Pegasus Boots' not in startitems:
+        startitems.append('Pegasus Boots')
     ret.startinventory = ','.join(startitems)
 
     if 'rom' in weights:
         romweights = weights['rom']
         ret.sprite = get_choice('sprite', romweights)
-        ret.disablemusic = get_choice('disablemusic', romweights) == 'on'
-        ret.quickswap = get_choice('quickswap', romweights) == 'on'
+        ret.disablemusic = get_choice('disablemusic', romweights)
+        ret.extendedmsu = get_choice('extendedmsu', romweights)
+        ret.quickswap = get_choice('quickswap', romweights)
         ret.fastmenu = get_choice('menuspeed', romweights)
         ret.heartcolor = get_choice('heartcolor', romweights)
-        ret.heartbeep = get_choice('heartbeep', romweights)
+        ret.heartbeep = convert_to_on_off(get_choice('heartbeep', romweights))
         ret.ow_palettes = get_choice('ow_palettes', romweights)
         ret.uw_palettes = get_choice('uw_palettes', romweights)
 

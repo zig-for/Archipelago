@@ -34,7 +34,9 @@ def main(args, seed=None):
     start = time.perf_counter()
 
     # initialize the world
-    world = World(args.multi, args.shuffle, args.door_shuffle, args.logic, args.mode, args.swords, args.difficulty, args.item_functionality, args.timer, args.progressive, args.goal, args.algorithm, args.accessibility, args.shuffleganon, args.retro, args.custom, args.customitemarray, args.hints)
+    world = World(args.multi, args.shuffle, args.door_shuffle, args.logic, args.mode, args.swords, args.difficulty,
+                  args.item_functionality, args.timer, args.progressive.copy(), args.goal, args.algorithm,
+                  args.accessibility, args.shuffleganon, args.retro, args.custom, args.customitemarray, args.hints)
     logger = logging.getLogger('')
     if seed is None:
         random.seed(None)
@@ -56,6 +58,9 @@ def main(args, seed=None):
     world.enemy_health = args.enemy_health.copy()
     world.enemy_damage = args.enemy_damage.copy()
     world.beemizer = args.beemizer.copy()
+    world.shufflepots = args.shufflepots.copy()
+    world.progressive = args.progressive.copy()
+    world.extendedmsu = args.extendedmsu.copy()
 
     world.rom_seeds = {player: random.randint(0, 999999999) for player in range(1, world.players + 1)}
 
@@ -172,14 +177,14 @@ def main(args, seed=None):
                                 or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
                                 or args.shufflepots[player] or sprite_random_on_hit)
 
-                rom = JsonRom() if args.jsonout or use_enemizer else LocalRom(args.rom)
+                rom = JsonRom() if args.jsonout or use_enemizer else LocalRom(args.rom, extendedmsu=args.extendedmsu[player])
 
                 patch_rom(world, rom, player, team, use_enemizer)
 
                 if use_enemizer and (args.enemizercli or not args.jsonout):
-                    patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
+                    patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit, extendedmsu=args.extendedmsu[player])
                     if not args.jsonout:
-                        rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000)
+                        rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000, args.extendedmsu[player])
 
                 if args.race:
                     patch_race_rom(rom)
@@ -218,9 +223,12 @@ def main(args, seed=None):
 
         multidata = zlib.compress(json.dumps({"names": parsed_names,
                                               "roms": rom_names,
-                                              "remote_items": [player for player in range(1, world.players + 1) if world.remote_items[player]],
-                                              "locations": [((location.address, location.player), (location.item.code, location.item.player))
-                                                            for location in world.get_filled_locations() if type(location.address) is int]
+                                              "remote_items": [player for player in range(1, world.players + 1) if
+                                                               world.remote_items[player]],
+                                              "locations": [((location.address, location.player),
+                                                             (location.item.code, location.item.player))
+                                                            for location in world.get_filled_locations() if
+                                                            type(location.address) is int]
                                               }).encode("utf-8"))
         if args.jsonout:
             jsonout["multidata"] = list(multidata)
@@ -282,6 +290,8 @@ def copy_world(world):
     ret.enemy_health = world.enemy_health.copy()
     ret.enemy_damage = world.enemy_damage.copy()
     ret.beemizer = world.beemizer.copy()
+    ret.shufflepots = world.shufflepots.copy()
+    ret.extendedmsu = world.extendedmsu.copy()
 
     for player in range(1, world.players + 1):
         if world.mode[player] != 'inverted':

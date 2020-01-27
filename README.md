@@ -1,81 +1,42 @@
-# ALttPDoorRandomizer
+Berserker's Multiworld Utilities for Bonta's Multiworld
+=======================================================
 
-This is a door randomizer for _The Legend of Zelda: A Link to the Past_ for the SNES
-based on the Entrance Randomizer found at [KevinCathcart's Github Project.](https://github.com/KevinCathcart/ALttPEntranceRandomizer)
-See https://alttpr.com/ for more details on the normal randomizer.
+This is a complete fork of Bonta's Multiworld V31, which assumes you already know how to setup and use that project. Instructions here are only for the additions.
+This is a drop-in replacement with everything from Bonta's Multiworld included.
 
-# Known Issues
+Additions/Changes
+-----------------
 
-[List of Known Issues and Their Status](https://docs.google.com/document/d/1Bk-m-QRvH5iF60ndptKYgyaV7P93D3TiG8xmdxp_bdQ/edit?usp=sharing)
+Project
+ * Compatible with Python 3.7 and 3.8. Potentially future versions as well.
+ * Update modules if they are too old, preventing a crash when trying to connect among potential other issues
+ * Autoinstall missing modules
+ * Allow newer versions of modules than specified, as they will *usually* not break compatibility
+ * Support for V31 extendedmsu
+ 
+MultiMystery.py
+ * Allows you to generate a Multiworld with individual player mystery weights. Since weights can also be set to 100%, this also allows for individual settings for each player in a regular multiworld.
+Basis is a .yaml file that sets these weights. You can find an easy.yaml in this project folder to get started.
+ * Additional instructions and settings are at the start of the file. Open with a text editor.
+ 
+ MultiServer.py
+  * Added a try/except to prevent malformed console commands from crashing the entire server
+  * /forfeitplayer Playername now works when the player is not currently connected
+  * Added /hint command on the server (use just /hint for help on command)  
+can be used as /hint Playername Itemname  
+All Itemnames can be found in Items.py starting at line 25  
+example:  
+/hint Berserker Progressive Sword  
+Notice (Team #1): [Hint]: Berserker's Progressive Sword can be found in Hype Cave - Top in ahhdurr's World  
+Notice (Team #1): [Hint]: Berserker's Progressive Sword can be found in Blind's Hideout - Far Right in Schulzer's World  
+Notice (Team #1): [Hint]: Berserker's Progressive Sword can be found in Palace of Darkness - Map Chest in Thorus's World  
+Notice (Team #1): [Hint]: Berserker's Progressive Sword can be found in Ganons Tower - Map Chest in Will's World  
 
-# Feedback and Bug Reports
+Mystery.py
+ * Defaults to generating a non-race ROM (Bonta's only makes race ROMs at this time)
+If a race ROM is desired, pass --create-race as argument to it
+ * When an error is generated due to a broken .yaml file, it now mentions in the error trace which file, line and character is the culprit
+ * Option for progressive items, allowing you to turn them off (see easy.yaml for more info)
+ * Rom-Option for extendedmsu (see easy.yaml for more info)
 
-Please just DM me on discord for now. I (Aerinon) can be found at the [ALTTP Randomizer discord](https://discordapp.com/invite/alttprandomizer).
-
-# Installation
-
-Clone this repository and then run ```DungeonRandomizer.py``` (requires Python 3).
-
-Alternatively, run ```Gui.py``` for a simple graphical user interface. (WIP)
-
-# Settings
-
-Only extra settings are found here. All entrance randomizer settings are supported. See their [readme](https://github.com/KevinCathcart/ALttPEntranceRandomizer/blob/master/README.md)
-
-## Door Shuffle
-
-### Basic
-
-Doors are shuffled only within a single dungeon.
-
-### Crossed
-
-Doors are shuffled between dungeons as well.
-
-### Vanilla
-
-Doors are not shuffled.
-
-### Experimental
-
-Used for development testing. This will be removed in a future version. Use at your own risk. Might play like a plando.
-
-## Map/Compass/Small Key/Big Key shuffle (aka Keysanity)
-
-These settings allow dungeon specific items to be distributed anywhere in the world and not just in their native dungeon.
-Small Keys dropped by enemies or found in pots are not affected. The chest in southeast Skull Woods that is traditionally
-a guaranteed Small Key still is. These items will be distributed according to the v26/balanced algorithm, but the rest
-of the itempool will respect the algorithm setting. Music for dungeons is randomized so it cannot be used as a tell
-for which dungeons contain pendants and crystals; finding a Map for a dungeon will allow the overworld map to display its prize.
-
-## Retro
-
-This setting turns all Small Keys into universal Small Keys that can be used in any dungeon and are distributed across the world.
-The Bow now consumed rupees to shoot; the cost is 10 rupees per Wood Arrow and 50 per Silver Arrow. Shooting Wood Arrows requires
-the purchase of an arrow item from shops, and to account for this and the dynamic use of keys, both Wood Arrows and Small Keys will
-be added to several shops around the world. Four "take any" caves are added that allow the player to choose between an extra Heart
-Container and a Bottle being filled with Blue Potion, and one of the four swords from the item pool is placed into a special cave as
-well. The five caves that are removed for these will be randomly selected single entrance caves that did not contain any items or any shops.
-In further concert with the Bow changes, all arrows under pots, in chests, and elsewhere in the seed will be replaced with rupees.
-
-## Seed
-
-Can be used to set a seed number to generate. Using the same seed with same settings on the same version of the entrance randomizer will always yield an identical output.
-
-## Count
-
-Use to batch generate multiple seeds with same settings. If a seed number is provided, it will be used for the first seed, then used to derive the next seed (i.e. generating 10 seeds with the same seed number given will produce the same 10 (different) roms each time).
-
-# Command Line Options
-
-```
--h, --help            
-```
-
-Show the help message and exit.
-
-```
---door_shuffle      
-```
-
-For specifying the door shuffle you want as above. (default: basic)
+ 
