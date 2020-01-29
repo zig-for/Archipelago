@@ -9,8 +9,6 @@ For every player a mystery game is rolled and a ROM created.
 After generation the server is automatically launched.
 It is still up to the host to forward the correct port (38281 by default) and distribute the roms to the players.
 Regular Mystery has to work for this first, such as a ALTTP Base ROM and Enemizer Setup.
-A guide can be found here: https://docs.google.com/document/d/19FoqUkuyStMqhOq8uGiocskMo1KMjOW4nEeG81xrKoI/edit
-This script itself should be placed within the Bonta Multiworld folder, that you download in step 1
 """
 
 ####config####
