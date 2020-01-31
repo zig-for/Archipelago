@@ -72,7 +72,7 @@ if __name__ == "__main__":
             py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
         import ModuleUpdate
         ModuleUpdate.update()
-
+        os.makedirs(outputpath, exist_ok=True)
         print(f"{__author__}'s MultiMystery Launcher V{__version__}")
         if not os.path.exists(enemizer_location):
             feedback(f"Enemizer not found at {enemizer_location}, please adjust the path in MultiMystery.py's config or put Enemizer in the default location.")
@@ -104,15 +104,21 @@ if __name__ == "__main__":
         start = time.perf_counter()
         def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
             global parallel_attempts
+
+            def cancel_remaining(starting_at:int = 0):
+                for x in range(starting_at + 1, parallel_attempts + 1):
+                    task_mapping[x].cancel()
+
             if parallel_attempts < 1:
                 import multiprocessing
                 parallel_attempts = multiprocessing.cpu_count()
+
             pool = concurrent.futures.ThreadPoolExecutor()
             task_mapping = {}
             for x in range(1, parallel_attempts+1):
                 folder = tempfile.TemporaryDirectory()
                 command = basecommand + f" --outputpath {folder.name}"
-                task = pool.submit(subprocess.run, command, capture_output=True, shell=True, text=True)
+                task = pool.submit(subprocess.run, command, capture_output=True, shell=False, text=True)
                 task.task_id = x
                 task.folder = folder
                 task_mapping[x] = task
@@ -152,15 +158,18 @@ if __name__ == "__main__":
                     done = check_if_done()
                     if done:
                         print(msg)
+                        cancel_remaining()
                         break
                     elif take_first_working:
                         print(msg)
+                        cancel_remaining()
                         def check_if_done():
                             return task.task_id
                         break
                     else:
                         print(msg+" However, waiting for an earlier logical seed that is still generating.")
-
+                        cancel_remaining(task.task_id)
+            pool.shutdown(False)
 
             task_id = check_if_done()
             if not task_id:
@@ -177,8 +186,6 @@ if __name__ == "__main__":
             shutil.copy(os.path.join(task.folder.name, file), os.path.join(outputpath, file))
             if file.endswith("_multidata"):
                 seedname = file[4:-10]
-
-
 
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
 
