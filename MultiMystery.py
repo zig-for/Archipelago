@@ -141,6 +141,9 @@ if __name__ == "__main__":
                     result = task.result()
                     if result.returncode:
                         raise Exception(result.stderr)
+                except concurrent.futures.CancelledError:
+                    task.folder.cleanup()
+                    dead_or_alive[task.task_id] = False
                 except:
                     error = io.StringIO()
                     traceback.print_exc(file=error)
