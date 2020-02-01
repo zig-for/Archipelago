@@ -242,9 +242,9 @@ def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, r
             'IcePalace': world.get_dungeon("Ice Palace", player).boss.enemizer_name,
             'MiseryMire': world.get_dungeon("Misery Mire", player).boss.enemizer_name,
             'TurtleRock': world.get_dungeon("Turtle Rock", player).boss.enemizer_name,
-            'GanonsTower1': world.get_dungeon('Ganons Tower' if world.mode[player] != 'inverted' else 'Inverted Ganons Tower', player).bosses['bottom'].enemizer_name,
-            'GanonsTower2': world.get_dungeon('Ganons Tower' if world.mode[player] != 'inverted' else 'Inverted Ganons Tower', player).bosses['middle'].enemizer_name,
-            'GanonsTower3': world.get_dungeon('Ganons Tower' if world.mode[player] != 'inverted' else 'Inverted Ganons Tower', player).bosses['top'].enemizer_name,
+            'GanonsTower1': world.get_dungeon('Ganons Tower', player).bosses['bottom'].enemizer_name,
+            'GanonsTower2': world.get_dungeon('Ganons Tower', player).bosses['middle'].enemizer_name,
+            'GanonsTower3': world.get_dungeon('Ganons Tower', player).bosses['top'].enemizer_name,
             'GanonsTower4': 'Agahnim2',
             'Ganon': 'Ganon',
         }
@@ -1601,7 +1601,7 @@ def write_strings(rom, world, player, team):
         entrances_to_hint.update(InconvenientDungeonEntrances)
         if world.shuffle_ganon:
             if world.mode[player] == 'inverted':
-                entrances_to_hint.update({'Inverted Ganons Tower': 'The sealed castle door'})
+                entrances_to_hint.update({'Ganons Tower': 'The sealed castle door'})
             else:
                 entrances_to_hint.update({'Ganons Tower': 'Ganon\'s Tower'})
         if world.shuffle[player] in ['simple', 'restricted', 'restricted_legacy']:

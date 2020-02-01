@@ -1,5 +1,5 @@
 __author__ = "Berserker55" # you can find me on the ALTTP Randomizer Discord
-__version__ = 1.5
+__version__ = 1.6
 
 """
 This script launches a Multiplayer "Multiworld" Mystery Game
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         import ModuleUpdate
         ModuleUpdate.update()
         os.makedirs(outputpath, exist_ok=True)
-        print(f"{__author__}'s MultiMystery Launcher V{__version__}")
+        print(f"{__author__}'s MultiMystery Launcher V{__version__} (DoorRando Edition)")
         if not os.path.exists(enemizer_location):
             feedback(f"Enemizer not found at {enemizer_location}, please adjust the path in MultiMystery.py's config or put Enemizer in the default location.")
         if not os.path.exists("Zelda no Densetsu - Kamigami no Triforce (Japan).sfc"):
@@ -100,7 +100,10 @@ if __name__ == "__main__":
                   f" --names {','.join(player_names)} --enemizercli {enemizer_location} " \
                   " --create_spoiler" if create_spoiler else "" + " --race" if race else ""
         print(basecommand)
+
         import time
+        import tqdm
+
         start = time.perf_counter()
         def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
             global parallel_attempts
@@ -136,7 +139,8 @@ if __name__ == "__main__":
                         return False
                 return False
 
-            for task in concurrent.futures.as_completed(task_mapping.values()):
+            for task in tqdm.tqdm(concurrent.futures.as_completed(task_mapping.values()),
+                                  total=len(task_mapping), unit="seeds"):
                 try:
                     result = task.result()
                     if result.returncode:
@@ -150,7 +154,7 @@ if __name__ == "__main__":
                     errors.append(error.getvalue())
                     task.folder.cleanup()
                     dead_or_alive[task.task_id] = False
-                    print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
+                    #print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
                     done = check_if_done()
                     if done:
                         break
