@@ -67,8 +67,9 @@ def main():
             if path not in weights_cache:
                 try:
                     weights_cache[path] = get_weights(path)
-                except:
-                    raise ValueError(f"File {path} is destroyed. Please fix your yaml.")
+                except Exception as e:
+                    import yaml.scanner
+                    raise yaml.scanner.ScannerError(f"File {path} is destroyed. Please fix your yaml.") from e
             print(f"P{player} Weights: {path} >> {weights_cache[path]['description']}")
 
     erargs = parse_arguments(['--multi', str(args.multi)])
