@@ -102,7 +102,7 @@ if __name__ == "__main__":
         print(basecommand)
 
         import time
-        import tqdm
+        from tqdm import tqdm
 
         start = time.perf_counter()
         def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                         return False
                 return False
 
-            for task in tqdm.tqdm(concurrent.futures.as_completed(task_mapping.values()),
+            for task in tqdm(concurrent.futures.as_completed(task_mapping.values()),
                                   total=len(task_mapping), unit="seeds"):
                 try:
                     result = task.result()
@@ -164,17 +164,17 @@ if __name__ == "__main__":
                     dead_or_alive[task.task_id] = True
                     done = check_if_done()
                     if done:
-                        print(msg)
+                        tqdm.write(msg)
                         cancel_remaining()
                         break
                     elif take_first_working:
-                        print(msg)
+                        tqdm.write(msg)
                         cancel_remaining()
                         def check_if_done():
                             return task.task_id
                         break
                     else:
-                        print(msg+" However, waiting for an earlier logical seed that is still generating.")
+                        tqdm.write(msg+" However, waiting for an earlier logical seed that is still generating.")
                         cancel_remaining(task.task_id)
             pool.shutdown(False)
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             shutil.copy(os.path.join(task.folder.name, file), os.path.join(outputpath, file))
             if file.endswith("_multidata"):
                 seedname = file[4:-10]
-
+        print()
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
 
         multidataname = f"DR_M{seedname}_multidata"
