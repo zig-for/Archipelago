@@ -4,6 +4,9 @@ import json
 import logging
 import shlex
 import urllib.parse
+import atexit
+
+exit_func = atexit.register(input, "Press enter to close.")
 
 import ModuleUpdate
 ModuleUpdate.update()
@@ -751,7 +754,9 @@ async def console_loop(ctx : Context):
                 snes_buffered_write(ctx, RECV_ITEM_PLAYER_ADDR, bytes([0]))
             else:
                 logging.info('Invalid item: ' + item)
-
+        if command[0] == "/license":
+            with open("LICENSE") as f:
+                logging.info(f.read())
         await snes_flush_writes(ctx)
 
 def get_item_name_from_id(code):
@@ -938,3 +943,4 @@ if __name__ == '__main__':
     loop.run_until_complete(asyncio.gather(*asyncio.Task.all_tasks()))
     loop.close()
     colorama.deinit()
+    atexit.unregister(exit_func)

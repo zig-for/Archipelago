@@ -2,6 +2,7 @@
 #comments don't work if the host uses bonta's remove all stuff behind # if you want this to be compatible with bonta's for some reason
 #I'd suggest keeping seperate files
 description: Easy/Open/Normal #please describe your options. Especially useful when you have multiple yamls for different occasions
+name: PleaseEnterNameHere #your name ingame, space and "_" gets replaced with a dash "-"
 glitches_required: none #there is also no_logic.
 item_placement: basic #this is based on Entrance Randomizer, which does not (yet?) support advanced
 map_shuffle: #to shuffle dungeon maps into the outside world and other dungeons, as well as other player's worlds in multiworld
@@ -110,6 +111,13 @@ beemizer:
   2: 0
   3: 0
   4: 0
+timer:
+  none: 1
+  timed: 0
+  timed_ohko: 0
+  ohko: 0
+  timed_countdown: 0
+  display: 0
 rom:
   sprite:
     random: 1

@@ -58,6 +58,7 @@ def main(args, seed=None):
     world.enemy_health = args.enemy_health.copy()
     world.enemy_damage = args.enemy_damage.copy()
     world.beemizer = args.beemizer.copy()
+    world.timer = args.timer.copy()
     world.shufflepots = args.shufflepots.copy()
     world.progressive = args.progressive.copy()
     world.extendedmsu = args.extendedmsu.copy()
@@ -237,9 +238,6 @@ def main(args, seed=None):
                 with open(output_path('%s_multidata' % outfilebase), 'wb') as f:
                     f.write(multidata)
 
-    if args.create_spoiler and not args.jsonout:
-        world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
-
     if not args.skip_playthrough:
         logger.info('Calculating playthrough.')
         create_playthrough(world)
@@ -291,6 +289,7 @@ def copy_world(world):
     ret.enemy_health = world.enemy_health.copy()
     ret.enemy_damage = world.enemy_damage.copy()
     ret.beemizer = world.beemizer.copy()
+    ret.timer = world.timer.copy()
     ret.shufflepots = world.shufflepots.copy()
     ret.extendedmsu = world.extendedmsu.copy()
 

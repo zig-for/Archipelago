@@ -301,7 +301,7 @@ def parse_arguments(argv, no_defaults=False):
             playerargs = parse_arguments(shlex.split(getattr(ret,f"p{player}")), True)
 
             for name in ['logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
-                         'shuffle', 'door_shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
+                         'shuffle', 'door_shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid', 'timer',
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle', 'startinventory',
                          'retro', 'accessibility', 'hints', 'beemizer',
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage', 'shufflepots',

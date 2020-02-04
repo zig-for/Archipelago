@@ -10,6 +10,9 @@ from tkinter import Checkbutton, OptionMenu, Toplevel, LabelFrame, PhotoImage, T
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+import ModuleUpdate
+ModuleUpdate.update()
+
 from AdjusterMain import adjust
 from DungeonRandomizer import parse_arguments
 from GuiUtils import ToolTips, set_icon, BackgroundTaskProgress

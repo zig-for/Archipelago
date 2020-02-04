@@ -220,6 +220,13 @@ def roll_settings(weights):
 
     ret.beemizer = int(get_choice('beemizer')) if 'beemizer' in weights else 0
 
+    ret.timer = {'none': 'none',
+                 'timed': 'timed',
+                 'timed_ohko': 'timed-ohko',
+                 'ohko': 'ohko',
+                 'timed_countdown': 'timed-countdown',
+                 'display': 'display'}[get_choice('timer')] if 'timer' in weights.keys() else 'none'
+
     ret.progressive = convert_to_on_off(get_choice('progressive')) if "progressive" in weights else 'on'
     inventoryweights = weights.get('startinventory', {})
     startitems = []
@@ -238,7 +245,7 @@ def roll_settings(weights):
         romweights = weights['rom']
         ret.sprite = get_choice('sprite', romweights)
         if ret.sprite and not os.path.isfile(ret.sprite) and not get_sprite_from_name(ret.sprite):
-            logging.Logger('').warning(f"Warning: The choson sprite, \"{ret.sprite}\" does not exist.")
+            logging.Logger('').warning(f"Warning: The chosen sprite, \"{ret.sprite}\" does not exist.")
         ret.disablemusic = get_choice('disablemusic', romweights)
         ret.extendedmsu = get_choice('extendedmsu', romweights)
         ret.quickswap = get_choice('quickswap', romweights)
