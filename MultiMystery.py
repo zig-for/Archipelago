@@ -255,16 +255,15 @@ if __name__ == "__main__":
                                 os.remove(file)
                                 print(f"Removed file {file} that is now present in the zipfile")
 
-            subprocess.call(f"py -{py_version} MultiServer.py --multidata {os.path.join(outputpath, multidataname)}")
-        if os.path.exists("BerserkerMultiServer.exe"):
-            baseservercommand = "BerserkerMultiServer.exe"  # compiled windows
-        elif os.path.exists("BerserkerMultiServer"):
-            baseservercommand = "BerserkerMultiServer"  # compiled linux
-        else:
-            baseservercommand = f"py -{py_version} MultiServer.py"  # source
-        #don't have a mac to test that. If you try to run compiled on mac, good luck.
+            if os.path.exists("BerserkerMultiServer.exe"):
+                baseservercommand = "BerserkerMultiServer.exe"  # compiled windows
+            elif os.path.exists("BerserkerMultiServer"):
+                baseservercommand = "BerserkerMultiServer"  # compiled linux
+            else:
+                baseservercommand = f"py -{py_version} MultiServer.py"  # source
+            #don't have a mac to test that. If you try to run compiled on mac, good luck.
 
-        subprocess.call(f"{baseservercommand} --multidata {os.path.join(outputpath, multidataname)}")
+            subprocess.call(f"{baseservercommand} --multidata {os.path.join(outputpath, multidataname)}")
     except:
         traceback.print_exc()
         input("Press enter to close")
