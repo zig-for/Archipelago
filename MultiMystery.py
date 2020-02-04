@@ -139,8 +139,22 @@ if __name__ == "__main__":
                         return False
                 return False
 
-            for task in tqdm(concurrent.futures.as_completed(task_mapping.values()),
-                                  total=len(task_mapping), unit="seeds"):
+            def get_alive_threads():
+                still_alive = []
+                for x in range(1,min(min_logical_seed,parallel_attempts)+1):
+                    success = dead_or_alive.get(x, None)
+                    if success is None:
+                        still_alive.append(str(x))
+                        if len(still_alive) == 8:
+                            still_alive.append("...")
+                            break
+                return ", ".join(still_alive) if len(still_alive) > 0 else "None"
+
+            min_logical_seed = parallel_attempts
+            pbar = tqdm(concurrent.futures.as_completed(task_mapping.values()),
+                                  total=len(task_mapping), unit="seeds")
+            pbar.set_description(f"Generating: {get_alive_threads()}")
+            for task in pbar:
                 try:
                     result = task.result()
                     if result.returncode:
@@ -155,6 +169,10 @@ if __name__ == "__main__":
                     task.folder.cleanup()
                     dead_or_alive[task.task_id] = False
                     #print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
+                    if "Please fix your yaml." in error.getvalue():
+                        cancel_remaining()
+                        tqdm.write("YAML error")
+                        break
                     done = check_if_done()
                     if done:
                         break
@@ -174,8 +192,11 @@ if __name__ == "__main__":
                             return task.task_id
                         break
                     else:
-                        tqdm.write(msg+" However, waiting for an earlier logical seed that is still generating.")
+                        min_logical_seed = min(min_logical_seed, task.task_id)
+                        if task.task_id <= min_logical_seed:
+                            tqdm.write(msg+" However, waiting for an earlier logical seed that is still generating.")
                         cancel_remaining(task.task_id)
+                pbar.set_description(f"Generating: {get_alive_threads()}")
             pool.shutdown(False)
 
             task_id = check_if_done()
@@ -196,35 +217,38 @@ if __name__ == "__main__":
         print()
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
 
-        multidataname = f"DR_M{seedname}_multidata"
+        if player_count == 1:
+            print(f"No need to start server as this is a single player seed")
+        else:
+            multidataname = f"DR_M{seedname}_multidata"
 
-        romfilename = ""
-        if player_name:
-            try:
-                index = player_names.index(player_name)
-            except IndexError:
-                print(f"Could not find Player {player_name}")
-            else:
-                romfilename = os.path.join(outputpath, f"DR_{seedname}_P{index + 1}_{player_name}.sfc")
-                import webbrowser
-                if os.path.exists(romfilename):
-                    print(f"Launching ROM file {romfilename}")
-                    webbrowser.open(romfilename)
+            romfilename = ""
+            if player_name:
+                try:
+                    index = player_names.index(player_name)
+                except IndexError:
+                    print(f"Could not find Player {player_name}")
+                else:
+                    romfilename = os.path.join(outputpath, f"DR_{seedname}_P{index + 1}_{player_name}.sfc")
+                    import webbrowser
+                    if os.path.exists(romfilename):
+                        print(f"Launching ROM file {romfilename}")
+                        webbrowser.open(romfilename)
 
-        if zip_roms:
-            zipname = os.path.join(outputpath, f"DR_M{seedname}.zip")
-            print(f"Creating zipfile {zipname}")
-            import zipfile
-            with zipfile.ZipFile(zipname, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-                for file in os.listdir(outputpath):
-                    if file.endswith(".sfc") and seedname in file:
-                        zf.write(os.path.join(outputpath, file), file)
-                        print(f"Packed {file} into zipfile {zipname}")
-                        if zip_roms == 2 and player_name.lower() not in file.lower():
-                            os.remove(file)
-                            print(f"Removed file {file} that is now present in the zipfile")
+            if zip_roms:
+                zipname = os.path.join(outputpath, f"DR_M{seedname}.zip")
+                print(f"Creating zipfile {zipname}")
+                import zipfile
+                with zipfile.ZipFile(zipname, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+                    for file in os.listdir(outputpath):
+                        if file.endswith(".sfc") and seedname in file:
+                            zf.write(os.path.join(outputpath, file), file)
+                            print(f"Packed {file} into zipfile {zipname}")
+                            if zip_roms == 2 and player_name.lower() not in file.lower():
+                                os.remove(file)
+                                print(f"Removed file {file} that is now present in the zipfile")
 
-        subprocess.call(f"py -{py_version} MultiServer.py --multidata {os.path.join(outputpath, multidataname)}")
+            subprocess.call(f"py -{py_version} MultiServer.py --multidata {os.path.join(outputpath, multidataname)}")
     except:
         traceback.print_exc()
         input("Press enter to close")
