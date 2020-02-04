@@ -96,11 +96,6 @@ if __name__ == "__main__":
 
         player_names = list(file[:-5] for file in player_files)
 
-        basecommand = f"py -{py_version} Mystery.py --multi {len(player_files)} {player_string}" \
-                  f" --names {','.join(player_names)} --enemizercli {enemizer_location} " \
-                  " --create_spoiler" if create_spoiler else "" + " --race" if race else ""
-        print(basecommand)
-
         if os.path.exists("BerserkerMultiServer.exe"):
             basemysterycommand = "BerserkerMystery.exe" #compiled windows
         elif os.path.exists("BerserkerMultiServer"):
@@ -108,10 +103,11 @@ if __name__ == "__main__":
         else:
             basemysterycommand = f"py -{py_version} Mystery.py" #source
 
-        command = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
+        basecommand = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
                   f"--names {','.join(player_names)} --enemizercli {enemizer_location} " \
-                  f"--outputpath {outputpath}" + " --create_spoiler" if create_spoiler else "" + " --race" if race else ""
-        print(command)
+                  "--create_spoiler" if create_spoiler else "" + " --race" if race else ""
+        print(basecommand)
+
         import time
         from tqdm import tqdm
 
