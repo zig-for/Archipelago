@@ -1726,7 +1726,7 @@ def write_strings(rom, world, player, team):
         hint_count = 5 if world.shuffle[player] not in ['vanilla', 'dungeonssimple', 'dungeonsfull'] else 8
         while hint_count > 0:
             this_item = items_to_hint.pop(0)
-            this_location = world.find_items(this_item, player)
+            this_location = world.find_items_not_key_only(this_item, player)
             random.shuffle(this_location)
             #This looks dumb but prevents hints for Skull Woods Pinball Room's key safely with any item pool.
             if this_location:
@@ -1736,6 +1736,15 @@ def write_strings(rom, world, player, team):
                 this_hint = this_location[0].item.hint_text + ' can be found ' + hint_text(this_location[0]) + '.'
                 tt[hint_locations.pop(0)] = this_hint
                 hint_count -= 1
+
+        # Adding a hint for the Thieves' Town Attic location in Crossed Doorshufle.
+        if world.doorShuffle[player] in ['crossed']:
+            attic_hint = world.get_location("Thieves' Town - Attic", player).parent_region.dungeon.name
+            this_hint = 'A cracked floor can be found in ' + attic_hint + '.'
+            if hint_locations[0] == 'telepathic_tile_thieves_town_upstairs':
+                tt[hint_locations.pop(1)] = this_hint
+            else:
+                tt[hint_locations.pop(0)] = this_hint
 
         # All remaining hint slots are filled with junk hints. It is done this way to ensure the same junk hint isn't selected twice.
         junk_hints = junk_texts.copy()
