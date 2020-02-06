@@ -155,55 +155,54 @@ if __name__ == "__main__":
                         if len(still_alive) == 8:
                             still_alive.append("...")
                             break
-                return ", ".join(still_alive) if len(still_alive) > 0 else "None"
+                return ", ".join(still_alive) if still_alive else "None"
 
             min_logical_seed = parallel_attempts
-            pbar = tqdm(concurrent.futures.as_completed(task_mapping.values()),
-                                  total=len(task_mapping), unit="seeds")
-            pbar.set_description(f"Generating: {get_alive_threads()}")
-            for task in pbar:
-                try:
-                    result = task.result()
-                    if result.returncode:
-                        raise Exception(result.stderr)
-                except concurrent.futures.CancelledError:
-                    task.folder.cleanup()
-                    dead_or_alive[task.task_id] = False
-                except:
-                    error = io.StringIO()
-                    traceback.print_exc(file=error)
-                    errors.append(error.getvalue())
-                    task.folder.cleanup()
-                    dead_or_alive[task.task_id] = False
-                    #print(f"Seed Attempt #{task.task_id:4} died. ({len(dead_or_alive):4} total of {parallel_attempts})")
-                    if "Please fix your yaml." in error.getvalue():
-                        cancel_remaining()
-                        tqdm.write("YAML error")
-                        break
-                    done = check_if_done()
-                    if done:
-                        break
-                else:
-                    msg = f"Seed Attempt #{task.task_id:4} was successful."
-
-                    dead_or_alive[task.task_id] = True
-                    done = check_if_done()
-                    if done:
-                        tqdm.write(msg)
-                        cancel_remaining()
-                        break
-                    elif take_first_working:
-                        tqdm.write(msg)
-                        cancel_remaining()
-                        def check_if_done():
-                            return task.task_id
-                        break
+            with tqdm(concurrent.futures.as_completed(task_mapping.values()),
+                      total=len(task_mapping), unit="seeds", desc=f"Generating: {get_alive_threads()}") as progressbar:
+                for task in progressbar:
+                    try:
+                        result = task.result()
+                        if result.returncode:
+                            raise Exception(result.stderr)
+                    except concurrent.futures.CancelledError:
+                        task.folder.cleanup()
+                        dead_or_alive[task.task_id] = False
+                    except:
+                        error = io.StringIO()
+                        traceback.print_exc(file=error)
+                        errors.append(error.getvalue())
+                        task.folder.cleanup()
+                        dead_or_alive[task.task_id] = False
+                        if "Please fix your yaml." in error.getvalue():
+                            cancel_remaining()
+                            tqdm.write("YAML error")
+                            break
+                        done = check_if_done()
+                        if done:
+                            break
                     else:
-                        min_logical_seed = min(min_logical_seed, task.task_id)
-                        if task.task_id <= min_logical_seed:
-                            tqdm.write(msg+" However, waiting for an earlier logical seed that is still generating.")
-                        cancel_remaining(task.task_id)
-                pbar.set_description(f"Generating: {get_alive_threads()}")
+                        msg = f"Seed Attempt #{task.task_id:4} was successful."
+
+                        dead_or_alive[task.task_id] = True
+                        done = check_if_done()
+                        if done:
+                            tqdm.write(msg)
+                            cancel_remaining()
+                            break
+                        elif take_first_working:
+                            tqdm.write(msg)
+                            cancel_remaining()
+                            def check_if_done():
+                                return task.task_id
+                            break
+                        else:
+                            min_logical_seed = min(min_logical_seed, task.task_id)
+                            if task.task_id <= min_logical_seed:
+                                tqdm.write(msg+" However, waiting for an earlier logical seed that is still generating.")
+                            cancel_remaining(task.task_id)
+                    progressbar.set_description(f"Generating: {get_alive_threads()}")
+
             pool.shutdown(False)
 
             task_id = check_if_done()
