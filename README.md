@@ -39,6 +39,5 @@ Mystery.py
 If a race ROM is desired, pass --create-race as argument to it
  * When an error is generated due to a broken .yaml file, it now mentions in the error trace which file, line and character is the culprit
  * Option for progressive items, allowing you to turn them off (see easy.yaml for more info)
- * Rom-Option for extendedmsu (see easy.yaml for more info)
 
  

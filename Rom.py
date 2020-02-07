@@ -115,7 +115,7 @@ class LocalRom(object):
         self.buffer.extend(bytearray([0x00]) * (0x200000 - len(self.buffer)))
 
         # load randomizer patches
-        with open(local_path('data/base2current.json') if not extendedmsu else local_path('data/base2current_extendedmsu.json'), 'r') as stream:
+        with open(local_path('data/base2current.json'), 'r') as stream:
             patches = json.load(stream)
         for patch in patches:
             if isinstance(patch, dict):
