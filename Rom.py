@@ -110,7 +110,7 @@ class LocalRom(object):
         basemd5.update(self.buffer)
         if JAP10HASH != basemd5.hexdigest():
             logging.getLogger('').warning('Supplied Base Rom does not match known MD5 for JAP(1.0) release. Will try to patch anyway.')
-        
+
         # extend to 2MB
         self.buffer.extend(bytearray([0x00]) * (0x200000 - len(self.buffer)))
 
@@ -242,9 +242,9 @@ def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, r
             'IcePalace': world.get_dungeon("Ice Palace", player).boss.enemizer_name,
             'MiseryMire': world.get_dungeon("Misery Mire", player).boss.enemizer_name,
             'TurtleRock': world.get_dungeon("Turtle Rock", player).boss.enemizer_name,
-            'GanonsTower1': world.get_dungeon('Ganons Tower', player).bosses['bottom'].enemizer_name,
-            'GanonsTower2': world.get_dungeon('Ganons Tower', player).bosses['middle'].enemizer_name,
-            'GanonsTower3': world.get_dungeon('Ganons Tower', player).bosses['top'].enemizer_name,
+            'GanonsTower1': [x for x in world.dungeons if x.player == player and 'bottom' in x.bosses.keys()][0].bosses['bottom'].enemizer_name,
+            'GanonsTower2': [x for x in world.dungeons if x.player == player and 'middle' in x.bosses.keys()][0].bosses['middle'].enemizer_name,
+            'GanonsTower3': [x for x in world.dungeons if x.player == player and 'top' in x.bosses.keys()][0].bosses['top'].enemizer_name,
             'GanonsTower4': 'Agahnim2',
             'Ganon': 'Ganon',
         }
