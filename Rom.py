@@ -613,10 +613,11 @@ def patch_rom(world, rom, player, team, enemized):
     for paired_door in world.paired_doors[player]:
         rom.write_bytes(paired_door.address_a(world, player), paired_door.rom_data_a(world, player))
         rom.write_bytes(paired_door.address_b(world, player), paired_door.rom_data_b(world, player))
-    for builder in world.dungeon_layouts[player].values():
-        if builder.pre_open_stonewall:
-            if builder.pre_open_stonewall.name == 'Desert Wall Slide NW':
+    if world.doorShuffle[player] != "vanilla":
+        for builder in world.dungeon_layouts[player].values():
+            if builder.pre_open_stonewall and builder.pre_open_stonewall.name == 'Desert Wall Slide NW':
                 dr_flags |= DROptions.Open_Desert_Wall
+                break
     rom.write_byte(0x139006, dr_flags.value)
 
     # fix skull woods exit, if not fixed during exit patching
