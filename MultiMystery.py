@@ -43,14 +43,16 @@ if __name__ == "__main__":
         create_spoiler = multi_mystery_options["create_spoiler"]
         zip_roms = multi_mystery_options["zip_roms"]
         player_name = multi_mystery_options["player_name"]
-
+        take_first_working = multi_mystery_options["take_first_working"]
 
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
         if not os.path.exists(enemizer_path):
-            feedback(f"Enemizer not found at {enemizer_path}, please adjust the path in MultiMystery.py's config or put Enemizer in the default location.")
+            feedback(
+                f"Enemizer not found at {enemizer_path}, please adjust the path in MultiMystery.py's config or put Enemizer in the default location.")
         if not os.path.exists("Zelda no Densetsu - Kamigami no Triforce (Japan).sfc"):
-            feedback("Base rom is expected as Zelda no Densetsu - Kamigami no Triforce (Japan).sfc in the Multiworld root folder please place/rename it there.")
+            feedback(
+                "Base rom is expected as Zelda no Densetsu - Kamigami no Triforce (Japan).sfc in the Multiworld root folder please place/rename it there.")
         player_files = []
         os.makedirs(player_files_path, exist_ok=True)
         for file in os.listdir(player_files_path):
@@ -85,8 +87,9 @@ if __name__ == "__main__":
         from tqdm import tqdm
 
         start = time.perf_counter()
+
         def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
-            global parallel_attempts
+            parallel_attempts = multi_mystery_options["parallel_attempts"]
 
             def cancel_remaining(starting_at:int = 0):
                 for x in range(starting_at + 1, parallel_attempts + 1):
@@ -190,7 +193,7 @@ if __name__ == "__main__":
         task = get_working_seed()
         seedname = ""
         for file in os.listdir(task.folder.name):
-            shutil.copy(os.path.join(task.folder.name, file), os.path.join(outputpath, file))
+            shutil.copy(os.path.join(task.folder.name, file), os.path.join(output_path, file))
             if file.endswith("_multidata"):
                 seedname = file[4:-10]
         print()

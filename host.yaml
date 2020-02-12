@@ -26,12 +26,19 @@ multi_mystery_options:
 #does nothing if the name is not found
 #example: player_name = "Berserker"
   player_name: "" # the hosts name
-#Zip the resulting roms
-#0 -> Don't
-#1 -> Create a zip
-#2 -> Create a zip and delete the ROMs that will be in it, except the hosts (requires player_name to be set correctly)
+  #Zip the resulting roms
+  #0 -> Don't
+  #1 -> Create a zip
+  #2 -> Create a zip and delete the ROMs that will be in it, except the hosts (requires player_name to be set correctly)
   zip_roms: 1
-#create a spoiler file
+  #create a spoiler file
   create_spoiler: 1
-#create roms flagged as race roms
+  #create roms flagged as race roms
   race: 0
+  ##Doors options
+  # How many seeds should be rolled in parallel. This is useful for Door Rando, since some to many of them can fail.
+  # set to 0 for it to mimic the amount of hardware threads you have, otherwise use a positive number for the amount of attempts it should do at once
+  parallel_attempts: 0
+  #When using parallel_attempts, this controls if the first one that works in order of starting should be taken, or the first one in order of completion time should be taken
+  #keep in mind, that turning this on, will skew the randomness into "simpler" seeds, as they generate quicker
+  take_first_working: False
