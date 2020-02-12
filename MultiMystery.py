@@ -135,7 +135,8 @@ if __name__ == "__main__":
 
             min_logical_seed = parallel_attempts
             with tqdm(concurrent.futures.as_completed(task_mapping.values()),
-                      total=len(task_mapping), unit="seeds", desc=f"Generating: {get_alive_threads()}") as progressbar:
+                      total=len(task_mapping), unit="seed(s)",
+                      desc=f"Generating: {get_alive_threads()}") as progressbar:
                 for task in progressbar:
                     try:
                         result = task.result()

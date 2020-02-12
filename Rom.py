@@ -159,7 +159,7 @@ def read_rom(stream):
         buffer = buffer[0x200:]
     return buffer
 
-def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, random_sprite_on_hit, extendedmsu):
+def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, random_sprite_on_hit):
     baserom_path = os.path.abspath(baserom_path)
     basepatch_path = os.path.abspath(local_path('data/base2current.json'))
     enemizer_basepatch_path = os.path.join(os.path.dirname(enemizercli), "enemizerBasePatch.json")
