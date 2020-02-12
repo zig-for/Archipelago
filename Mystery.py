@@ -240,7 +240,6 @@ def roll_settings(weights):
         if ret.sprite and not os.path.isfile(ret.sprite) and not get_sprite_from_name(ret.sprite):
             logging.Logger('').warning(f"Warning: The chosen sprite, \"{ret.sprite}\" does not exist.")
         ret.disablemusic = get_choice('disablemusic', romweights)
-        ret.extendedmsu = get_choice('extendedmsu', romweights)
         ret.quickswap = get_choice('quickswap', romweights)
         ret.fastmenu = get_choice('menuspeed', romweights)
         ret.heartcolor = get_choice('heartcolor', romweights)

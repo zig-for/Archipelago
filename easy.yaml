@@ -124,7 +124,6 @@ rom:
     randomonhit: 1
     link: 1
   disablemusic: off
-  extendedmsu: off #turn on to have V31 extended MSU support, not available if the host uses bonta's
   quickswap:
     on: 1
     off: 0
