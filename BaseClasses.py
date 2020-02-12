@@ -66,6 +66,7 @@ class World(object):
         self.dungeon_layouts = {}
         self.inaccessible_regions = {}
         self.key_logic = {}
+        self.pool_adjustment = {}
 
         for player in range(1, players + 1):
             def set_player_attr(attr, val):
@@ -1515,11 +1516,11 @@ class Spoiler(object):
         else:
             self.entrances[(entrance, direction, player)] = OrderedDict([('player', player), ('entrance', entrance), ('exit', exit), ('direction', direction)])
 
-    def set_door(self, entrance, exit, direction, player):
+    def set_door(self, entrance, exit, direction, player, d_name):
         if self.world.players == 1:
-            self.doors[(entrance, direction, player)] = OrderedDict([('entrance', entrance), ('exit', exit), ('direction', direction)])
+            self.doors[(entrance, direction, player)] = OrderedDict([('player', player), ('entrance', entrance), ('exit', exit), ('direction', direction), ('dname', d_name)])
         else:
-            self.doors[(entrance, direction, player)] = OrderedDict([('player', player), ('entrance', entrance), ('exit', exit), ('direction', direction)])
+            self.doors[(entrance, direction, player)] = OrderedDict([('player', player), ('entrance', entrance), ('exit', exit), ('direction', direction), ('dname', d_name)])
 
     def set_door_type(self, doorNames, type, player):
         if self.world.players == 1:
@@ -1628,7 +1629,8 @@ class Spoiler(object):
                          'progressive': self.world.progressive,
                          'shufflepots': self.world.shufflepots,
                          'players': self.world.players,
-                         'teams': self.world.teams
+                         'teams': self.world.teams,
+                         'experimental' : self.world.experimental
                          }
 
     def to_json(self):
@@ -1689,9 +1691,16 @@ class Spoiler(object):
                 outfile.write('Hints:                           %s\n' % ('Yes' if self.metadata['hints'][player] else 'No'))
                 outfile.write('Beemizer:                        %s\n' % self.metadata['beemizer'][player])
                 outfile.write('Pot shuffle                      %s\n' % ('Yes' if self.metadata['shufflepots'][player] else 'No'))
+                outfile.write('Experimental Doors:              %s\n' % ('Yes' if self.metadata['experimental'][player] else 'No'))
             if self.doors:
                 outfile.write('\n\nDoors:\n\n')
-                outfile.write('\n'.join(['%s%s %s %s' % ('Player {0}: '.format(entry['player']) if self.world.players > 1 else '', entry['entrance'], '<=>' if entry['direction'] == 'both' else '<=' if entry['direction'] == 'exit' else '=>', entry['exit']) for entry in self.doors.values()]))
+                outfile.write('\n'.join(
+                    ['%s%s %s %s %s' % ('Player {0}: '.format(entry['player']) if self.world.players > 1 else '',
+                                        entry['entrance'],
+                                        '<=>' if entry['direction'] == 'both' else '<=' if entry['direction'] == 'exit' else '=>',
+                                        entry['exit'],
+                                        '({0})'.format(entry['dname']) if self.world.doorShuffle[entry['player']] == 'crossed' else '') for
+                     entry in self.doors.values()]))
             if self.doorTypes:
                 outfile.write('\n\nDoor Types:\n\n')
                 outfile.write('\n'.join(['%s%s %s' % ('Player {0}: '.format(entry['player']) if self.world.players > 1 else '', entry['doorNames'], entry['type']) for entry in self.doorTypes.values()]))
