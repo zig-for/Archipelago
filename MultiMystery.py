@@ -55,6 +55,7 @@ if __name__ == "__main__":
                 "Base rom is expected as Zelda no Densetsu - Kamigami no Triforce (Japan).sfc in the Multiworld root folder please place/rename it there.")
         player_files = []
         os.makedirs(player_files_path, exist_ok=True)
+        os.makedirs(output_path, exist_ok=True)
         for file in os.listdir(player_files_path):
             if file.lower().endswith(".yaml"):
                 player_files.append(file)
