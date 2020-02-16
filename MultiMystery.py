@@ -20,9 +20,12 @@ import tempfile
 import shutil
 import traceback
 import io
+import time
+import multiprocessing
 import concurrent.futures
 
-def feedback(text:str):
+
+def feedback(text: str):
     print(text)
     input("Press Enter to ignore and probably crash.")
 
@@ -86,7 +89,6 @@ if __name__ == "__main__":
                   f"{spoiler_option}{race_option}"
         print(basecommand)
 
-        import time
         from tqdm import tqdm
 
         start = time.perf_counter()
@@ -99,7 +101,6 @@ if __name__ == "__main__":
                 for x in range(starting_at + 1, max_attempts + 1):
                     task_mapping[x].cancel()
 
-            import multiprocessing
             if cpu_threads < 1:
                 cpu_threads = multiprocessing.cpu_count()
 
