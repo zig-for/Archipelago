@@ -34,7 +34,7 @@ entrance_shuffle:
   insanity: 0 #any entrance can lead to any other entrance
 door_shuffle: # not available if the host uses bonta's
   vanilla: 1 # everything should be like in vanilla
-  basic: 0 # dungeons are shuffled within themselves. Reported to be broken with retro and inverted, I suggest not mixing it.
+  basic: 0 # dungeons are shuffled within themselves.
   crossed: 0 # dungeons are shuffled across each other.
 goals:
   ganon: 5 #beat GT and then Ganon
