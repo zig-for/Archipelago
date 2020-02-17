@@ -120,10 +120,6 @@ if __name__ == "__main__":
                 task_mapping[x] = task
 
             errors = []
-        text = subprocess.check_output(command, shell=True).decode()
-        print(f"Took {time.perf_counter()-start:.3f} seconds to generate rom(s).")
-        seedname = ""
-
             dead_or_alive = {}
 
             def check_if_done():
@@ -204,15 +200,26 @@ if __name__ == "__main__":
 
             return task_mapping[task_id]
 
-        multidataname = f"ER_{seedname}_multidata"
-        spoilername = f"ER_{seedname}_Spoiler.txt"
+
+
+
+        task = get_working_seed()
+        seedname = ""
+        for file in os.listdir(task.folder.name):
+            shutil.copy(os.path.join(task.folder.name, file), os.path.join(output_path, file))
+            if file.endswith("_multidata"):
+                seedname = file[3:-10]
+
+        print()
+        print(f"Took {time.perf_counter()-start:.3f} seconds to generate rom(s).")
+        multidataname = f"DR_{seedname}_multidata"
+        spoilername = f"DR_{seedname}_Spoiler.txt"
         romfilename = ""
 
         if player_name:
             for file in os.listdir(output_path):
                 if player_name in file:
                     import webbrowser
-
                     romfilename = os.path.join(output_path, file)
                     print(f"Launching ROM file {romfilename}")
                     webbrowser.open(romfilename)
@@ -220,33 +227,6 @@ if __name__ == "__main__":
 
         if any((zip_roms, zip_multidata, zip_spoiler)):
             import zipfile
-        task = get_working_seed()
-        seedname = ""
-        for file in os.listdir(task.folder.name):
-            shutil.copy(os.path.join(task.folder.name, file), os.path.join(output_path, file))
-            if file.endswith("_multidata"):
-                seedname = file[4:-10]
-        print()
-        print(f"Took {time.perf_counter()-start:.3f} seconds to generate seed.")
-
-        if player_count == 1:
-            print(f"No need to start server as this is a single player seed")
-        else:
-            multidataname = f"DR_M{seedname}_multidata"
-
-            romfilename = ""
-            if player_name:
-                try:
-                    index = player_names.index(player_name)
-                except IndexError:
-                    print(f"Could not find Player {player_name}")
-                else:
-                    romfilename = os.path.join(output_path, f"DR_{seedname}_P{index + 1}_{player_name}.sfc")
-                    import webbrowser
-                    if os.path.exists(romfilename):
-                        print(f"Launching ROM file {romfilename}")
-                        webbrowser.open(romfilename)
-
             def pack_file(file: str):
                 zf.write(os.path.join(output_path, file), file)
                 print(f"Packed {file} into zipfile {zipname}")
@@ -254,25 +234,26 @@ if __name__ == "__main__":
             def remove_zipped_file(file: str):
                 os.remove(os.path.join(output_path, file))
                 print(f"Removed {file} which is now present in the zipfile")
-                zipname = os.path.join(output_path, f"DR_M{seedname}.zip")
-                print(f"Creating zipfile {zipname}")
 
-                with zipfile.ZipFile(zipname, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-                    for file in os.listdir(output_path):
-                        if zip_roms andfile.endswith(".sfc") and seedname in file:
-                            pack_file(file)
-                            if zip_roms == 2 and player_name.lower() not in file.lower():
-                                remove_zipped_file(file)
+            zipname = os.path.join(output_path, f"DR_{seedname}.zip")
+            print(f"Creating zipfile {zipname}")
+            with zipfile.ZipFile(zipname, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+                for file in os.listdir(output_path):
+                    if zip_roms and file.endswith(".sfc") and seedname in file:
+                        pack_file(file)
+                        if zip_roms == 2 and player_name.lower() not in file.lower():
+                            remove_zipped_file(file)
                 if zip_multidata and os.path.exists(os.path.join(output_path, multidataname)):
                     pack_file(multidataname)
                     if zip_multidata == 2:
                         remove_zipped_file(multidataname)
                 if zip_spoiler and create_spoiler:
                     pack_file(spoilername)
-                                if zip_spoiler == 2:
+                    if zip_spoiler == 2:
                         remove_zipped_file(spoilername)
 
-            if os.path.exists(os.path.join(output_path, multidataname)):if os.path.exists("BerserkerMultiServer.exe"):
+        if os.path.exists(os.path.join(output_path, multidataname)):
+            if os.path.exists("BerserkerMultiServer.exe"):
                 baseservercommand = "BerserkerMultiServer.exe"  # compiled windows
             elif os.path.exists("BerserkerMultiServer"):
                 baseservercommand = "BerserkerMultiServer"  # compiled linux
