@@ -4,3 +4,4 @@ websockets>=8.1
 PyYAML>=5.3
 collections_extended>=1.0.3
 tqdm>=4.42.0
+fuzzywuzzy>=0.18.0

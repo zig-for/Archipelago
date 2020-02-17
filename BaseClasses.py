@@ -10,7 +10,6 @@ from Tables import normal_offset_table, spiral_offset_table
 from RoomData import Room
 
 class World(object):
-
     def __init__(self, players, shuffle, doorShuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive, goal, algorithm, accessibility, shuffle_ganon, retro, custom, customitemarray, hints):
         self.players = players
         self.teams = 1
@@ -688,7 +687,7 @@ class CollectionState(object):
 
     def can_flute(self, player):
         lw = self.world.get_region('Light World', player)
-        return self.has('Ocarina', player) and lw.can_reach(self) and self.is_not_bunny(lw, player)
+        return self.has('Flute', player) and lw.can_reach(self) and self.is_not_bunny(lw, player)
 
     def can_melt_things(self, player):
         return self.has('Fire Rod', player) or (self.has('Bombos', player) and self.has_sword(player))
@@ -1493,7 +1492,7 @@ class Shop(object):
 
 
 class Spoiler(object):
-
+    world: World
     def __init__(self, world):
         self.world = world
         self.hashes = {}
