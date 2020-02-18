@@ -186,7 +186,7 @@ def roll_settings(weights):
 
     entrance_shuffle = get_choice('entrance_shuffle', weights)
     ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
-    door_shuffle = get_choice('door_shuffle')
+    door_shuffle = get_choice('door_shuffle', weights)
     ret.door_shuffle = door_shuffle if door_shuffle else 'vanilla'
 
     goal = get_choice('goals', weights)

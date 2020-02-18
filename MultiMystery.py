@@ -88,11 +88,10 @@ if __name__ == "__main__":
             basemysterycommand = f"py -{py_version} Mystery.py" #source
 
         command = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
-                  f"--names {','.join(player_names)} --enemizercli {enemizer_path} " \
-                  f"--outputpath {output_path}"
+                  f"--names {','.join(player_names)} --enemizercli {enemizer_path} "
 
         if create_spoiler:
-            command +=  " --create_spoiler"
+            command += " --create_spoiler"
         if race:
             command += " --race"
         if os.path.exists(os.path.join(player_files_path, meta_file_path)):
@@ -150,6 +149,7 @@ if __name__ == "__main__":
                 return ", ".join(still_alive) if still_alive else "None"
 
             min_logical_seed = max_attempts
+            from tqdm import tqdm
             with tqdm(concurrent.futures.as_completed(task_mapping.values()),
                       total=len(task_mapping), unit="seed(s)",
                       desc=f"Generating: {get_alive_threads()}") as progressbar:
