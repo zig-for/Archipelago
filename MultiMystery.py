@@ -49,6 +49,8 @@ if __name__ == "__main__":
         zip_multidata = multi_mystery_options["zip_multidata"]
         player_name = multi_mystery_options["player_name"]
         take_first_working = multi_mystery_options["take_first_working"]
+        meta_file_path = multi_mystery_options["meta_file_path"]
+
 
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
@@ -62,7 +64,8 @@ if __name__ == "__main__":
         os.makedirs(player_files_path, exist_ok=True)
         os.makedirs(output_path, exist_ok=True)
         for file in os.listdir(player_files_path):
-            if file.lower().endswith(".yaml"):
+            lfile = file.lower()
+            if lfile.endswith(".yaml") and lfile != meta_file_path.lower():
                 player_files.append(file)
                 print(f"Player {file[:-5]} found.")
         player_count = len(player_files)
@@ -84,15 +87,19 @@ if __name__ == "__main__":
         else:
             basemysterycommand = f"py -{py_version} Mystery.py" #source
 
-        spoiler_option = " --create_spoiler" if  create_spoiler else ""
-        race_option = " --race" if race else ""
-        basecommand = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
-                  f"--names {','.join(player_names)} --enemizercli {enemizer_path}" \
-                  f"{spoiler_option}{race_option}"
-        print(basecommand)
+        command = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
+                  f"--names {','.join(player_names)} --enemizercli {enemizer_path} " \
+                  f"--outputpath {output_path}"
 
-        from tqdm import tqdm
+        if create_spoiler:
+            command +=  " --create_spoiler"
+        if race:
+            command += " --race"
+        if os.path.exists(os.path.join(player_files_path, meta_file_path)):
+            command += f" --meta {os.path.join(player_files_path, meta_file_path)}"
 
+        print(command)
+        import time
         start = time.perf_counter()
 
         def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
@@ -113,8 +120,8 @@ if __name__ == "__main__":
             task_mapping = {}
             for x in range(1, max_attempts+1):
                 folder = tempfile.TemporaryDirectory()
-                command = basecommand + f" --outputpath {folder.name}"
-                task = pool.submit(subprocess.run, command, capture_output=True, shell=False, text=True)
+                taskcommand = command + f" --outputpath {folder.name}"
+                task = pool.submit(subprocess.run, taskcommand, capture_output=True, shell=False, text=True)
                 task.task_id = x
                 task.folder = folder
                 task_mapping[x] = task
