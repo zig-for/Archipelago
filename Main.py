@@ -23,7 +23,7 @@ from Fill import distribute_items_cutoff, distribute_items_staleness, distribute
 from ItemList import generate_itempool, difficulties, fill_prizes
 from Utils import output_path, parse_player_names
 
-__version__ = '0.0.13pre'
+__version__ = '0.0.15pre'
 
 
 def main(args, seed=None):
@@ -61,6 +61,7 @@ def main(args, seed=None):
     world.timer = args.timer.copy()
     world.shufflepots = args.shufflepots.copy()
     world.progressive = args.progressive.copy()
+    world.dungeon_counters = args.dungeon_counters.copy()
     world.experimental = args.experimental.copy()
 
     world.rom_seeds = {player: random.randint(0, 999999999) for player in range(1, world.players + 1)}

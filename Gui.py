@@ -86,8 +86,12 @@ def guiMain(args=None):
     hintsVar = IntVar()
     hintsVar.set(1) #set default
     hintsCheckbutton = Checkbutton(checkBoxFrame, text="Include Helpful Hints", variable=hintsVar)
+    experimentVar = IntVar()
+    experimentCheckbutton = Checkbutton(checkBoxFrame, text="Enable Experimental Features", variable=experimentVar)
     customVar = IntVar()
     customCheckbutton = Checkbutton(checkBoxFrame, text="Use custom item pool", variable=customVar)
+    dungeonCounterVar = IntVar()
+    dungeonCounterbutton = Checkbutton(checkBoxFrame, text="Enable dungeon chest counters", variable=dungeonCounterVar)
 
     createSpoilerCheckbutton.pack(expand=True, anchor=W)
     suppressRomCheckbutton.pack(expand=True, anchor=W)
@@ -101,7 +105,9 @@ def guiMain(args=None):
     retroCheckbutton.pack(expand=True, anchor=W)
     shuffleGanonCheckbutton.pack(expand=True, anchor=W)
     hintsCheckbutton.pack(expand=True, anchor=W)
+    experimentCheckbutton.pack(expand=True, anchor=W)
     customCheckbutton.pack(expand=True, anchor=W)
+    dungeonCounterbutton.pack(expand=True, anchor=W)
 
     romOptionsFrame = LabelFrame(rightHalfFrame, text="Rom options")
     romOptionsFrame.columnconfigure(0, weight=1)
@@ -455,6 +461,7 @@ def guiMain(args=None):
         guiargs.uw_palettes = uwPalettesVar.get()
         guiargs.shuffleganon = bool(shuffleGanonVar.get())
         guiargs.hints = bool(hintsVar.get())
+        guiargs.experimental = bool(experimentVar.get())
         guiargs.enemizercli = enemizerCLIpathVar.get()
         guiargs.shufflebosses = enemizerBossVar.get()
         guiargs.shuffleenemies = enemyShuffleVar.get()
@@ -471,6 +478,7 @@ def guiMain(args=None):
                                    int(arrow1Var.get()), int(arrow10Var.get()), int(bomb1Var.get()), int(bomb3Var.get()), int(rupee1Var.get()), int(rupee5Var.get()), int(rupee20Var.get()), int(rupee50Var.get()), int(rupee100Var.get()),
                                    int(rupee300Var.get()), int(rupoorVar.get()), int(blueclockVar.get()), int(greenclockVar.get()), int(redclockVar.get()), int(progbowVar.get()), int(bomb10Var.get()), int(triforcepieceVar.get()),
                                    int(triforcecountVar.get()), int(triforceVar.get()),  int(rupoorcostVar.get()), int(universalkeyVar.get())]
+        guiargs.dungeon_counters = bool(dungeonCounterVar.get())
         guiargs.rom = romVar.get()
         guiargs.sprite = sprite
         guiargs.outputpath = args.outputpath if args else None
@@ -1262,6 +1270,7 @@ def guiMain(args=None):
         romVar.set(args.rom)
         shuffleGanonVar.set(args.shuffleganon)
         hintsVar.set(args.hints)
+        experimentVar.set(args.experimental)
         enemizerCLIpathVar.set(args.enemizercli)
         potShuffleVar.set(args.shufflepots)
         enemyShuffleVar.set(args.shuffleenemies)

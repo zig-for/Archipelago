@@ -22,7 +22,7 @@ from EntranceShuffle import door_addresses, exit_ids
 
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '818b2c659a610cb4112804cf612ffd37'
+RANDOMIZERBASEHASH = '746b52b20a116648b624ebe58af9e54b'
 
 
 class JsonRom(object):
@@ -619,6 +619,8 @@ def patch_rom(world, rom, player, team, enemized):
                 dr_flags |= DROptions.Open_Desert_Wall
                 break
     rom.write_byte(0x139006, dr_flags.value)
+    if dr_flags & DROptions.Town_Portal and world.mode[player] == 'inverted':
+        rom.write_byte(0x139008, 1)
 
     # fix skull woods exit, if not fixed during exit patching
     if world.fix_skullwoods_exit[player] and world.shuffle[player] == 'vanilla':
@@ -1158,6 +1160,8 @@ def patch_rom(world, rom, player, team, enemized):
     # compasses showing dungeon count
     if world.clock_mode[player] != 'off':
         rom.write_byte(0x18003C, 0x00)  # Currently must be off if timer is on, because they use same HUD location
+    elif world.dungeon_counters[player]:
+        rom.write_byte(0x18003C, 0x02)  # show always
     elif world.compassshuffle[player] or world.doorShuffle[player] != 'vanilla':
         rom.write_byte(0x18003C, 0x01)  # show on pickup
     else:
