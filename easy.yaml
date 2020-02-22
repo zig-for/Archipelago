@@ -17,6 +17,9 @@ smallkey_shuffle: #same for small keys
 bigkey_shuffle: #same for big keys
   on: 0
   off: 1
+dungeon_counters: #always display amount of checks checked in a dungeon
+  on: 0
+  off: 1
 accessibility:
   items: 0 # item accessibility means you can get all inventory items. So a key could lock itself, but you can fill your inventory
   locations: 1 # location accessibility means you can access every location in your seed and get all 216 checks
