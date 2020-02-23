@@ -10,6 +10,7 @@ from Tables import normal_offset_table, spiral_offset_table
 from RoomData import Room
 
 class World(object):
+    player_names: list
     def __init__(self, players, shuffle, doorShuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive, goal, algorithm, accessibility, shuffle_ganon, retro, custom, customitemarray, hints):
         self.players = players
         self.teams = 1

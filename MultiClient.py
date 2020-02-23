@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import json
 import logging
-import shlex
+import typing
 import urllib.parse
 import atexit
 
@@ -14,16 +14,20 @@ ModuleUpdate.update()
 import colorama
 import websockets
 import aioconsole
+try:
+    import tqdm
+except:
+    tqdm = None
 
 import Items
 import Regions
 import Utils
 
-class ReceivedItem:
-    def __init__(self, item, location, player):
-        self.item = item
-        self.location = location
-        self.player = player
+
+class ReceivedItem(typing.NamedTuple):
+    item: int
+    location: int
+    player: int
 
 class Context:
     def __init__(self, snes_address, server_address, password):
@@ -74,7 +78,7 @@ def color(text, *args):
     return color_code(*args) + text + color_code('reset')
 
 
-RECONNECT_DELAY = 30
+RECONNECT_DELAY = 5
 
 ROM_START = 0x000000
 WRAM_START = 0xF50000
@@ -415,7 +419,11 @@ async def snes_connect(ctx : Context, address):
             asyncio.create_task(snes_autoreconnect(ctx))
 
 async def snes_autoreconnect(ctx: Context):
-    await asyncio.sleep(RECONNECT_DELAY)
+    if tqdm:
+        for _ in tqdm.trange(100, unit='%', leave=False):
+            await asyncio.sleep(RECONNECT_DELAY/100)
+    else:
+        await asyncio.sleep(RECONNECT_DELAY)
     if ctx.snes_reconnect_address and ctx.snes_socket is None:
         await snes_connect(ctx, ctx.snes_reconnect_address)
 
@@ -601,7 +609,11 @@ async def server_loop(ctx : Context, address = None):
             asyncio.create_task(server_autoreconnect(ctx))
 
 async def server_autoreconnect(ctx: Context):
-    await asyncio.sleep(RECONNECT_DELAY)
+    if tqdm:
+        for _ in tqdm.trange(100, unit='%', leave=False):
+            await asyncio.sleep(RECONNECT_DELAY/100)
+    else:
+        await asyncio.sleep(RECONNECT_DELAY)
     if ctx.server_address and ctx.server_task is None:
         ctx.server_task = asyncio.create_task(server_loop(ctx))
 
@@ -714,7 +726,7 @@ async def server_auth(ctx: Context, password_requested):
     ctx.awaiting_rom = False
     ctx.auth = ctx.rom.copy()
     await send_msgs(ctx.socket, [['Connect', {
-        'password': ctx.password, 'rom': ctx.auth, 'version': [1, 0, 0], 'tags': ['Berserker']
+        'password': ctx.password, 'rom': ctx.auth, 'version': [1, 1, 0], 'tags': ['Berserker']
     }]])
 
 async def console_input(ctx : Context):
@@ -752,9 +764,11 @@ async def console_loop(ctx : Context):
 
         if precommand == 'exit':
             ctx.exit_event.set()
+
         elif precommand == 'snes':
             ctx.snes_reconnect_address = None
             asyncio.create_task(snes_connect(ctx, command[1] if len(command) > 1 else ctx.snes_address))
+
         elif precommand in {'snes_close', 'snes_quit'}:
             ctx.snes_reconnect_address = None
             if ctx.snes_socket is not None and not ctx.snes_socket.closed:
@@ -763,6 +777,7 @@ async def console_loop(ctx : Context):
         elif precommand in {'connect', 'reconnect'}:
             ctx.server_address = None
             asyncio.create_task(connect(ctx, command[1] if len(command) > 1 else None))
+
         elif precommand == 'disconnect':
             ctx.server_address = None
             asyncio.create_task(disconnect(ctx))
@@ -780,15 +795,7 @@ async def console_loop(ctx : Context):
             for location in [k for k, v in Regions.location_table.items() if type(v[0]) is int]:
                 if location not in ctx.locations_checked:
                     logging.info('Missing: ' + location)
-        elif precommand == 'getitem' and len(command) > 1:
-            item = input[9:]
-            item_id = Items.item_table[item][3] if item in Items.item_table else None
-            if type(item_id) is int and item_id in range(0x100):
-                logging.info('Sending item: ' + item)
-                snes_buffered_write(ctx, RECV_ITEM_ADDR, bytes([item_id]))
-                snes_buffered_write(ctx, RECV_ITEM_PLAYER_ADDR, bytes([0]))
-            else:
-                logging.info('Invalid item: ' + item)
+
         elif precommand == "license":
             with open("LICENSE") as f:
                 logging.info(f.read())

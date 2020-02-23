@@ -1,5 +1,5 @@
 __author__ = "Berserker55" # you can find me on the ALTTP Randomizer Discord
-__version__ = 1.6
+__version__ = 1.7
 
 """
 This script launches a Multiplayer "Multiworld" Mystery Game
@@ -52,6 +52,8 @@ if __name__ == "__main__":
         player_name = multi_mystery_options["player_name"]
         take_first_working = multi_mystery_options["take_first_working"]
         meta_file_path = multi_mystery_options["meta_file_path"]
+        teams = multi_mystery_options["teams"]
+        rom_file = multi_mystery_options["rom_file"]
 
 
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -59,9 +61,9 @@ if __name__ == "__main__":
         if not os.path.exists(enemizer_path):
             feedback(
                 f"Enemizer not found at {enemizer_path}, please adjust the path in MultiMystery.py's config or put Enemizer in the default location.")
-        if not os.path.exists("Zelda no Densetsu - Kamigami no Triforce (Japan).sfc"):
+        if not os.path.exists(rom_file):
             feedback(
-                "Base rom is expected as Zelda no Densetsu - Kamigami no Triforce (Japan).sfc in the Multiworld root folder please place/rename it there.")
+                f"Base rom is expected as {rom_file} in the Multiworld root folder please place/rename it there.")
         player_files = []
         os.makedirs(player_files_path, exist_ok=True)
         os.makedirs(output_path, exist_ok=True)
@@ -69,7 +71,7 @@ if __name__ == "__main__":
             lfile = file.lower()
             if lfile.endswith(".yaml") and lfile != meta_file_path.lower():
                 player_files.append(file)
-                print(f"Player {file[:-5]} found.")
+                print(f"Found player's file {file}.")
         player_count = len(player_files)
         if player_count == 0:
             feedback(f"No player files found. Please put them in a {player_files_path} folder.")
@@ -77,10 +79,9 @@ if __name__ == "__main__":
             print(player_count, "Players found.")
 
         player_string = ""
-        for i,file in enumerate(player_files):
-            player_string += f"--p{i+1} {os.path.join(player_files_path, file)} "
+        for i, file in enumerate(player_files, 1):
+            player_string += f"--p{i} {os.path.join(player_files_path, file)} "
 
-        player_names = list(file[:-5] for file in player_files)
 
         if os.path.exists("BerserkerMultiServer.exe"):
             basemysterycommand = "BerserkerMystery.exe" #compiled windows
@@ -90,7 +91,9 @@ if __name__ == "__main__":
             basemysterycommand = f"py -{py_version} Mystery.py" #source
 
         command = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
-                  f"--names {','.join(player_names)} --enemizercli {enemizer_path} "
+                  f"--rom \"{rom_file}\" --enemizercli \"{enemizer_path}\" " \
+                  f"--teams {teams} " \
+                  f"--enemizercli {enemizer_path} "
 
         if create_spoiler:
             command += " --create_spoiler"
