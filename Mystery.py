@@ -265,6 +265,8 @@ def roll_settings(weights):
                  'timed_countdown': 'timed-countdown',
                  'display': 'display'}[get_choice('timer', weights)] if 'timer' in weights.keys() else 'none'
 
+    ret.experimental = get_choice('experimental', weights) if "experimental" in weights else False
+
     ret.dungeon_counters = get_choice('dungeon_counters', weights) if 'dungeon_counters' in weights else False
 
     ret.progressive = convert_to_on_off(get_choice('progressive', weights)) if "progressive" in weights else 'on'
@@ -272,7 +274,9 @@ def roll_settings(weights):
     startitems = []
     for item in inventoryweights.keys():
         itemvalue = get_choice(item, inventoryweights)
-        if item.startswith(('Progressive ', 'Small Key ', 'Rupee', 'Piece of Heart', 'Boss Heart Container', 'Sanctuary Heart Container', 'Arrow', 'Bombs ', 'Bomb ', 'Bottle')) and isinstance(itemvalue, int):
+        if item.startswith(('Progressive ', 'Small Key ', 'Rupee', 'Piece of Heart', 'Boss Heart Container',
+                            'Sanctuary Heart Container', 'Arrow', 'Bombs ', 'Bomb ', 'Bottle')) and isinstance(
+                itemvalue, int):
             for i in range(int(itemvalue)):
                 startitems.append(item)
         elif itemvalue:

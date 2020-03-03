@@ -103,12 +103,13 @@ class LocalRom(object):
             ret.write_bytes(int(address), values)
         return ret
 
-    def patch_base_rom(self, extendedmsu):
+    def patch_base_rom(self):
         # verify correct checksum of baserom
         basemd5 = hashlib.md5()
         basemd5.update(self.buffer)
         if JAP10HASH != basemd5.hexdigest():
-            logging.getLogger('').warning('Supplied Base Rom does not match known MD5 for JAP(1.0) release. Will try to patch anyway.')
+            logging.getLogger('').warning(
+                'Supplied Base Rom does not match known MD5 for JAP(1.0) release. Will try to patch anyway.')
 
         # extend to 2MB
         self.buffer.extend(bytearray([0x00]) * (0x200000 - len(self.buffer)))

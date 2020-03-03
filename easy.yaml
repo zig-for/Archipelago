@@ -41,6 +41,9 @@ door_shuffle: # not available if the host uses bonta's
   vanilla: 1 # everything should be like in vanilla
   basic: 0 # dungeons are shuffled within themselves.
   crossed: 0 # dungeons are shuffled across each other.
+experimental: # use experimental door shuffle mechanisms. Which those are may change, so consult #door_rando pinned messages in discord
+  'on': 0
+  'off': 1
 goals:
   ganon: 5 #beat GT and then Ganon
   fast_ganon: 4 # Just kill Ganon
@@ -128,6 +131,7 @@ rom:
     random: 1
     randomonhit: 1
     link: 1
+  #Doors is based on extendedmsu and is always active!
   disablemusic: off
   quickswap:
     on: 1

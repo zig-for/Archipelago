@@ -18,8 +18,14 @@ from DungeonGenerator import create_dungeon_builders, split_dungeon_builder, sim
 from KeyDoorShuffle import analyze_dungeon, validate_vanilla_key_logic, build_key_layout, validate_key_layout
 
 
-def link_doors(world, player):
+def _doors_compat_name(namedobj_or_name) -> str:
+    """Doors references locations by name or by themselves
+    If needed, this command is here for debugging.
+    It should not be used in release code as it is slow."""
+    return getattr(namedobj_or_name, "name", namedobj_or_name)
 
+
+def link_doors(world, player):
     # Drop-down connections & push blocks
     for exitName, regionName in logical_connections:
         connect_simple_door(world, exitName, regionName, player)
@@ -197,8 +203,7 @@ def connect_simple_door(world, exit_name, region_name, player):
         d.dest = region
 
 
-def connect_door_only(world, exit_name, region_name, player):
-    region = world.get_region(region_name, player)
+def connect_door_only(world, exit_name, region, player):
     d = world.check_for_door(exit_name, player)
     if d is not None:
         d.dest = region

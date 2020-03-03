@@ -92,8 +92,7 @@ if __name__ == "__main__":
 
         command = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
                   f"--rom \"{rom_file}\" --enemizercli \"{enemizer_path}\" " \
-                  f"--teams {teams} " \
-                  f"--enemizercli {enemizer_path} "
+                  f"--teams {teams} "
 
         if create_spoiler:
             command += " --create_spoiler"
