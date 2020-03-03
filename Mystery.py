@@ -203,9 +203,10 @@ def roll_settings(weights):
 
     entrance_shuffle = get_choice('entrance_shuffle', weights)
     ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
+
     door_shuffle = get_choice('door_shuffle', weights)
     ret.door_shuffle = door_shuffle if door_shuffle else 'vanilla'
-    ret.experimental = get_choice('experimental') == 'on'
+    ret.experimental = get_choice('experimental', weights) if "experimental" in weights else False
 
     goal = get_choice('goals', weights)
     ret.goal = {'ganon': 'ganon',
@@ -265,8 +266,6 @@ def roll_settings(weights):
                  'ohko': 'ohko',
                  'timed_countdown': 'timed-countdown',
                  'display': 'display'}[get_choice('timer', weights)] if 'timer' in weights.keys() else 'none'
-
-    ret.experimental = get_choice('experimental', weights) if "experimental" in weights else False
 
     ret.dungeon_counters = get_choice('dungeon_counters', weights) if 'dungeon_counters' in weights else False
 
