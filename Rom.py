@@ -74,15 +74,14 @@ class JsonRom(object):
 
 class LocalRom(object):
 
-    def __init__(self, file, extendedmsu=False, patch=True, name=None, hash=None):
+    def __init__(self, file, patch=True, name=None, hash=None):
         self.name = name
         self.hash = hash
         self.orig_buffer = None
-        self.extendedmsu = extendedmsu
         with open(file, 'rb') as stream:
             self.buffer = read_rom(stream)
         if patch:
-            self.patch_base_rom(extendedmsu)
+            self.patch_base_rom()
             self.orig_buffer = self.buffer.copy()
 
     def write_byte(self, address, value):
@@ -97,8 +96,8 @@ class LocalRom(object):
             outfile.write(self.buffer)
 
     @staticmethod
-    def fromJsonRom(rom, file, rom_size = 0x200000, extendedmsu=False):
-        ret = LocalRom(file, extendedmsu, True, rom.name, rom.hash)
+    def fromJsonRom(rom, file, rom_size = 0x200000):
+        ret = LocalRom(file, True, rom.name, rom.hash)
         ret.buffer.extend(bytearray([0x00]) * (rom_size - len(ret.buffer)))
         for address, values in rom.patches.items():
             ret.write_bytes(int(address), values)
@@ -974,8 +973,8 @@ def patch_rom(world, rom, player, team, enemized):
     startingstate = CollectionState(world)
 
     if startingstate.has('Bow', player):
-        equip[0x340] = 1
-        equip[0x38E] |= 0x20 # progressive flag to get the correct hint in all cases
+        equip[0x340] = 3 if startingstate.has('Silver Arrows', player) else 1
+        equip[0x38E] |= 0x20  # progressive flag to get the correct hint in all cases
         if not world.retro[player]:
             equip[0x38E] |= 0x80
     if startingstate.has('Silver Arrows', player):
@@ -1150,11 +1149,11 @@ def patch_rom(world, rom, player, team, enemized):
     rom.write_byte(0x18003B, 0x01 if world.mapshuffle[player] else 0x00)  # maps showing crystals on overworld
 
     # compasses showing dungeon count
-    if world.clock_mode[player] != 'off':
+    if world.clock_mode[player] != 'off' or world.dungeon_counters[player] == 'off':
         rom.write_byte(0x18003C, 0x00)  # Currently must be off if timer is on, because they use same HUD location
-    elif world.dungeon_counters[player]:
-        rom.write_byte(0x18003C, 0x02)  # show always
-    elif world.compassshuffle[player] or world.doorShuffle[player] != 'vanilla':
+    elif world.dungeon_counters[player] == 'on':
+        rom.write_byte(0x18003C, 0x02)  # always on
+    elif world.compassshuffle[player] or world.doorShuffle[player] != 'vanilla' or world.dungeon_counters[player] == 'pickup':
         rom.write_byte(0x18003C, 0x01)  # show on pickup
     else:
         rom.write_byte(0x18003C, 0x00)
