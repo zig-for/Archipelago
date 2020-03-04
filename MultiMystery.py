@@ -55,7 +55,6 @@ if __name__ == "__main__":
         teams = multi_mystery_options["teams"]
         rom_file = multi_mystery_options["rom_file"]
 
-
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
         if not os.path.exists(enemizer_path):
