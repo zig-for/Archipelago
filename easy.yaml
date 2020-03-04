@@ -19,7 +19,8 @@ bigkey_shuffle: #same for big keys
   off: 1
 dungeon_counters:
   on: 0 # always display amount of items checked in a dungeon
-  pickup: 1 # show when compass picked up
+  pickup: 0 # show when compass picked up
+  default: 1 # show when compass is picked up in basic/crossed door shuffle or if the compass itself is shuffled
   off: 0 # never show item count in dungeons
 accessibility:
   items: 0 # item accessibility means you can get all inventory items. So a key could lock itself, but you can fill your inventory
