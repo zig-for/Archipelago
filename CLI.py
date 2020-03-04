@@ -298,6 +298,8 @@ def parse_arguments(argv, no_defaults=False):
             parser.add_argument(f'--p{player}', default=defval(''), help=argparse.SUPPRESS)
 
     ret = parser.parse_args(argv)
+    if ret.timer == "none":
+        ret.timer = False
 
     if ret.keysanity:
         ret.mapshuffle, ret.compassshuffle, ret.keyshuffle, ret.bigkeyshuffle = [True] * 4
@@ -305,7 +307,7 @@ def parse_arguments(argv, no_defaults=False):
     if multiargs.multi:
         defaults = copy.deepcopy(ret)
         for player in range(1, multiargs.multi + 1):
-            playerargs = parse_arguments(shlex.split(getattr(ret,f"p{player}")), True)
+            playerargs = parse_arguments(shlex.split(getattr(ret, f"p{player}")), True)
 
             for name in ['logic', 'mode', 'swords', 'goal', 'difficulty', 'item_functionality',
                          'shuffle', 'door_shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
