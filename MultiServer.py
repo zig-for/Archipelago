@@ -3,7 +3,6 @@ import asyncio
 import functools
 import json
 import logging
-import urllib.request
 import zlib
 import collections
 import typing
@@ -192,17 +191,17 @@ async def countdown(ctx: Context, timer):
 def get_connected_players_string(ctx: Context):
     auth_clients = [c for c in ctx.clients if c.auth]
     if not auth_clients:
-        return 'No player connected'
+        return f'No player connected, of {len(ctx.player_names)} expected players'
 
     auth_clients.sort(key=lambda c: (c.team, c.slot))
-    current_team = 0
-    text = 'Team #1: '
+    current_team = -1
+    text = ''
     for c in auth_clients:
         if c.team != current_team:
             text += f':: Team #{c.team + 1}: '
             current_team = c.team
         text += f'{c.name} '
-    return 'Connected players: ' + text[:-1]
+    return f'Connected players ({len(auth_clients)} of {len(ctx.player_names)}) ' + text[:-1]
 
 
 def get_received_items(ctx: Context, team: int, player: int):
@@ -613,23 +612,17 @@ async def main():
     except Exception as e:
         logging.error('Failed to read multiworld data (%s)' % e)
         return
-    import socket
-    ip = socket.gethostbyname(socket.gethostname())
-    try:
-        ip = urllib.request.urlopen('https://checkip.amazonaws.com/').read().decode('utf8').strip()
-    except Exception as e:
-        try:
-            ip = urllib.request.urlopen('https://v4.ident.me').read().decode('utf8').strip()
-        except:
-            logging.exception(e)
-            pass # we could be offline, in a local game, so no point in erroring out
 
-    logging.info('Hosting game at %s:%d (%s)' % (ip, ctx.port, 'No password' if not ctx.password else 'Password: %s' % ctx.password))
+    ip = Utils.get_public_ipv4()
+
+    logging.info('Hosting game at %s:%d (%s)' % (
+    ip, ctx.port, 'No password' if not ctx.password else 'Password: %s' % ctx.password))
 
     ctx.disable_save = args.disable_save
     if not ctx.disable_save:
         if not ctx.save_filename:
-            ctx.save_filename = (ctx.data_filename[:-9] if ctx.data_filename[-9:] == 'multidata' else (ctx.data_filename + '_')) + 'multisave'
+            ctx.save_filename = (ctx.data_filename[:-9] if ctx.data_filename[-9:] == 'multidata' else (
+                        ctx.data_filename + '_')) + 'multisave'
         try:
             with open(ctx.save_filename, 'rb') as f:
                 jsonobj = json.loads(zlib.decompress(f.read()).decode("utf-8"))

@@ -271,3 +271,18 @@ if __name__ == '__main__':
     pass
     # make_new_base2current()
     read_entrance_data(old_rom='C:\\Users\\Randall\\Documents\\kwyn\\orig\\z3.sfc')
+
+def get_public_ipv4() -> str:
+    import socket
+    import urllib.request
+    import logging
+    ip = socket.gethostbyname(socket.gethostname())
+    try:
+        ip = urllib.request.urlopen('https://checkip.amazonaws.com/').read().decode('utf8').strip()
+    except Exception as e:
+        try:
+            ip = urllib.request.urlopen('https://v4.ident.me').read().decode('utf8').strip()
+        except:
+            logging.exception(e)
+            pass  # we could be offline, in a local game, so no point in erroring out
+    return ip
