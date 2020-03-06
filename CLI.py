@@ -300,6 +300,10 @@ def parse_arguments(argv, no_defaults=False):
     ret = parser.parse_args(argv)
     if ret.timer == "none":
         ret.timer = False
+    if ret.dungeon_counters == 'on':
+        ret.dungeon_counters = True
+    elif ret.dungeon_counters == 'off':
+        ret.dungeon_counters = False
 
     if ret.keysanity:
         ret.mapshuffle, ret.compassshuffle, ret.keyshuffle, ret.bigkeyshuffle = [True] * 4

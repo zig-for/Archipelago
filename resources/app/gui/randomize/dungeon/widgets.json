@@ -41,8 +41,8 @@
     },
     "options": {
       "Auto": "default",
-      "Off": "off",
-      "On": "on",
+      "Off": false,
+      "On": true,
       "On Compass Pickup": "pickup"
     }
   }
