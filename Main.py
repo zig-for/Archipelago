@@ -191,13 +191,13 @@ def main(args, seed=None):
 
         if use_enemizer and (args.enemizercli or not args.jsonout):
             if os.path.exists(args.enemizercli):
-                        patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player],
-                                   sprite_random_on_hit)
-                        if not args.jsonout:
-                            rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000)
-                    else:
-                        logging.warning("EnemizerCLI not found at:" + args.enemizercli)
-                        logging.warning("No Enemizer options will be applied until this is resolved.")
+                patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player],
+                               sprite_random_on_hit)
+                if not args.jsonout:
+                    rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000)
+            else:
+                logging.warning("EnemizerCLI not found at:" + args.enemizercli)
+                logging.warning("No Enemizer options will be applied until this is resolved.")
 
         if args.race:
             patch_race_rom(rom)
@@ -263,16 +263,16 @@ def main(args, seed=None):
                                               "roms": rom_names,
                                               "remote_items": [player for player in range(1, world.players + 1) if
                                                                world.remote_items[player]],
-                                                  "locations": [((location.address, location.player),
+                                              "locations": [((location.address, location.player),
                                                              (location.item.code, location.item.player))
-                                                                for location in world.get_filled_locations() if
+                                                            for location in world.get_filled_locations() if
                                                             type(location.address) is int]
-                                                  }).encode("utf-8"))
-            if args.jsonout:
-                jsonout["multidata"] = list(multidata)
-            else:
-                with open(output_path('%s_multidata' % outfilebase), 'wb') as f:
-                    f.write(multidata)
+                                              }).encode("utf-8"))
+        if args.jsonout:
+            jsonout["multidata"] = list(multidata)
+        else:
+            with open(output_path('%s_multidata' % outfilebase), 'wb') as f:
+                f.write(multidata)
 
     if not args.skip_playthrough:
         logger.info('Calculating playthrough.')
