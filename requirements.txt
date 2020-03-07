@@ -6,3 +6,4 @@ collections_extended>=1.0.3
 tqdm>=4.42.0
 fuzzywuzzy>=0.18.0
 bsdiff4>=1.1.9
+upnpy>=1.1.5

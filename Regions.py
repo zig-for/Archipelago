@@ -753,19 +753,23 @@ def create_dungeon_regions(world, player):
     world.get_region('GT Crystal Circles', player).crystal_switch = True
 
 
-def create_lw_region(player, name, locations=None, exits=None):
+def create_lw_region(player: int, name: str, locations=None, exits=None):
     return _create_region(player, name, RegionType.LightWorld, 'Light World', locations, exits)
 
-def create_dw_region(player, name, locations=None, exits=None):
+
+def create_dw_region(player: int, name: str, locations=None, exits=None):
     return _create_region(player, name, RegionType.DarkWorld, 'Dark World', locations, exits)
 
-def create_cave_region(player, name, hint='Hyrule', locations=None, exits=None):
+
+def create_cave_region(player: int, name: str, hint: str, locations=None, exits=None):
     return _create_region(player, name, RegionType.Cave, hint, locations, exits)
 
-def create_dungeon_region(player, name, hint='Hyrule', locations=None, exits=None):
+
+def create_dungeon_region(player: int, name: str, hint: str, locations=None, exits=None):
     return _create_region(player, name, RegionType.Dungeon, hint, locations, exits)
 
-def _create_region(player, name, type, hint='Hyrule', locations=None, exits=None):
+
+def _create_region(player: int, name: str, type: RegionType, hint: str, locations=None, exits=None):
     ret = Region(name, type, hint, player)
     if locations is None:
         locations = []
@@ -783,7 +787,8 @@ def _create_region(player, name, type, hint='Hyrule', locations=None, exits=None
             ret.locations.append(Location(player, location, address, crystal, hint_text, ret, None, player_address))
     return ret
 
-def mark_light_world_regions(world, player):
+
+def mark_light_world_regions(world, player: int):
     # cross world caves may have some sections marked as both in_light_world, and in_dark_work.
     # That is ok. the bunny logic will check for this case and incorporate special rules.
     queue = collections.deque(region for region in world.get_regions(player) if region.type == RegionType.LightWorld)
@@ -814,7 +819,7 @@ def mark_light_world_regions(world, player):
                     queue.append(exit.connected_region)
 
 
-def create_shops(world, player):
+def create_shops(world, player: int):
     for region_name, (room_id, type, shopkeeper, custom, locked, inventory) in shop_table.items():
         if world.mode[player] == 'inverted' and region_name == 'Dark Lake Hylia Shop':
             locked = True

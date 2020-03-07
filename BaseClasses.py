@@ -1360,7 +1360,7 @@ class Boss(object):
         return self.defeat_rule(state, self.player)
 
 class Location(object):
-    def __init__(self, player, name='', address=None, crystal=False, hint_text=None, parent=None, forced_item=None, player_address=None):
+    def __init__(self, player: int, name: str='', address=None, crystal=False, hint_text=None, parent=None, forced_item=None, player_address=None):
         self.name = name
         self.parent_region = parent
         if forced_item is not None:
@@ -1377,7 +1377,7 @@ class Location(object):
         self.address = address
         self.player_address = player_address
         self.spot_type = 'Location'
-        self.hint_text = hint_text if hint_text is not None else 'Hyrule'
+        self.hint_text: str = hint_text if hint_text else name
         self.recursion_count = 0
         self.staleness_count = 0
         self.locked = False
