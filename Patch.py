@@ -3,7 +3,7 @@ import yaml
 import os
 import lzma
 import hashlib
-import logging
+from typing import Tuple
 
 import Utils
 from Rom import JAP10HASH, read_rom
@@ -22,8 +22,8 @@ def get_base_rom_bytes() -> bytes:
         basemd5 = hashlib.md5()
         basemd5.update(base_rom_bytes)
         if JAP10HASH != basemd5.hexdigest():
-            logging.warning('Supplied Base Rom does not match known MD5 for JAP(1.0) release.'
-                            ' Will try to patch anyway.')
+            raise Exception('Supplied Base Rom does not match known MD5 for JAP(1.0) release. '
+                            'Get the correct game and version, then dump it')
     return base_rom_bytes
 
 
@@ -45,12 +45,13 @@ def create_patch_file(rom_file_to_patch: str, server: str = "") -> str:
     return target
 
 
-def create_rom_file(patch_file) -> dict:
+def create_rom_file(patch_file) -> Tuple[dict, str]:
     data = Utils.parse_yaml(lzma.decompress(load_bytes(patch_file)).decode("utf-8-sig"))
     patched_data = bsdiff4.patch(get_base_rom_bytes(), data["patch"])
-    with open(os.path.splitext(patch_file)[0] + ".sfc", "wb") as f:
+    target = os.path.splitext(patch_file)[0] + ".sfc"
+    with open(target, "wb") as f:
         f.write(patched_data)
-    return data["meta"]
+    return data["meta"], target
 
 
 def load_bytes(path: str):

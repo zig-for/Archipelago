@@ -292,6 +292,9 @@ def parse_arguments(argv, no_defaults=False):
     parser.add_argument('--race', default=defval(settings["race"] != 0), action='store_true')
     parser.add_argument('--saveonexit', default=defval(settings["saveonexit"]), choices=['never', 'ask', 'always'])
     parser.add_argument('--outputname')
+    parser.add_argument('--create_diff', default=defval(False), action='store_true', help='''\
+    create a binary patch file from which the randomized rom can be recreated using MultiClient.
+    Does not work with jsonout.''')
 
     if multiargs.multi:
         for player in range(1, multiargs.multi + 1):
