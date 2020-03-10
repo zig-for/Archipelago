@@ -79,7 +79,7 @@ def main():
                 raise ValueError(f"File {path} is destroyed. Please fix your yaml.") from e
     erargs = parse_arguments(['--multi', str(args.multi)])
     erargs.seed = seed
-    erargs.name = {x: "" for x in range(1, args.multi + 1)} # only so it can be overwrittin in mystery
+    erargs.name = {x: "" for x in range(1, args.multi + 1)}  # only so it can be overwrittin in mystery
     erargs.create_spoiler = args.create_spoiler
     erargs.race = args.race
     erargs.outputname = seedname
@@ -87,8 +87,29 @@ def main():
     erargs.teams = args.teams
 
     # set up logger
-    loglevel = {'error': logging.ERROR, 'info': logging.INFO, 'warning': logging.WARNING, 'debug': logging.DEBUG}[erargs.loglevel]
-    logging.basicConfig(format='%(message)s', level=loglevel)
+    loglevel = {'error': logging.ERROR, 'info': logging.INFO, 'warning': logging.WARNING, 'debug': logging.DEBUG}[
+        erargs.loglevel]
+    import sys
+    class LoggerWriter(object):
+        def __init__(self, writer):
+            self._writer = writer
+            self._msg = ''
+
+        def write(self, message):
+            self._msg = self._msg + message
+            while '\n' in self._msg:
+                pos = self._msg.find('\n')
+                self._writer(self._msg[:pos])
+                self._msg = self._msg[pos + 1:]
+
+        def flush(self):
+            if self._msg != '':
+                self._writer(self._msg)
+                self._msg = ''
+
+    log = logging.getLogger("stderr")
+    sys.stderr = LoggerWriter(log.error)
+    logging.basicConfig(format='%(message)s', level=loglevel, filename=f"{seed}.log")
 
     if args.rom:
         erargs.rom = args.rom
@@ -132,7 +153,7 @@ def main():
 
     erargs.names = ",".join(erargs.name[i] for i in range(1, args.multi + 1))
     del(erargs.name)
-
+    logging.info(erargs)
     DRMain(erargs, seed)
 
 

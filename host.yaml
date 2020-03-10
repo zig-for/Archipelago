@@ -60,9 +60,9 @@ multi_mystery_options:
   cpu_threads: 0
   # How many seeds should be attempted. This is useful for Door Rando, since some to many of them can fail.
   # set to 0 for it to mimic the amount of hardware threads you have, otherwise use a positive number for the amount of attempts it should do.
-  max_attempts: 0
+  max_attempts: 100
   #When using max_attempts, this controls if the first one that works in order of starting should be taken, or the first one in order of completion time should be taken
   #keep in mind, that turning this on, will skew the randomness into "simpler" seeds, as they generate quicker
   take_first_working: False
   #When using max_attempts, this controls if all successful seeds will be kept.
-  keep_all_seeds: False
+  keep_all_seeds: True
