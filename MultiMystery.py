@@ -108,10 +108,21 @@ if __name__ == "__main__":
         print(command)
         import time
         start = time.perf_counter()
+        
+        def copy_seed(source: str, destination: str):
+            seedname = None
+            os.makedirs(destination, exist_ok=True)
+            for file in os.listdir(source):
+                shutil.copy(os.path.join(source, file), os.path.join(destination, file))
+                if not seedname and (file.endswith("_multidata") or file.endswith(".sfc") or file.endswith("_spoiler.txt")):
+                    seedname = file.split('.')[0].split('_')[1]
+            return seedname
 
         def get_working_seed():#is a function for automatic deallocation of resources that are no longer needed when the server starts
             cpu_threads = multi_mystery_options["cpu_threads"]
             max_attempts = multi_mystery_options["max_attempts"]
+            keep_all_seeds = multi_mystery_options["keep_all_seeds"]
+            basedir = os.path.basename(tempfile.TemporaryDirectory().name) if keep_all_seeds else ""
 
             def cancel_remaining(starting_at:int = 0):
                 for x in range(starting_at + 1, max_attempts + 1):
@@ -135,6 +146,7 @@ if __name__ == "__main__":
 
             errors = []
             dead_or_alive = {}
+            alive = 0
 
             def check_if_done():
                 for x in range(1, max_attempts+1):
@@ -159,8 +171,8 @@ if __name__ == "__main__":
             min_logical_seed = max_attempts
             from tqdm import tqdm
             with tqdm(concurrent.futures.as_completed(task_mapping.values()),
-                      total=len(task_mapping), unit="seed(s)",
-                      desc=f"Generating: {get_alive_threads()}") as progressbar:
+                      total=len(task_mapping), unit="seed(s)", 
+                      desc=(f"0.0% Success rate, " if keep_all_seeds else "") + f"Generating: {get_alive_threads()}") as progressbar:
                 for task in progressbar:
                     try:
                         result = task.result()
@@ -180,14 +192,18 @@ if __name__ == "__main__":
                             tqdm.write("YAML error")
                             break
                         done = check_if_done()
-                        if done:
+                        if done and not keep_all_seeds:
                             break
                     else:
                         msg = f"Seed Attempt #{task.task_id:4} was successful."
 
                         dead_or_alive[task.task_id] = True
+                        alive += 1
                         done = check_if_done()
-                        if done:
+                        if keep_all_seeds:
+                            tqdm.write(msg)
+                            copy_seed(task.folder.name, os.path.join(output_path, basedir, str(task.task_id)))
+                        elif done:
                             tqdm.write(msg)
                             cancel_remaining()
                             break
@@ -202,7 +218,7 @@ if __name__ == "__main__":
                             if task.task_id <= min_logical_seed:
                                 tqdm.write(msg+" However, waiting for an earlier logical seed that is still generating.")
                             cancel_remaining(task.task_id)
-                    progressbar.set_description(f"Generating: {get_alive_threads()}")
+                    progressbar.set_description((f"{(alive/len(dead_or_alive))*100:.1f}% Success rate, " if keep_all_seeds else "") + f"Generating: {get_alive_threads()}")
 
             pool.shutdown(False)
 
@@ -219,11 +235,7 @@ if __name__ == "__main__":
 
 
         task = get_working_seed()
-        seedname = ""
-        for file in os.listdir(task.folder.name):
-            shutil.copy(os.path.join(task.folder.name, file), os.path.join(output_path, file))
-            if file.endswith("_multidata"):
-                seedname = file[3:-10]
+        seedname = copy_seed(task.folder.name, output_path)
 
         print()
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate rom(s).")
