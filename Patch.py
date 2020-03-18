@@ -14,9 +14,10 @@ base_rom_bytes = None
 def get_base_rom_bytes() -> bytes:
     global base_rom_bytes
     if not base_rom_bytes:
-        with open("host.yaml") as f:
-            options = Utils.parse_yaml(f.read())
+        options = Utils.get_options()
         file_name = options["general_options"]["rom_file"]
+        if not os.path.exists(file_name):
+            file_name = Utils.local_path(file_name)
         base_rom_bytes = bytes(read_rom(open(file_name, "rb")))
 
         basemd5 = hashlib.md5()
@@ -62,3 +63,13 @@ def load_bytes(path: str):
 def write_lzma(data: bytes, path: str):
     with lzma.LZMAFile(path, 'wb') as f:
         f.write(data)
+
+if __name__ == "__main__":
+    ipv4 = Utils.get_public_ipv4()
+    import sys
+
+    for rom in sys.argv:
+        if rom.endswith(".sfc"):
+            print(f"Creating patch for {rom}")
+            result = create_patch_file(rom, ipv4)
+            print(f"Created patch {result}")
