@@ -4,9 +4,7 @@ import copy
 from enum import Enum, unique, Flag
 import logging
 import json
-from collections import OrderedDict, deque, defaultdict
-from collections_extended import bag
-from collections import OrderedDict, Counter
+from collections import OrderedDict, deque, defaultdict, Counter
 from EntranceShuffle import door_addresses
 from Utils import int16_as_bytes
 from Tables import normal_offset_table, spiral_offset_table, multiply_lookup, divisor_lookup
