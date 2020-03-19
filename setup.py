@@ -63,9 +63,9 @@ import datetime
 buildtime = datetime.datetime.now()
 
 cx_Freeze.setup(
-    name="HonorarPlus",
+    name="BerserkerMultiWorld",
     version=f"{buildtime.year}.{buildtime.month}.{buildtime.day}.{buildtime.hour}",
-    description="HonorarPlus",
+    description="BerserkerMultiWorld",
     executables=exes,
     options={
         "build_exe": {
