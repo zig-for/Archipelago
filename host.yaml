@@ -12,8 +12,8 @@ server_options:
   savefile: null
   disable_save: null
   loglevel: null
-  #disallow automatically forwarding the port that is used, then closing that port on shutdown
-  disable_port_forward: null
+  #automatically forward the port that is used, then close that port after 24 hours
+  port_forward: null
   #Disallow !getitem. Old /getitem cannot be blocked this way
   disable_item_cheat: null
   #Client hint system
@@ -66,3 +66,5 @@ multi_mystery_options:
   take_first_working: False
   #When using max_attempts, this controls if all successful seeds will be kept.
   keep_all_seeds: True
+  #When logging is desired, this specifies the path to output the logs to. null for no output logs.
+  log_output_path: "Output Logs"
