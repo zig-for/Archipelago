@@ -110,6 +110,7 @@ def main():
 
     if args.log_output_path:
         log = logging.getLogger("stderr")
+        log.addHandler(logging.StreamHandler())
         sys.stderr = LoggerWriter(log.error)
         os.makedirs(args.log_output_path, exist_ok=True)
         logging.basicConfig(format='%(message)s', level=loglevel, filename=os.path.join(args.log_output_path, f"{seed}.log"))
