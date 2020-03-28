@@ -61,6 +61,7 @@ if __name__ == "__main__":
         teams = multi_mystery_options["teams"]
         rom_file = options["general_options"]["rom_file"]
         log_output_path = multi_mystery_options["log_output_path"]
+        log_level = multi_mystery_options["log_level"]
 
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
@@ -106,12 +107,20 @@ if __name__ == "__main__":
             command += " --race"
         if log_output_path:
             command += f" --log_output_path \"{log_output_path}\""
+        if log_level:
+            command += f" --loglevel {log_level}"
         if os.path.exists(os.path.join(player_files_path, meta_file_path)):
             command += f" --meta {os.path.join(player_files_path, meta_file_path)}"
 
         print(command)
         import time
         start = time.perf_counter()
+
+        def seed_exists(task):
+            for file in os.listdir(task.folder.name):
+                if task.seedname in file:
+                    return True
+            return False
         
         def copy_seed(task, destination: str):
             # seedname = None
@@ -213,9 +222,9 @@ if __name__ == "__main__":
                         error = io.StringIO()
                         traceback.print_exc(file=error)
                         errors.append(error.getvalue())
+                        move_output_log(task, "Unplayable" if seed_exists(task) else "Failure")
                         task.folder.cleanup()
                         dead_or_alive[task.task_id] = False
-                        move_output_log(task, "Failure")
 
                         if "Please fix your yaml." in error.getvalue():
                             cancel_remaining()

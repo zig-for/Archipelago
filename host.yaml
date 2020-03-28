@@ -68,3 +68,5 @@ multi_mystery_options:
   keep_all_seeds: True
   #When logging is desired, this specifies the path to output the logs to. null for no output logs.
   log_output_path: "Output Logs"
+  #When logging is desired, this specifies the log level to apply. null for default. Options are 'error', 'warning', 'info', 'debug'
+  log_level: null
