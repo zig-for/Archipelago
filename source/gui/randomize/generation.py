@@ -1,7 +1,8 @@
-from tkinter import ttk, filedialog, StringVar, Button, Entry, Frame, Label, E, W, LEFT, X
+from tkinter import ttk, messagebox, filedialog, StringVar, Button, Entry, Frame, Label, E, W, LEFT, X
 import source.gui.widgets as widgets
 import json
 import os
+import logging
 from source.classes.Empty import Empty
 
 def generation_page(parent,settings):
@@ -63,7 +64,18 @@ def generation_page(parent,settings):
     # FIXME: Translate these
     def RomSelect():
         rom = filedialog.askopenfilename(filetypes=[("Rom Files", (".sfc", ".smc")), ("All Files", "*")], initialdir=os.path.join("."))
-        self.widgets[widget].storageVar.set(rom)
+        import Patch
+        try:
+            Patch.get_base_rom_bytes(rom)  # throws error on checksum fail
+        except Exception as e:
+            logging.exception(e)
+            messagebox.showerror(title="Error while reading ROM", message=str(e))
+        else:
+            self.widgets[widget].storageVar.set(os.path.relpath(rom,os.path.join(".")))
+            self.widgets[widget].pieces["textbox"]['state'] = "disabled"
+            self.widgets[widget].pieces["button"]['state'] = "disabled"
+            self.widgets[widget].pieces["button"]["text"] = "ROM verified"
+
     # dialog button
     self.widgets[widget].pieces["button"] = Button(self.widgets[widget].pieces["frame"], text='Select Rom', command=RomSelect)
 

@@ -91,12 +91,8 @@ def bottom_frame(self, parent, args=None):
         seeds = []
         if not needEnemizer or (needEnemizer and hasEnemizer):
             try:
-                if not guiargs.suppress_rom:
-                    if not os.path.exists(guiargs.rom):
-                        raise FileNotFoundError(f"Could not find specified rom file {guiargs.rom}")
-                    else:
-                        import Patch
-                        Patch.get_base_rom_bytes(guiargs.rom)  # throws error on checksum fail
+                if not guiargs.suppress_rom and not os.path.exists(guiargs.rom):
+                    raise FileNotFoundError(f"Could not find specified rom file {guiargs.rom}")
                 if guiargs.count is not None and guiargs.seed:
                     seed = guiargs.seed
                     for _ in range(guiargs.count):
