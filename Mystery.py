@@ -290,6 +290,8 @@ def roll_settings(weights):
         startitems.append('Pegasus Boots')
     ret.startinventory = ','.join(startitems)
 
+    ret.remote_items = get_choice('remote_items', weights) if 'remote_items' in weights else False
+
     if 'rom' in weights:
         romweights = weights['rom']
         ret.sprite = get_choice('sprite', romweights)
