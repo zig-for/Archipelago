@@ -24,8 +24,8 @@ weights/
 /QUsb2Snes/
 /options.yaml
 
-settings.json
-working_dirs.json
+resources/user/*
+!resources/user/.gitkeep
 
 *.exe
 
