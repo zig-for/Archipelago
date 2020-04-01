@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import re
 import subprocess
 import sys
 import typing
@@ -50,36 +49,40 @@ def is_bundled():
 def local_path(path):
     return path
 
-    if local_path.cached_path is not None:
+    if local_path.cached_path:
         return os.path.join(local_path.cached_path, path)
 
-    if is_bundled() and hasattr(sys, "_MEIPASS"):
-        # we are running in a PyInstaller bundle
-        local_path.cached_path = sys._MEIPASS # pylint: disable=protected-access,no-member
     elif is_bundled():
-        #probably cxFreeze
-        local_path.cached_path = os.path.dirname(sys.argv[0])
+        if hasattr(sys, "_MEIPASS"):
+            # we are running in a PyInstaller bundle
+            local_path.cached_path = sys._MEIPASS  # pylint: disable=protected-access,no-member
+        else:
+            # cx_Freeze
+            local_path.cached_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     else:
         # we are running in a normal Python environment
-        local_path.cached_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+        import __main__
+        local_path.cached_path = os.path.dirname(os.path.abspath(__main__.__file__))
+
     return os.path.join(local_path.cached_path, path)
 
 local_path.cached_path = None
 
 def output_path(path):
-    if output_path.cached_path is not None:
+    if output_path.cached_path:
         return os.path.join(output_path.cached_path, path)
 
-    if not is_bundled():
+    if not is_bundled() and not hasattr(sys, "_MEIPASS"):
+        # this should trigger if it's cx_freeze bundling
         output_path.cached_path = '.'
         return os.path.join(output_path.cached_path, path)
     else:
-        # has been packaged, so cannot use CWD for output.
+        # has been PyInstaller packaged, so cannot use CWD for output.
         if sys.platform == 'win32':
-            #windows
+            # windows
             import ctypes.wintypes
-            CSIDL_PERSONAL = 5       # My Documents
-            SHGFP_TYPE_CURRENT = 0   # Get current, not default value
+            CSIDL_PERSONAL = 5  # My Documents
+            SHGFP_TYPE_CURRENT = 0  # Get current, not default value
 
             buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
             ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
@@ -93,12 +96,16 @@ def output_path(path):
             NSUserDomainMask = 1
             # True for expanding the tilde into a fully qualified path
             documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, True)[0]
+        elif sys.platform.find("linux") or sys.platform.find("ubuntu") or sys.platform.find("unix"):
+            documents = os.path.join(os.path.expanduser("~"),"Documents")
         else:
             raise NotImplementedError('Not supported yet')
 
-        output_path.cached_path = os.path.join(documents, 'ALttPEntranceRandomizer')
+        output_path.cached_path = os.path.join(documents, 'ALttPDoorRandomizer')
         if not os.path.exists(output_path.cached_path):
-            os.mkdir(output_path.cached_path)
+            os.makedirs(output_path.cached_path)
+        if not os.path.join(output_path.cached_path, path):
+            os.makedirs(os.path.join(output_path.cached_path, path))
         return os.path.join(output_path.cached_path, path)
 
 output_path.cached_path = None
@@ -229,8 +236,7 @@ def read_entrance_data(old_rom='Zelda no Densetsu - Kamigami no Triforce (Japan)
         print(string)
 
 
-def print_wiki_doors(d_regions, world, player):
-
+def print_wiki_doors_by_region(d_regions, world, player):
     for d, region_list in d_regions.items():
         tile_map = {}
         for region in region_list:
@@ -245,27 +251,141 @@ def print_wiki_doors(d_regions, world, player):
                 if tile not in tile_map:
                     tile_map[tile] = []
                 tile_map[tile].append(r)
-        print(d)
-        print('{| class="wikitable"')
-        print('|-')
-        print('! Room')
-        print('! Supertile')
-        print('! Doors')
+        toprint = ""
+        toprint += ('<!-- ' + d + ' -->') + "\n"
+        toprint += ('== Room List ==') + "\n"
+        toprint += "\n"
+        toprint += ('{| class="wikitable"') + "\n"
+        toprint += ('|-') + "\n"
+        toprint += ('! Room !! Supertile !! Doors') + "\n"
         for tile, region_list in tile_map.items():
             tile_done = False
             for region in region_list:
-                print('|-')
-                print('| '+region.name)
+                toprint += ('|-') + "\n"
+                toprint += ('| {{Dungeon Room|{{PAGENAME}}|' + region.name + '}}') + "\n"
                 if not tile_done:
                     listlen = len(region_list)
                     link = '| {{UnderworldMapLink|'+str(tile)+'}}'
-                    print(link if listlen < 2 else '| rowspan = '+str(listlen)+' '+link)
+                    toprint += (link if listlen < 2 else '| rowspan = '+str(listlen)+' '+link) + "\n"
                     tile_done = True
                 strs_to_print = []
                 for ext in region.exits:
-                    strs_to_print.append(ext.name)
-                print('| '+' <br /> '.join(strs_to_print))
-        print('|}')
+                    strs_to_print.append('{{Dungeon Door|{{PAGENAME}}|' + ext.name + '}}')
+                toprint += ('| '+'<br />'.join(strs_to_print))
+                toprint += "\n"
+        toprint += ('|}') + "\n"
+        with open(os.path.join(".","resources", "user", "regions-" + d + ".txt"),"w+") as f:
+            f.write(toprint)
+
+def update_deprecated_args(args):
+    argVars = vars(args)
+    truthy = [ 1, True, "True", "true" ]
+    # Don't do: Yes
+    # Do:       No
+    if "suppress_rom" in argVars:
+        args.create_rom = args.suppress_rom not in truthy
+    # Don't do: No
+    # Do:       Yes
+    if "create_rom" in argVars:
+        args.suppress_rom = not args.create_rom in truthy
+
+    # Don't do: Yes
+    # Do:       No
+    if "no_shuffleganon" in argVars:
+        args.shuffleganon = not args.no_shuffleganon in truthy
+    # Don't do: No
+    # Do:       Yes
+    if "shuffleganon" in argVars:
+        args.no_shuffleganon = not args.shuffleganon in truthy
+
+    # Don't do: Yes
+    # Do:       No
+    if "skip_playthrough" in argVars:
+        args.calc_playthrough = not args.skip_playthrough in truthy
+    # Don't do: No
+    # Do:       Yes
+    if "calc_playthrough" in argVars:
+        args.skip_playthrough = not args.calc_playthrough in truthy
+
+    return args
+
+def print_wiki_doors_by_room(d_regions, world, player):
+    for d, region_list in d_regions.items():
+        tile_map = {}
+        for region in region_list:
+            tile = None
+            r = world.get_region(region, player)
+            for ext in r.exits:
+                door = world.check_for_door(ext.name, player)
+                if door is not None and door.roomIndex != -1:
+                    tile = door.roomIndex
+                    break
+            if tile is not None:
+                if tile not in tile_map:
+                    tile_map[tile] = []
+                tile_map[tile].append(r)
+        toprint = ""
+        toprint += ('<!-- ' + d + ' -->') + "\n"
+        for tile, region_list in tile_map.items():
+            for region in region_list:
+                toprint += ('<!-- ' + region.name + ' -->') + "\n"
+                toprint += ('{{Infobox dungeon room') + "\n"
+                toprint += ('| dungeon   = {{ROOTPAGENAME}}') + "\n"
+                toprint += ('| supertile = ' + str(tile)) + "\n"
+                toprint += ('| tile      = x') + "\n"
+                toprint += ('}}') + "\n"
+                toprint += ('') + "\n"
+                toprint += ('== Doors ==') + "\n"
+                toprint += ('{| class="wikitable"') + "\n"
+                toprint += ('|-') + "\n"
+                toprint += ('! Door !! Room Side !! Requirement') + "\n"
+                for ext in region.exits:
+                    ext_part = ext.name.replace(region.name,'')
+                    ext_part = ext_part.strip()
+                    toprint += ('{{DungeonRoomDoorList/Row|{{ROOTPAGENAME}}|{{SUBPAGENAME}}|' + ext_part + '|Side|}}') + "\n"
+                toprint += ('|}') + "\n"
+                toprint += ('') + "\n"
+        with open(os.path.join(".","resources", "user", "rooms-" + d + ".txt"),"w+") as f:
+            f.write(toprint)
+
+def print_xml_doors(d_regions, world, player):
+    root = ET.Element('root')
+    for d, region_list in d_regions.items():
+        tile_map = {}
+        for region in region_list:
+            tile = None
+            r = world.get_region(region, player)
+            for ext in r.exits:
+                door = world.check_for_door(ext.name, player)
+                if door is not None and door.roomIndex != -1:
+                    tile = door.roomIndex
+                    break
+            if tile is not None:
+                if tile not in tile_map:
+                    tile_map[tile] = []
+                tile_map[tile].append(r)
+        dungeon = ET.SubElement(root, 'dungeon', {'name': d})
+        for tile, r_list in tile_map.items():
+            supertile = ET.SubElement(dungeon, 'supertile', {'id': str(tile)})
+            for region in r_list:
+                room = ET.SubElement(supertile, 'room', {'name': region.name})
+                for ext in region.exits:
+                    ET.SubElement(room, 'door', {'name': ext.name})
+    ET.dump(root)
+
+
+def print_graph(world):
+    root = ET.Element('root')
+    for region in world.regions:
+        r = ET.SubElement(root, 'region', {'name': region.name})
+        for ext in region.exits:
+            attribs = {'name': ext.name}
+            if ext.connected_region:
+                attribs['connected_region'] = ext.connected_region.name
+            if ext.door and ext.door.dest:
+                attribs['dest'] = ext.door.dest.name
+            ET.SubElement(r, 'exit', attribs)
+    ET.dump(root)
 
 
 def print_xml_doors(d_regions, world, player):
@@ -327,3 +447,18 @@ def get_public_ipv4() -> str:
             logging.exception(e)
             pass  # we could be offline, in a local game, so no point in erroring out
     return ip
+
+
+def get_options() -> dict:
+    if not hasattr(get_options, "options"):
+        locations = ("options.yaml", "host.yaml",
+                     local_path("options.yaml"), local_path("host.yaml"))
+
+        for location in locations:
+            if os.path.exists(location):
+                with open(location) as f:
+                    get_options.options = parse_yaml(f.read())
+                break
+        else:
+            raise FileNotFoundError(f"Could not find {locations[1]} to load options.")
+    return get_options.options

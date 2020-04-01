@@ -6,13 +6,14 @@ import logging
 import zlib
 import collections
 import typing
-import os
 
 import ModuleUpdate
+
 ModuleUpdate.update()
 
 import websockets
-import aioconsole
+import prompt_toolkit
+from prompt_toolkit.patch_stdout import patch_stdout
 from fuzzywuzzy import process as fuzzy_process
 
 import Items
@@ -36,6 +37,10 @@ class Client:
         self.send_index = 0
         self.tags = []
         self.version = [0, 0, 0]
+
+    @property
+    def wants_item_notification(self):
+        return self.auth and "FoundItems" in self.tags
 
 
 class Context:
@@ -133,7 +138,6 @@ def notify_hints(ctx: Context, team: int, hints: typing.List[Utils.Hint]):
                 payload = texts
             asyncio.create_task(send_msgs(client.socket, payload))
 
-
 async def server(websocket, path, ctx: Context):
     client = Client(websocket)
     ctx.clients.append(client)
@@ -208,7 +212,7 @@ def get_connected_players_string(ctx: Context):
     return f'{len(auth_clients)} players of {len(ctx.player_names)} connected ' + text[:-1]
 
 
-def get_received_items(ctx: Context, team: int, player: int):
+def get_received_items(ctx: Context, team: int, player: int) -> typing.List[ReceivedItem]:
     return ctx.received_items.setdefault((team, player), [])
 
 
@@ -233,7 +237,7 @@ def forfeit_player(ctx: Context, team: int, slot: int):
 
 
 def register_location_checks(ctx: Context, team: int, slot: int, locations):
-    ctx.location_checks[team, slot] |= set(locations)
+
 
     found_items = False
     for location in locations:
@@ -252,8 +256,17 @@ def register_location_checks(ctx: Context, team: int, slot: int, locations):
                     recvd_items.append(new_item)
                     if slot != target_player:
                         broadcast_team(ctx, team, [['ItemSent', (slot, location, target_player, target_item)]])
-                    logging.info('(Team #%d) %s sent %s to %s (%s)' % (team+1, ctx.player_names[(team, slot)], get_item_name_from_id(target_item), ctx.player_names[(team, target_player)], get_location_name_from_address(location)))
+                    logging.info('(Team #%d) %s sent %s to %s (%s)' % (
+                    team + 1, ctx.player_names[(team, slot)], get_item_name_from_id(target_item),
+                    ctx.player_names[(team, target_player)], get_location_name_from_address(location)))
                     found_items = True
+            elif target_player == slot:  # local pickup, notify clients of the pickup
+                if location not in ctx.location_checks[team, slot]:
+                    for client in ctx.clients:
+                        if client.team == team and client.wants_item_notification:
+                            asyncio.create_task(
+                                send_msgs(client.socket, [['ItemFound', (target_item, location, slot)]]))
+    ctx.location_checks[team, slot] |= set(locations)
     send_new_items(ctx)
 
     if found_items:
@@ -396,6 +409,12 @@ async def process_client_cmd(ctx: Context, client: Client, cmd, args):
         logging.info(f"{client.name} in team {client.team+1} scouted {', '.join([l[0] for l in locs])}")
         await send_msgs(client.socket, [['LocationInfo', [l[1:] for l in locs]]])
 
+    if cmd == 'UpdateTags':
+        if not args or type(args) is not list:
+            await send_msgs(client.socket, [['InvalidArguments', 'UpdateTags']])
+            return
+        client.tags = args
+
     if cmd == 'Say':
         if type(args) is not str or not args.isprintable():
             await send_msgs(client.socket, [['InvalidArguments', 'Say']])
@@ -488,12 +507,14 @@ def set_password(ctx : Context, password):
 
 
 async def console(ctx: Context):
+    session = prompt_toolkit.PromptSession()
     running = True
     while running:
-        input = await aioconsole.ainput()
+        with patch_stdout():
+            input_text = await session.prompt_async()
         try:
 
-            command = input.split()
+            command = input_text.split()
             if not command:
                 continue
 
@@ -536,7 +557,7 @@ async def console(ctx: Context):
                         if usable:
                             for client in ctx.clients:
                                 if client.name == seeked_player:
-                                    new_item = ReceivedItem(Items.item_table[item][3], "cheat console", client.slot)
+                                    new_item = ReceivedItem(Items.item_table[item][3], -1, client.slot)
                                     get_received_items(ctx, client.team, client.slot).append(new_item)
                                     notify_all(ctx, 'Cheat console: sending "' + item + '" to ' + client.name)
                             send_new_items(ctx)
@@ -567,7 +588,7 @@ async def console(ctx: Context):
                         logging.warning(response)
 
             if command[0][0] != '/':
-                notify_all(ctx, '[Server]: ' + input)
+                notify_all(ctx, '[Server]: ' + input_text)
         except:
             import traceback
             traceback.print_exc()
@@ -601,7 +622,7 @@ async def forward_port(port: int):
     logging.info(f"Attempted to forward port {port} to {ip}, your local ip address.")
 
 
-async def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', default=None)
     parser.add_argument('--port', default=38281, type=int)
@@ -615,12 +636,14 @@ async def main():
     parser.add_argument('--disable_item_cheat', default=False, action='store_true')
     parser.add_argument('--port_forward', default=False, action='store_true')
     args = parser.parse_args()
+    file_options = Utils.get_options()["server_options"]
+    for key, value in file_options.items():
+        if value is not None:
+            setattr(args, key, value)
+    return args
 
-    if os.path.exists('host.yaml'):
-        file_options = Utils.parse_yaml(open("host.yaml").read())["server_options"]
-        for key, value in file_options.items():
-            if value is not None:
-                setattr(args, key, value)
+
+async def main(args: argparse.Namespace):
     logging.basicConfig(format='[%(asctime)s] %(message)s', level=getattr(logging, args.loglevel.upper(), logging.INFO))
     portforwardtask = None
     if args.port_forward:
@@ -682,5 +705,5 @@ async def main():
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.run_until_complete(main(parse_args()))
     loop.close()

@@ -12,7 +12,7 @@ ModuleUpdate.update()
 
 from Utils import parse_yaml
 from Rom import get_sprite_from_name
-from DungeonRandomizer import parse_arguments
+from DungeonRandomizer import parse_cli
 from Main import main as DRMain
 
 
@@ -79,7 +79,7 @@ def main():
 
             except Exception as e:
                 raise ValueError(f"File {path} is destroyed. Please fix your yaml.") from e
-    erargs = parse_arguments(['--multi', str(args.multi)])
+    erargs = parse_cli(['--multi', str(args.multi)])
     erargs.seed = seed
     erargs.name = {x: "" for x in range(1, args.multi + 1)}  # only so it can be overwrittin in mystery
     erargs.create_spoiler = args.create_spoiler
@@ -150,6 +150,8 @@ def main():
         if path:
             try:
                 settings = settings_cache[path] if settings_cache[path] else roll_settings(weights_cache[path])
+                if settings.sprite is not None and not os.path.isfile(settings.sprite) and not get_sprite_from_name(settings.sprite):
+                    logging.warning(f"Warning: The chosen sprite, \"{settings.sprite}\", for yaml \"{path}\", does not exist.")
                 for k, v in vars(settings).items():
                     if v is not None:
                         getattr(erargs, k)[player] = v
@@ -318,11 +320,11 @@ def roll_settings(weights):
         startitems.append('Pegasus Boots')
     ret.startinventory = ','.join(startitems)
 
+    ret.remote_items = get_choice('remote_items', weights) if 'remote_items' in weights else False
+
     if 'rom' in weights:
         romweights = weights['rom']
         ret.sprite = get_choice('sprite', romweights)
-        if ret.sprite and not os.path.isfile(ret.sprite) and not get_sprite_from_name(ret.sprite):
-            logging.Logger('').warning(f"Warning: The chosen sprite, \"{ret.sprite}\" does not exist.")
         ret.disablemusic = get_choice('disablemusic', romweights)
         ret.quickswap = get_choice('quickswap', romweights)
         ret.fastmenu = get_choice('menuspeed', romweights)
