@@ -37,10 +37,12 @@ if __name__ == "__main__":
 
         ModuleUpdate.update()
 
-        from Utils import parse_yaml, get_public_ipv4
+
+        from Utils import get_public_ipv4, get_options
+
         from Patch import create_patch_file
 
-        options = parse_yaml(open("host.yaml").read())
+        options = get_options()
 
         multi_mystery_options = options["multi_mystery_options"]
         output_path = multi_mystery_options["output_path"]
@@ -59,6 +61,7 @@ if __name__ == "__main__":
         meta_file_path = multi_mystery_options["meta_file_path"]
         teams = multi_mystery_options["teams"]
         rom_file = options["general_options"]["rom_file"]
+        port = options["server_options"]["port"]
         log_output_path = multi_mystery_options["log_output_path"]
         log_level = multi_mystery_options["log_level"]
 
@@ -324,7 +327,7 @@ if __name__ == "__main__":
 
             zipname = os.path.join(output_path, f"DR_{seedname}.{typical_zip_ending}")
             print(f"Creating zipfile {zipname}")
-            ipv4 = get_public_ipv4()
+            ipv4 = get_public_ipv4() + ":" + str(port)
             with zipfile.ZipFile(zipname, "w", compression=compression, compresslevel=9) as zf:
                 for file in os.listdir(output_path):
                     if file.endswith(".sfc") and seedname in file:
