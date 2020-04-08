@@ -14,6 +14,7 @@ from Utils import parse_yaml
 from Rom import get_sprite_from_name
 from DungeonRandomizer import parse_cli
 from Main import main as DRMain
+from source.classes.BabelFish import BabelFish
 
 
 
@@ -166,7 +167,7 @@ def main():
     erargs.names = ",".join(erargs.name[i] for i in range(1, args.multi + 1))
     del(erargs.name)
     logging.info(erargs)
-    DRMain(erargs, seed)
+    DRMain(erargs, seed, BabelFish())
 
 
 def get_weights(path):
