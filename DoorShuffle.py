@@ -721,14 +721,7 @@ def cross_dungeon(world, player):
     all_dungeon_items = [y for x in world.dungeons if x.player == player for y in x.all_items]
     target_items = 34 if world.retro[player] else 63
     d_items = target_items - len(all_dungeon_items)
-    if d_items > 0:
-        if d_items >= 1:  # restore HC map
-            world.get_dungeon('Hyrule Castle', player).dungeon_items.append(ItemFactory('Map (Escape)', player))
-        if d_items >= 2:  # restore GT map
-            world.get_dungeon('Ganons Tower', player).dungeon_items.append(ItemFactory('Map (Ganons Tower)', player))
-        if d_items > 2:
-            world.pool_adjustment[player] = d_items - 2
-    elif d_items < 0:
+    if d_items != 0:
         world.pool_adjustment[player] = d_items
     smooth_door_pairs(world, player)
 
