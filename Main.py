@@ -193,9 +193,10 @@ def main(args, seed=None, fish=None):
 
     rom_names = []
     jsonout = {}
-    enemized = False
 
+    enemized = False
     def _gen_rom(team: int, player: int):
+        enemized = False
         sprite_random_on_hit = type(args.sprite[player]) is str and args.sprite[player].lower() == 'randomonhit'
         use_enemizer = (world.boss_shuffle[player] != 'none' or world.enemy_shuffle[player] != 'none'
                         or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
@@ -284,7 +285,7 @@ def main(args, seed=None, fish=None):
               "-prog_" + outfilestuffs["progressive"] if outfilestuffs["progressive"] in ['off', 'random'] else "", # B
               "-nohints" if not outfilestuffs["hints"] == "True" else "")) if not args.outputname else '' # C
             rom.write_to_file(output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc'))
-        return (player, team, list(rom.name))
+        return (player, team, list(rom.name)), enemized
 
     if not args.suppress_rom:
         logger.info(world.fish.translate("cli", "cli", "patching.rom"))
@@ -295,8 +296,9 @@ def main(args, seed=None, fish=None):
                 for player in range(1, world.players + 1):
                     futures.append(pool.submit(_gen_rom, team, player))
         for future in futures:
-            rom_name = future.result()
+            rom_name, enemized_check = future.result()
             rom_names.append(rom_name)
+            enemized |= enemized_check
         multidata = zlib.compress(json.dumps({"names": parsed_names,
                                               "roms": rom_names,
                                               "remote_items": [player for player in range(1, world.players + 1) if
