@@ -2,6 +2,8 @@
 .vscode
 *_Spoiler.txt
 *.bmbp
+*.log
+*_Spoiler.json
 *.pyc
 *.sfc
 *.srm

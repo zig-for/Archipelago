@@ -22,7 +22,7 @@ from EntranceShuffle import door_addresses, exit_ids
 
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '5af37026eb2c5a5d21a2d16724be805c'
+RANDOMIZERBASEHASH = 'fbdff4dcb6b4c196ab5f8c3913aac2c7'
 
 
 class JsonRom(object):
@@ -163,8 +163,7 @@ def read_rom(stream):
 
 def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, random_sprite_on_hit):
     baserom_path = os.path.abspath(baserom_path)
-    basepatch_path = os.path.abspath(
-        local_path('data/base2current.json'))
+    basepatch_path = os.path.abspath(local_path(os.path.join("data","base2current.json")))
     enemizer_basepatch_path = os.path.join(os.path.dirname(enemizercli), "enemizerBasePatch.json")
     randopatch_path = os.path.abspath(output_path(f'enemizer_randopatch_{player}.json'))
     options_path = os.path.abspath(output_path(f'enemizer_options_{player}.json'))
@@ -300,7 +299,7 @@ def patch_enemizer(world, player, rom, baserom_path, enemizercli, shufflepots, r
 _sprite_table = {}
 def _populate_sprite_table():
     if not _sprite_table:
-        for dir in [local_path('data/sprites/official'), local_path('data/sprites/unofficial')]:
+        for dir in [local_path(os.path.join("data","sprites","official")), local_path(os.path.join("data","sprites","unofficial"))]:
             for file in os.listdir(dir):
                 filepath = os.path.join(dir, file)
                 if not os.path.isfile(filepath):
@@ -380,7 +379,7 @@ class Sprite(object):
 
     @staticmethod
     def default_link_sprite():
-        return Sprite(local_path('data/default.zspr'))
+        return get_sprite_from_name('Link')
 
     def decode8(self, pos):
         arr = [[0 for _ in range(8)] for _ in range(8)]
