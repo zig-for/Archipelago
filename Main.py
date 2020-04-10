@@ -25,7 +25,7 @@ from ItemList import generate_itempool, difficulties, fill_prizes
 from Utils import output_path, parse_player_names, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
 
-__version__ = '0.0.20.4u'
+__version__ = '0.0.20.6u'
 
 class EnemizerError(RuntimeError):
     pass
@@ -193,19 +193,18 @@ def main(args, seed=None, fish=None):
 
     rom_names = []
     jsonout = {}
+    enemized = False
+
     def _gen_rom(team: int, player: int):
         sprite_random_on_hit = type(args.sprite[player]) is str and args.sprite[player].lower() == 'randomonhit'
-        enemized = False
         use_enemizer = (world.boss_shuffle[player] != 'none' or world.enemy_shuffle[player] != 'none'
                         or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
                         or args.shufflepots[player] or sprite_random_on_hit)
 
         rom = JsonRom() if args.jsonout or use_enemizer else LocalRom(args.rom)
 
-        patch_rom(world, rom, player, team, use_enemizer)
-
         if use_enemizer and (args.enemizercli or not args.jsonout):
-            if args.rom and not (os.path.isfile(args.rom)):
+            if args.rom and not(os.path.isfile(args.rom)):
                 raise RuntimeError("Could not find valid base rom for enemizing at expected path %s." % args.rom)
             if os.path.exists(args.enemizercli):
                 patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
@@ -213,8 +212,8 @@ def main(args, seed=None, fish=None):
                 if not args.jsonout:
                     rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000)
             else:
-                enemizerMsg = world.fish.translate("cli", "cli", "enemizer.not.found") + ': ' + args.enemizercli + "\n"
-                enemizerMsg += world.fish.translate("cli", "cli", "enemizer.nothing.applied")
+                enemizerMsg  = world.fish.translate("cli","cli","enemizer.not.found") + ': ' + args.enemizercli + "\n"
+                enemizerMsg += world.fish.translate("cli","cli","enemizer.nothing.applied")
                 logging.warning(enemizerMsg)
                 raise EnemizerError(enemizerMsg)
 
@@ -238,29 +237,57 @@ def main(args, seed=None, fish=None):
                 mcsb_name = '-mapshuffle' if world.mapshuffle[player] else '-compassshuffle' if world.compassshuffle[player] else '-keyshuffle' if world.keyshuffle[player] else '-bigkeyshuffle'
             elif any([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
                 mcsb_name = '-%s%s%s%sshuffle' % (
-                    'M' if world.mapshuffle[player] else '', 'C' if world.compassshuffle[player] else '',
-                    'S' if world.keyshuffle[player] else '', 'B' if world.bigkeyshuffle[player] else '')
+                'M' if world.mapshuffle[player] else '', 'C' if world.compassshuffle[player] else '',
+                'S' if world.keyshuffle[player] else '', 'B' if world.bigkeyshuffle[player] else '')
 
-            outfilepname = f'_T{team + 1}' if world.teams > 1 else ''
+            outfilepname = f'_T{team+1}' if world.teams > 1 else ''
             if world.players > 1:
                 outfilepname += f'_P{player}'
             if world.players > 1 or world.teams > 1:
                 outfilepname += f"_{world.player_names[player][team].replace(' ', '_')}" if world.player_names[player][team] != 'Player %d' % player else ''
-            outfilesuffix = ('_%s_%s-%s-%s-%s%s_%s_%s-%s%s%s%s%s' % (world.logic[player], world.difficulty[player], world.difficulty_adjustments[player],
-                                                                     world.mode[player], world.goal[player],
-                                                                     "" if world.timer[player] in ['none', 'display'] else "-" + world.timer[player],
-                                                                     world.shuffle[player], world.doorShuffle[player], world.algorithm, mcsb_name,
-                                                                     "-retro" if world.retro[player] else "",
-                                                                     "-prog_" + world.progressive if world.progressive in ['off', 'random'] else "",
-                                                                     "-nohints" if not world.hints[player] else "")) if not args.outputname else ''
-            rompath = output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc')
-            rom.write_to_file(rompath)
-            if args.create_diff:
-                import Patch
-                Patch.create_patch_file(rompath)
+            outfilestuffs = {
+              "logic": world.logic[player],                                   # 0
+              "difficulty": world.difficulty[player],                         # 1
+              "difficulty_adjustments": world.difficulty_adjustments[player], # 2
+              "mode": world.mode[player],                                     # 3
+              "goal": world.goal[player],                                     # 4
+              "timer": str(world.timer),                                      # 5
+              "shuffle": world.shuffle[player],                               # 6
+              "doorShuffle": world.doorShuffle[player],                       # 7
+              "algorithm": world.algorithm,                                   # 8
+              "mscb": mcsb_name,                                              # 9
+              "retro": world.retro[player],                                   # A
+              "progressive": world.progressive,                               # B
+              "hints": 'True' if world.hints[player] else 'False'             # C
+            }
+            #                  0  1  2  3  4 5  6  7  8 9 A B C
+            outfilesuffix = ('_%s_%s-%s-%s-%s%s_%s_%s-%s%s%s%s%s' % (
+              #  0          1      2      3    4     5    6      7     8        9         A     B           C
+              # _noglitches_normal-normal-open-ganon-ohko_simple_basic-balanced-keysanity-retro-prog_swords-nohints
+              # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity-retro
+              # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity      -prog_swords
+              # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity                  -nohints
+              outfilestuffs["logic"], # 0
+
+              outfilestuffs["difficulty"],             # 1
+              outfilestuffs["difficulty_adjustments"], # 2
+              outfilestuffs["mode"],                   # 3
+              outfilestuffs["goal"],                   # 4
+              "" if outfilestuffs["timer"] in ['False', 'none', 'display'] else "-" + outfilestuffs["timer"], # 5
+
+              outfilestuffs["shuffle"],     # 6
+              outfilestuffs["doorShuffle"], # 7
+              outfilestuffs["algorithm"],   # 8
+              outfilestuffs["mscb"],        # 9
+
+              "-retro" if outfilestuffs["retro"] == "True" else "", # A
+              "-prog_" + outfilestuffs["progressive"] if outfilestuffs["progressive"] in ['off', 'random'] else "", # B
+              "-nohints" if not outfilestuffs["hints"] == "True" else "")) if not args.outputname else '' # C
+            rom.write_to_file(output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc'))
         return (player, team, list(rom.name))
 
     if not args.suppress_rom:
+        logger.info(world.fish.translate("cli", "cli", "patching.rom"))
         import concurrent.futures
         futures = []
         with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -293,7 +320,11 @@ def main(args, seed=None, fish=None):
         print(json.dumps({**jsonout, 'spoiler': world.spoiler.to_json()}))
     elif args.create_spoiler:
         logger.info(world.fish.translate("cli","cli","patching.spoiler"))
-        world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
+        if args.jsonout:
+            with open(output_path('%s_Spoiler.json' % outfilebase), 'w') as outfile:
+              outfile.write(world.spoiler.to_json())
+        else:
+            world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
 
     YES = world.fish.translate("cli","cli","yes")
     NO = world.fish.translate("cli","cli","no")
@@ -303,6 +334,7 @@ def main(args, seed=None, fish=None):
     logger.info(world.fish.translate("cli","cli","made.rom") % (YES if (args.create_rom) else NO))
     logger.info(world.fish.translate("cli","cli","made.playthrough") % (YES if (args.calc_playthrough) else NO))
     logger.info(world.fish.translate("cli","cli","made.spoiler") % (YES if (not args.jsonout and args.create_spoiler) else NO))
+    logger.info(world.fish.translate("cli","cli","used.enemizer") % (YES if enemized else NO))
     logger.info(world.fish.translate("cli","cli","seed") + ": %d", world.seed)
     logger.info(world.fish.translate("cli","cli","total.time"), time.perf_counter() - start)
 

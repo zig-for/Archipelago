@@ -137,6 +137,7 @@ def parse_settings():
         "accessibility": "items",
         "algorithm": "balanced",
 
+        # Shuffle Ganon defaults to TRUE
         "openpyramid": False,
         "shuffleganon": True,
         "shuffle": "vanilla",
@@ -160,7 +161,9 @@ def parse_settings():
         "multi": 1,
         "names": "",
 
+        # Hints default to TRUE
         "hints": True,
+        "no_hints": False,
         "disablemusic": False,
         "quickswap": False,
         "heartcolor": "red",
@@ -170,10 +173,11 @@ def parse_settings():
         "ow_palettes": "default",
         "uw_palettes": "default",
 
+        # Spoiler     defaults to FALSE
+        # Playthrough defaults to TRUE
+        # ROM         defaults to TRUE
         "create_spoiler": False,
-        "skip_playthrough": False,
         "calc_playthrough": True,
-        "suppress_rom": False,
         "create_rom": True,
         "usestartinventory": False,
         "custom": False,
@@ -323,9 +327,9 @@ def get_args_priority(settings_args, gui_args, cli_args):
             else:
                 newArgs[key] = args[key]
 
-            newArgs[key] = update_deprecated_args(newArgs[key])
         else:
             newArgs[key] = args[key]
+        newArgs[key] = update_deprecated_args(newArgs[key])
 
     args = newArgs
 
