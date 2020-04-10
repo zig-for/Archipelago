@@ -3,7 +3,6 @@ import shutil
 import sys
 import sysconfig
 from pathlib import Path
-
 import cx_Freeze
 
 is_64bits = sys.maxsize > 2 ** 32
@@ -15,9 +14,8 @@ sbuildfolder = str(buildfolder)
 libfolder = Path(buildfolder, "lib")
 library = Path(libfolder, "library.zip")
 print("Outputting to: " + str(buildfolder))
-build_resources = "exe_resources"
 compress = False
-holoviews = False
+icon="icon.ico"
 from hashlib import sha3_512
 import base64
 
@@ -54,7 +52,8 @@ exes = []
 for script, scriptname in scripts.items():
     exes.append(cx_Freeze.Executable(
         script=script,
-        targetName=scriptname + ("" if sys.platform == "linux" else ".exe"))
+        targetName=scriptname + ("" if sys.platform == "linux" else ".exe"),
+        icon=icon)
     )
 
 
