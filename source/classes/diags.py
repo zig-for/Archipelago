@@ -1,5 +1,4 @@
 import platform, sys, os, subprocess
-import pkg_resources
 from datetime import datetime
 
 def diagpad(str):
@@ -35,11 +34,15 @@ def output(APP_VERSION):
    pkg = pkg.split("==")
    lines.append(diagpad(pkg[0]) + pkg[1])
   '''
-  installed_packages = [str(d) for d in pkg_resources.working_set]   #this doesn't work from the .exe either, but it doesn't crash the program
-  installed_packages.sort()
-  for pkg in installed_packages:
-    pkg = pkg.split(' ')
-    lines.append(diagpad(pkg[0]) + pkg[1])
+  import Utils
+  if not Utils.is_bundled():
+    import pkg_resources
+    installed_packages = [str(d) for d in
+                          pkg_resources.working_set]  # this doesn't work from the .exe either, but it doesn't crash the program
+    installed_packages.sort()
+    for pkg in installed_packages:
+      pkg = pkg.split(' ')
+      lines.append(diagpad(pkg[0]) + pkg[1])
 
   return lines
 

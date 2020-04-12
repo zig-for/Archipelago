@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-import argparse
-import copy
 import os
 import logging
 import random
-import textwrap
-import shlex
 import sys
 
 from source.classes.BabelFish import BabelFish
-import source.classes.diags as diagnostics
 
 from CLI import parse_cli, get_args_priority
 from Main import main, EnemizerError, __version__
@@ -23,6 +18,7 @@ def start():
     # print diagnostics
     # usage: py DungeonRandomizer.py --diags
     if args.diags:
+        import source.classes.diags as diagnostics
         diags = diagnostics.output(__version__)
         print("\n".join(diags))
         sys.exit(0)
