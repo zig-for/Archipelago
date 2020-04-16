@@ -109,7 +109,7 @@ def parse_cli(argv, no_defaults=False):
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage', 'shufflepots',
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
                          'heartbeep',
-                         'remote_items', 'timer', 'progressive']:
+                         'remote_items', 'timer', 'progressive', "glitch_boots"]:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
                     setattr(ret, name, {1: value})
@@ -136,6 +136,7 @@ def parse_settings():
         "progressive": "on",
         "accessibility": "items",
         "algorithm": "balanced",
+        "glitch_boots": True,
 
         # Shuffle Ganon defaults to TRUE
         "openpyramid": False,

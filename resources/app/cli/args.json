@@ -17,8 +17,13 @@
     "choices": [
       "noglitches",
       "minorglitches",
+      "overworld_glitches",
       "nologic"
     ]
+  },
+  "glitch_boots": {
+    "action": "store_true",
+    "type": "bool"
   },
   "mode": {
     "choices": [
