@@ -22,10 +22,9 @@ from Rules import set_rules
 from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive, dungeon_regions
 from Fill import distribute_items_cutoff, distribute_items_staleness, distribute_items_restrictive, flood_items, balance_multiworld_progression
 from ItemList import generate_itempool, difficulties, fill_prizes
-from Utils import output_path, parse_player_names, get_options, print_wiki_doors_by_region, print_wiki_doors_by_room
+from Utils import output_path, parse_player_names, get_options, __version__, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
 
-__version__ = '0.0.20.8u'
 
 class EnemizerError(RuntimeError):
     pass
