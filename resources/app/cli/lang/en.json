@@ -2,7 +2,7 @@
   "cli": {
     "yes": "Yes",
     "no": "No",
-    "app.title": "ALttP Door Randomizer Version %s - Seed: %d",
+    "app.title": "ALttP Berserker\\'s Multiworld Door Randomizer Version %s - Seed: %d",
     "version": "Version",
     "seed": "Seed",
     "player": "Player",
