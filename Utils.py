@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __version__ = "2.0.2"
 _version_tuple = tuple(int(piece, 10) for piece in __version__.split("."))
 
@@ -165,6 +167,13 @@ class Hint(typing.NamedTuple):
     item: int
     found: bool
 
+    def re_check(self, ctx, team) -> Hint:
+        if self.found:
+            return self
+        found = self.location in ctx.location_checks[team, self.finding_player]
+        if found:
+            return Hint(self.receiving_player, self.finding_player, self.location, self.item, found)
+        return self
 
 entrance_offsets = {
     'Sanctuary': 0x2,
