@@ -155,7 +155,8 @@ def main():
             try:
                 settings = settings_cache[path] if settings_cache[path] else roll_settings(weights_cache[path])
                 if settings.sprite is not None and not os.path.isfile(settings.sprite) and not get_sprite_from_name(settings.sprite):
-                    logging.warning(f"Warning: The chosen sprite, \"{settings.sprite}\", for yaml \"{path}\", does not exist.")
+                    logging.warning(
+                        f"Warning: The chosen sprite, \"{settings.sprite}\", for yaml \"{path}\", does not exist.")
                 for k, v in vars(settings).items():
                     if v is not None:
                         getattr(erargs, k)[player] = v
