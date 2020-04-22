@@ -175,6 +175,9 @@ class Hint(typing.NamedTuple):
             return Hint(self.receiving_player, self.finding_player, self.location, self.item, found)
         return self
 
+    def __hash__(self):
+        return hash((self.receiving_player, self.finding_player, self.location, self.item))
+    
 entrance_offsets = {
     'Sanctuary': 0x2,
     'HC West': 0x3,
