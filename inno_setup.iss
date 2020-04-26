@@ -1,5 +1,5 @@
 #define sourcepath "build\exe.win-amd64-3.8\"
-#define MyAppName "BerserkerMultiWorld"
+#define MyAppName "BerserkerMultiWorld.Doors"
 #define MyAppExeName "BerserkerMultiClient.exe"
 #define MyAppIcon "icon.ico"
 
