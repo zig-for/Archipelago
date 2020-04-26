@@ -179,17 +179,20 @@ def main():
                 if len(set(player_settings.values())) > 1:
                     important[option] = {player: value for player, value in player_settings.items() if
                                          player <= args.yaml_output}
-                else:
+                elif len(set(player_settings.values())) > 0:
                     important[option] = player_settings[1]
+                else:
+                    logging.debug(f"No player settings defined for option '{option}'")
             else:
                 if player_settings != "":  # is not empty name
                     important[option] = player_settings
-        os.makedirs(args.outputpath, exist_ok=True)
+                else:
+                    logging.debug(f"No player settings defined for option '{option}'")
+        if args.outputpath:
+            os.makedirs(args.outputpath, exist_ok=True)
         with open(os.path.join(args.outputpath if args.outputpath else ".", f"mystery_result_{seed}.yaml"), "wt") as f:
             yaml.dump(important, f)
 
-    erargs.names = ",".join(erargs.name[i] for i in range(1, args.multi + 1))
-    del(erargs.name)
     logging.info(erargs)
     DRMain(erargs, seed, BabelFish())
 
