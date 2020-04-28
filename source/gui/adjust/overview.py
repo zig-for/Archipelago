@@ -107,12 +107,14 @@ def adjust_page(top, parent, settings):
         guiargs.baserom = top.pages["randomizer"].pages["generation"].widgets["rom"].storageVar.get()
         guiargs.sprite = self.sprite
         try:
-            adjust(args=guiargs)
+            guiargs, path = adjust(args=guiargs)
         except Exception as e:
             logging.exception(e)
-            messagebox.showerror(title="Error while creating seed", message=str(e))
+            messagebox.showerror(title="Error while adjusting Rom", message=str(e))
         else:
             messagebox.showinfo(title="Success", message="Rom patched successfully")
+            from Utils import persistent_store
+            persistent_store("adjuster", "last_settings", guiargs)
 
     adjustButton = Button(self.frames["bottomAdjustFrame"], text='Adjust Rom', command=adjustRom)
     adjustButton.pack(side=BOTTOM, padx=(5, 0))
