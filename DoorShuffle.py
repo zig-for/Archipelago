@@ -412,11 +412,6 @@ def determine_entrance_list(world, player):
     return entrance_map, potential_entrances, connections
 
 
-# todo: kill drop exceptions
-def drop_exception(name):
-    return name in ['Skull Pot Circle', 'Skull Back Drop']
-
-
 def add_shuffled_entrances(sectors, region_list, entrance_list):
     for sector in sectors:
         for region in sector.regions:
@@ -434,8 +429,6 @@ def find_enabled_origins(sectors, enabled, entrance_list, entrance_map, key):
                     if key not in entrance_map.keys():
                         key = ' '.join(key.split(' ')[:-1])
                     entrance_map[key].append(region.name)
-            if drop_exception(region.name):  # only because they have unique regions
-                entrance_list.append(region.name)
 
 
 def remove_drop_origins(entrance_list):
@@ -692,7 +685,7 @@ def cross_dungeon(world, player):
     all_sectors = []
     for key in dungeon_regions.keys():
         all_sectors.extend(convert_to_sectors(dungeon_regions[key], world, player))
-    dungeon_builders = create_dungeon_builders(all_sectors, world, player)
+    dungeon_builders = create_dungeon_builders(all_sectors, connections_tuple, world, player)
     for builder in dungeon_builders.values():
         builder.entrance_list = list(entrances_map[builder.name])
         dungeon_obj = world.get_dungeon(builder.name, player)
@@ -1472,7 +1465,7 @@ def check_if_regions_visited(state, check_paths):
 
 def check_for_pinball_fix(state, bad_region, world, player):
     pinball_region = world.get_region('Skull Pinball', player)
-    if bad_region.name == 'Skull 2 West Lobby' and state.visited_at_all(pinball_region): #revisit this for entrance shuffle
+    if bad_region.name == 'Skull 2 West Lobby' and state.visited_at_all(pinball_region):  # revisit this for entrance shuffle
         door = world.get_door('Skull Pinball WS', player)
         room = world.get_room(door.roomIndex, player)
         if room.doorList[door.doorListPos][1] == DoorKind.Trap:
