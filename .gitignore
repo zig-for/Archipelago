@@ -25,6 +25,8 @@ weights/
 /Players/
 /QUsb2Snes/
 /options.yaml
+_persistent_storage.yaml
+mystery_result_*.yaml
 
 resources/user/*
 !resources/user/.gitkeep
