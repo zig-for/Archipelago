@@ -252,7 +252,7 @@ def main(args, seed=None, fish=None):
               "difficulty_adjustments": world.difficulty_adjustments[player], # 2
               "mode": world.mode[player],                                     # 3
               "goal": world.goal[player],                                     # 4
-              "timer": str(world.timer),                                      # 5
+              "timer": str(world.timer[player]),                                      # 5
               "shuffle": world.shuffle[player],                               # 6
               "doorShuffle": world.doorShuffle[player],                       # 7
               "algorithm": world.algorithm,                                   # 8
