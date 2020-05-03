@@ -132,7 +132,6 @@ def get_custom_array_key(item):
       "silverarrow": "silversupgrade",
       "blueboomerang": "boomerang",
       "redboomerang": "redmerang",
-      "flute": "ocarina",
       "bugcatchingnet": "bugnet",
       "bookofmudora": "book",
       "pegasusboots": "boots",
