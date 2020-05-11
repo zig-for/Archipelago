@@ -22,7 +22,7 @@ from EntranceShuffle import door_addresses, exit_ids
 
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '6042de1d3a63417efe4397b69c626b88'
+RANDOMIZERBASEHASH = 'a793b94179f7a4afcfd958bac3a79b47'
 
 
 class JsonRom(object):
@@ -312,6 +312,8 @@ def get_sprite_from_name(name):
     name = name.lower()
     if name in ['random', 'randomonhit']:
         return Sprite(random.choice(list(_sprite_table.values())))
+    if name == ('(default link)'):
+        name = 'link'
     return Sprite(_sprite_table[name]) if name in _sprite_table else None
 
 class Sprite(object):
@@ -611,7 +613,8 @@ def patch_rom(world, rom, player, team, enemized):
     if world.doorShuffle[player] == 'basic':
         rom.write_byte(0x139004, 1)
     for door in world.doors:
-        if door.dest is not None and door.player == player and door.type in [DoorType.Normal, DoorType.SpiralStairs]:
+        if door.dest is not None and door.player == player and door.type in [DoorType.Normal, DoorType.SpiralStairs,
+                                                                             DoorType.Open, DoorType.StraightStairs]:
             rom.write_bytes(door.getAddress(), door.dest.getTarget(door))
     for room in world.rooms:
         if room.player == player and room.modified:

@@ -24,8 +24,8 @@ class GraphPiece:
         self.possible_bk_locations = set()
 
 
-# Turtle Rock shouldn't be generated until the Big Chest entrance is reachable
-def validate_tr(builder, entrance_region_names, world, player):
+# Dungeons shouldn't be generated until all entrances are appropriately accessible
+def pre_validate(builder, entrance_region_names, world, player):
     entrance_regions = convert_regions(entrance_region_names, world, player)
     proposed_map = {}
     doors_to_connect = {}
@@ -519,11 +519,7 @@ type_map = {
     Hook.North: Hook.South,
     Hook.South: Hook.North,
     Hook.West: Hook.East,
-    Hook.East: Hook.West,
-    Hook.NEdge: Hook.SEdge,
-    Hook.SEdge: Hook.NEdge,
-    Hook.EEdge: Hook.WEdge,
-    Hook.WEdge: Hook.EEdge,
+    Hook.East: Hook.West
 }
 
 
@@ -539,31 +535,20 @@ hang_dir_map = {
 }
 
 
-edge_map_back = {
-    Direction.North: Hook.SEdge,
-    Direction.South: Hook.NEdge,
-    Direction.West: Hook.EEdge,
-    Direction.East: Hook.WEdge,
-}
-
-
 def hanger_from_door(door):
     if door.type == DoorType.SpiralStairs:
         return Hook.Stairs
-    if door.type == DoorType.Normal:
+    if door.type in [DoorType.Normal, DoorType.Open, DoorType.StraightStairs]:
         return hang_dir_map[door.direction]
-    if door.type == DoorType.Open:
-        return edge_map_back[door.direction]
     return None
 
 
 def connect_doors(a, b):
     # Return on unsupported types.
-    if a.type in [DoorType.StraightStairs, DoorType.Hole, DoorType.Warp, DoorType.Ladder,
-                  DoorType.Interior, DoorType.Logical]:
+    if a.type in [DoorType.Hole, DoorType.Warp, DoorType.Ladder, DoorType.Interior, DoorType.Logical]:
         return
     # Connect supported types
-    if a.type == DoorType.Normal or a.type == DoorType.SpiralStairs or a.type == DoorType.Open:
+    if a.type in [DoorType.Normal, DoorType.SpiralStairs, DoorType.Open, DoorType.StraightStairs]:
         if a.blocked:
             connect_one_way(b.entrance, a.entrance)
         elif b.blocked:

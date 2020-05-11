@@ -72,11 +72,11 @@ def create_doors(world, player):
         create_door(player, 'Hyrule Dungeon North Abyss Catwalk Edge', Open).dir(So, 0x72, None, High).edge(1, Z, 0x08),
         create_door(player, 'Hyrule Dungeon North Abyss Catwalk Dropdown', Lgcl),
         create_door(player, 'Hyrule Dungeon South Abyss North Edge', Open).dir(No, 0x82, None, Low).edge(0, A, 0x10),
-        create_door(player, 'Hyrule Dungeon South Abyss West Edge', Open).dir(We, 0x82, None, Low).edge(3, Z, 0x10),
+        create_door(player, 'Hyrule Dungeon South Abyss West Edge', Open).dir(We, 0x82, None, Low).edge(3, Z, 0x18),
         create_door(player, 'Hyrule Dungeon South Abyss Catwalk North Edge', Open).dir(No, 0x82, None, High).edge(1, A, 0x08),
-        create_door(player, 'Hyrule Dungeon South Abyss Catwalk West Edge', Open).dir(We, 0x82, None, High).edge(4, A, 0x18),
+        create_door(player, 'Hyrule Dungeon South Abyss Catwalk West Edge', Open).dir(We, 0x82, None, High).edge(4, A, 0x10),
         create_door(player, 'Hyrule Dungeon Guardroom Catwalk Edge', Open).dir(Ea, 0x81, None, High).edge(3, S, 0x10),
-        create_door(player, 'Hyrule Dungeon Guardroom Abyss Edge', Open).dir(Ea, 0x81, None, High).edge(4, X, 0x18),
+        create_door(player, 'Hyrule Dungeon Guardroom Abyss Edge', Open).dir(Ea, 0x81, None, Low).edge(4, X, 0x18),
         create_door(player, 'Hyrule Dungeon Guardroom N', Nrml).dir(No, 0x81, Left, Low).pos(0),
         create_door(player, 'Hyrule Dungeon Armory S', Nrml).dir(So, 0x71, Left, Low).trap(0x2).pos(1),
         create_door(player, 'Hyrule Dungeon Armory ES', Intr).dir(Ea, 0x71, Left, Low).pos(2),
@@ -201,8 +201,8 @@ def create_doors(world, player):
         create_door(player, 'Desert Trap Room SW', Intr).dir(So, 0x75, Left, High).pos(0),
         create_door(player, 'Desert North Hall SE Edge', Open).dir(So, 0x74, None, High).edge(5, X, 0x20),
         create_door(player, 'Desert North Hall SW Edge', Open).dir(So, 0x74, None, High).edge(3, Z, 0x20),
-        create_door(player, 'Desert North Hall W Edge', Open).dir(We, 0x74, None, High).edge(2, Z, 0x20),
-        create_door(player, 'Desert North Hall E Edge', Open).dir(Ea, 0x74, None, High).edge(1, X, 0x20),
+        create_door(player, 'Desert North Hall W Edge', Open).dir(We, 0x74, None, High).edge(1, Z, 0x20),
+        create_door(player, 'Desert North Hall E Edge', Open).dir(Ea, 0x74, None, High).edge(2, X, 0x20),
         create_door(player, 'Desert North Hall NW', Intr).dir(No, 0x74, Left, High).pos(1),
         create_door(player, 'Desert Map SW', Intr).dir(So, 0x74, Left, High).pos(1),
         create_door(player, 'Desert North Hall NE', Intr).dir(No, 0x74, Right, High).pos(0),
@@ -588,6 +588,8 @@ def create_doors(world, player):
         create_door(player, 'Thieves Spike Switch Up Stairs', Sprl).dir(Up, 0xab, 0, HTH).ss(Z, 0x1a, 0x6c, True, True).small_key().pos(0),
         create_door(player, 'Thieves Attic Down Stairs', Sprl).dir(Dn, 0x64, 0, HTH).ss(Z, 0x11, 0x80, True, True),
         create_door(player, 'Thieves Attic ES', Intr).dir(Ea, 0x64, Bot, High).pos(0),
+        create_door(player, 'Thieves Attic Orange Barrier', Lgcl),
+        create_door(player, 'Thieves Attic Hint Orange Barrier', Lgcl),
         create_door(player, 'Thieves Cricket Hall Left WS', Intr).dir(We, 0x64, Bot, High).pos(0),
         create_door(player, 'Thieves Cricket Hall Left Edge', Open).dir(Ea, 0x64, None, High).edge(0, X, 0x30),
         create_door(player, 'Thieves Cricket Hall Right Edge', Open).dir(We, 0x65, None, High).edge(0, Z, 0x30),
@@ -900,7 +902,7 @@ def create_doors(world, player):
         create_door(player, 'TR Crystal Maze Blue Path', Lgcl),
         create_door(player, 'TR Crystal Maze Cane Path', Lgcl),
         create_door(player, 'TR Crystal Maze North Stairs', StrS).dir(No, 0xc4, Mid, High),
-        create_door(player, 'TR Final Abyss South Stairs', StrS).dir(No, 0xb4, Right, High),
+        create_door(player, 'TR Final Abyss South Stairs', StrS).dir(So, 0xb4, Mid, High),
         create_door(player, 'TR Final Abyss NW', Nrml).dir(No, 0xb4, Left, High).big_key().pos(0),
         create_door(player, 'TR Boss SW', Nrml).dir(So, 0xa4, Left, High).no_exit().trap(0x4).pos(0),
 
@@ -1136,6 +1138,9 @@ def create_doors(world, player):
     world.get_door('Thieves Triple Bypass EN', player).barrier(CrystalBarrier.Blue)
     world.get_door('Thieves Hellway Orange Barrier', player).barrier(CrystalBarrier.Orange)
     world.get_door('Thieves Hellway Crystal Orange Barrier', player).barrier(CrystalBarrier.Orange)
+    world.get_door('Thieves Hellway Crystal Orange Barrier', player).barrier(CrystalBarrier.Orange)
+    world.get_door('Thieves Attic Orange Barrier', player).barrier(CrystalBarrier.Orange)
+    world.get_door('Thieves Attic Hint Orange Barrier', player).barrier(CrystalBarrier.Orange)
 
     world.get_door('Ice Bomb Drop SE', player).c_switch()
     world.get_door('Ice Conveyor SW', player).c_switch()

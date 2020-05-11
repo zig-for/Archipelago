@@ -1046,10 +1046,6 @@ class Hook(Enum):
     South = 2
     East = 3
     Stairs = 4
-    NEdge = 5
-    SEdge = 6
-    WEdge = 7
-    EEdge = 8
 
 
 hook_dir_map = {
@@ -1059,21 +1055,12 @@ hook_dir_map = {
     Direction.East: Hook.East,
 }
 
-edge_map = {
-    Direction.North: Hook.NEdge,
-    Direction.South: Hook.SEdge,
-    Direction.West: Hook.WEdge,
-    Direction.East: Hook.EEdge,
-}
-
 
 def hook_from_door(door):
     if door.type == DoorType.SpiralStairs:
         return Hook.Stairs
-    if door.type == DoorType.Normal:
+    if door.type in [DoorType.Normal, DoorType.Open, DoorType.StraightStairs]:
         return hook_dir_map[door.direction]
-    if door.type == DoorType.Open:
-        return edge_map[door.direction]
     return None
 
 
@@ -1207,23 +1194,25 @@ class Door(object):
             entrance.door = self
 
     def getAddress(self):
-        if self.type == DoorType.Normal:
+        if self.type in [DoorType.Normal, DoorType.StraightStairs]:
             return 0x13A000 + normal_offset_table[self.roomIndex] * 24 + (self.doorIndex + self.direction.value * 3) * 2
         elif self.type == DoorType.SpiralStairs:
             return 0x13B000 + (spiral_offset_table[self.roomIndex] + self.doorIndex) * 4
         elif self.type == DoorType.Open:
             base_address = {
                 Direction.North: 0x13C500,
-                Direction.South: 0x13C533,
-                Direction.West: 0x13C566,
-                Direction.East: 0x13C581,
+                Direction.South: 0x13C521,
+                Direction.West: 0x13C542,
+                Direction.East: 0x13C55D,
             }
             return base_address[self.direction] + self.edge_id * 3
 
     def getTarget(self, src):
-        if self.type == DoorType.Normal:
+        if self.type in [DoorType.Normal, DoorType.StraightStairs]:
             bitmask = 4 * (self.layer ^ 1 if src.toggle else self.layer)
             bitmask += 0x08 * int(self.trapFlag)
+            if src.type == DoorType.StraightStairs:
+                bitmask += 0x40
             return [self.roomIndex, bitmask + self.doorIndex]
         if self.type == DoorType.SpiralStairs:
             bitmask = int(self.layer) << 2
@@ -1233,15 +1222,25 @@ class Door(object):
             return [self.roomIndex, bitmask + self.quadrant, self.shiftX, self.shiftY]
         if self.type == DoorType.Open:
             bitmask = self.edge_id
-            bitmask += 0x10 * self.layer
-            bitmask += 0x20 * self.quadrant
+            bitmask += 0x10 * (self.layer ^ 1 if src.toggle else self.layer)
             bitmask += 0x80
+            if src.type == DoorType.StraightStairs:
+                bitmask += 0x40
             if src.type == DoorType.Open:
+                bitmask += 0x20 * self.quadrant
                 fraction = 0x10 * multiply_lookup[src.edge_width][self.edge_width]
                 fraction += divisor_lookup[src.edge_width][self.edge_width]
                 return [self.roomIndex, bitmask, fraction]
             else:
+                bitmask += 0x20 * self.quad_indicator()
                 return [self.roomIndex, bitmask]
+
+    def quad_indicator(self):
+        if self.direction in [Direction.North, Direction.South]:
+            return self.quadrant & 0x1
+        elif self.direction in [Direction.East, Direction.West]:
+            return (self.quadrant & 0x2) >> 1
+        return 0
 
     def dir(self, direction, room, doorIndex, layer):
         self.direction = direction
