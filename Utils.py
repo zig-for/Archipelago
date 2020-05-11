@@ -337,6 +337,16 @@ def update_deprecated_args(args):
             else:
                 args.no_hints = args.hints not in truthy  # dest = !src
 
+        # Multiworld progression balancing defaults to TRUE
+        # Don't do: No
+        # Do:       Yes
+        if "progression_balancing" in argVars:
+            args.skip_progression_balancing = not args.progression_balancing in truthy
+        # Don't do: Yes
+        # Do:       No
+        if "skip_progression_balancing" in argVars:
+            args.progression_balancing = not args.skip_progression_balancing in truthy
+
         # Spoiler defaults to FALSE
         # Don't do: No
         # Do:       Yes

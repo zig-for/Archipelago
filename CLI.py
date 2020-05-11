@@ -74,10 +74,6 @@ def parse_cli(argv, no_defaults=False):
     parser.add_argument('--beemizer', default=defval(settings["beemizer"]), type=lambda value: min(max(int(value), 0), 4))
     parser.add_argument('--multi', default=defval(settings["multi"]), type=lambda value: min(max(int(value), 1), 255))
     parser.add_argument('--teams', default=defval(1), type=lambda value: max(int(value), 1))
-    #parser.add_argument('--outputpath', default=defval(settings["outputpath"]))
-    #parser.add_argument('--race', default=defval(settings["race"] != 0), action='store_true')
-    #parser.add_argument('--saveonexit', default=defval(settings["saveonexit"]), choices=['never', 'ask', 'always'])
-    #parser.add_argument('--outputname')
     parser.add_argument('--create_diff', default=defval(False), action='store_true', help='''\
     create a binary patch file from which the randomized rom can be recreated using MultiClient.
     Does not work with jsonout.''')
@@ -137,6 +133,7 @@ def parse_settings():
         "accessibility": "items",
         "algorithm": "balanced",
         "glitch_boots": True,
+        "skip_progression_balancing": False,
 
         # Shuffle Ganon defaults to TRUE
         "openpyramid": False,

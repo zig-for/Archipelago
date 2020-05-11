@@ -154,6 +154,7 @@
     "randomizer.gameoptions.sprite.unchanged": "(unchanged)",
 
 
+    "randomizer.generation.balancemultiworld": "Progression Balancing",
     "randomizer.generation.createspoiler": "Create Spoiler Log",
     "randomizer.generation.createrom": "Create Patched ROM",
     "randomizer.generation.calcplaythrough": "Calculate Playthrough",

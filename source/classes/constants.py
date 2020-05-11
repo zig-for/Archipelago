@@ -101,6 +101,7 @@ SETTINGSTOPROCESS = {
       "uwpalettes": "uw_palettes"
     },
     "generation": {
+      "balancemultiworld": "progression_balancing",
       "createspoiler": "create_spoiler",
       "createrom": "create_rom",
       "calcplaythrough": "calc_playthrough",
