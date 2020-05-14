@@ -151,17 +151,18 @@ def main(args, seed=None, fish=None):
         fill_dungeons(world)
 
     for player in range(1, world.players+1):
-        for key_layout in world.key_layout[player].values():
-            if not validate_key_placement(key_layout, world, player):
-                raise RuntimeError(
-                  "%s: %s (%s %d)" %
-                  (
-                    world.fish.translate("cli","cli","keylock.detected"),
-                    key_layout.sector.name,
-                    world.fish.translate("cli","cli","player"),
-                    player
-                  )
-                )
+        if world.logic[player] != 'nologic':
+            for key_layout in world.key_layout[player].values():
+                if not validate_key_placement(key_layout, world, player):
+                    raise RuntimeError(
+                      "%s: %s (%s %d)" %
+                      (
+                        world.fish.translate("cli", "cli", "keylock.detected"),
+                        key_layout.sector.name,
+                        world.fish.translate("cli", "cli", "player"),
+                        player
+                      )
+                    )
 
     logger.info(world.fish.translate("cli","cli","fill.world"))
 
