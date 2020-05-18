@@ -3791,3 +3791,11 @@ exit_ids = {'Links House Exit': (0x01, 0x00),
             'Skull Pinball': 0x78,
             'Skull Pot Circle': 0x76,
             'Pyramid': 0x7B}
+
+exit_id_to_name = {}
+for name, addresses in exit_ids.items():
+    if type(addresses) == int:
+        exit_id_to_name[addresses] = name
+    else:
+        for address in addresses:
+            exit_id_to_name[address] = name
