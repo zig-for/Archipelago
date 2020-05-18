@@ -68,6 +68,7 @@ def main(args, seed=None, fish=None):
     world.experimental = args.experimental.copy()
     world.fish = fish if fish else BabelFish(lang="en")
     world.glitch_boots = args.glitch_boots.copy()
+    world.progression_balancing = {player: not balance for player, balance in args.skip_progression_balancing.items()}
 
     world.rom_seeds = {player: random.randint(0, 999999999) for player in range(1, world.players + 1)}
 
@@ -182,8 +183,7 @@ def main(args, seed=None, fish=None):
     elif args.algorithm == 'balanced':
         distribute_items_restrictive(world, True)
 
-    if world.players > 1 and not args.skip_progression_balancing:
-        logger.info(world.fish.translate("cli","cli","balance.multiworld"))
+    if world.players > 1:
         balance_multiworld_progression(world)
 
     # if we only check for beatable, we can do this sanity check first before creating the rom

@@ -104,7 +104,7 @@ def parse_cli(argv, no_defaults=False):
                          'retro', 'accessibility', 'hints', 'beemizer', 'experimental', 'dungeon_counters',
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage', 'shufflepots',
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
-                         'heartbeep',
+                         'heartbeep',  "skip_progression_balancing",
                          'remote_items', 'timer', 'progressive', "glitch_boots"]:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
