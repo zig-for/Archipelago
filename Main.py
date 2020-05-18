@@ -301,19 +301,29 @@ def main(args, seed=None, fish=None):
             rom_names.append(rom_name)
             enemized |= enemized_check
 
-        def get_entrance_to_region(region: Region):
+        er_cache = {player: {} for player in range(1, world.players + 1)}
+        def get_entrance_to_region(region: Region, regions_visited):
+            if region in er_cache[region.player] and er_cache[region.player][region]:
+                return er_cache[region.player][region]
             for entrance in region.entrances:
                 if entrance.parent_region.type in (RegionType.DarkWorld, RegionType.LightWorld):
+                    er_cache[region.player][region] = entrance
                     return entrance
             for entrance in region.entrances:  # BFS might be better here, trying DFS for now.
-                return get_entrance_to_region(entrance.parent_region)
+                if entrance not in regions_visited:
+                    regions_visited.append(entrance)
+                    result = get_entrance_to_region(entrance.parent_region, regions_visited)
+                    if result:
+                        er_cache[region.player][region] = result
+                        return result
 
         # collect ER hint info
-        er_hint_data = {player: {} for player in range(1, world.players + 1) if world.shuffle[player] != "vanilla"}
+        er_hint_data = {player: {} for player in range(1, world.players + 1) if (world.shuffle[player] != "vanilla" or world.doorShuffle[player] == "crossed")}
+
         from Regions import RegionType
         for region in world.regions:
             if region.player in er_hint_data and region.locations:
-                main_entrance = get_entrance_to_region(region)
+                main_entrance = get_entrance_to_region(region, [])
                 for location in region.locations:
                     if type(location.address) == int:  # skips events and crystals
                         er_hint_data[region.player][location.address] = main_entrance.name
