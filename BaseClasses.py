@@ -1729,7 +1729,7 @@ class Spoiler(object):
                          'shufflepots': self.world.shufflepots,
                          'players': self.world.players,
                          'teams': self.world.teams,
-                         'progression_balancing': self.world.progression_balancing
+                         'progression_balancing': self.world.progression_balancing,
                          'experimental' : self.world.experimental
                          }
 
