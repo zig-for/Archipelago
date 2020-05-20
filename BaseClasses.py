@@ -1831,9 +1831,9 @@ class Spoiler(object):
 
             for player in range(1, self.world.players + 1):
                 if self.world.boss_shuffle[player] != 'none':
-                    bossmap = self.bosses[player] if self.world.players > 1 else self.bosses
-                    outfile.write(f'\n\nBosses (Player {player}):\n\n')
-                    outfile.write('\n'.join([f'{x}: {y}' for x, y in bossmap.items()]))
+                    bossmap = self.bosses[str(player)] if self.world.players > 1 else self.bosses
+                    outfile.write(f'\n\nBosses{(f" ({self.world.get_player_names(player)})" if self.world.players > 1 else "")}:\n')
+                    outfile.write('    ' + '\n    '.join([f'{x}: {y}' for x, y in bossmap.items()]))
 
             # locations: Change up location names; in the instance of a location with multiple sections, it'll try to translate the room name
             # items: Item names
