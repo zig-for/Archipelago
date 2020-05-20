@@ -311,19 +311,24 @@ def roll_settings(weights):
     ret.item_functionality = get_choice('item_functionality', weights)
 
     ret.shufflebosses = {'none': 'none',
-                         'simple': 'basic',
-                         'full': 'normal',
-                         'random': 'chaos'
+                         'simple': 'simple',
+                         'full': 'full',
+                         'random': 'random',
+                         'basic': 'simple',
+                         'normal': 'full',
+                         'chaos': 'random'
                          }[get_choice('boss_shuffle', weights)]
 
     ret.shuffleenemies = {'none': 'none',
                           'shuffled': 'shuffled',
-                          'random': 'chaos'
+                          'random': 'random',
+                          'chaos': 'random'
                           }[get_choice('enemy_shuffle', weights)]
 
     ret.enemy_damage = {'default': 'default',
                         'shuffled': 'shuffled',
-                        'random': 'chaos'
+                        'random': 'random',
+                        'chaos': 'random'
                         }[get_choice('enemy_damage', weights)]
 
     ret.enemy_health = get_choice('enemy_health', weights)
