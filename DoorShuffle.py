@@ -512,6 +512,7 @@ def cross_dungeon(world, player):
                     if loc.name in key_only_locations:
                         key_name = dungeon_keys[builder.name] if loc.name != 'Hyrule Castle - Big Key Drop' else dungeon_bigs[builder.name]
                         loc.forced_item = loc.item = ItemFactory(key_name, player)
+                        loc.forced_item.world = world
     recombinant_builders = {}
     handle_split_dungeons(dungeon_builders, recombinant_builders, entrances_map, world.fish)
 
@@ -556,6 +557,7 @@ def assign_cross_keys(dungeon_builders, world, player):
             dungeon.big_key = None
         elif builder.bk_required and not builder.bk_provided:
             dungeon.big_key = ItemFactory(dungeon_bigs[name], player)
+            dungeon.big_key.world = world
         start_regions = convert_regions(builder.path_entrances, world, player)
         find_small_key_door_candidates(builder, start_regions, world, player)
         builder.key_doors_num = max(0, len(builder.candidates) - builder.key_drop_cnt)
@@ -624,6 +626,8 @@ def assign_cross_keys(dungeon_builders, world, player):
                 dungeon.small_keys = []
             else:
                 dungeon.small_keys = [ItemFactory(dungeon_keys[name], player)] * actual_chest_keys
+                for key in dungeon.small_keys:
+                    key.world = world
     logging.getLogger('').info('%s: %s', world.fish.translate("cli","cli","keydoor.shuffle.time.crossed"), time.process_time()-start)
 
 

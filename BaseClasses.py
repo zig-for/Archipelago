@@ -1444,6 +1444,7 @@ class Location(object):
           self.forced_item = ItemFactory([forced_item], player)[0]
           self.item = self.forced_item
           self.item.location = self
+          self.item.world = parent.world if parent and parent.world else None
           self.event = True
         else:
           self.forced_item = None
@@ -1800,7 +1801,7 @@ class Spoiler(object):
             if self.doors:
                 outfile.write('\n\nDoors:\n\n')
                 outfile.write('\n'.join(
-                    ['%s%s %s %s %s' % ('Player {0}: '.format(entry['player']) if self.world.players > 1 else '',
+                    ['%s%s %s %s %s' % (f'{self.world.get_player_names(entry["player"])}: ' if self.world.players > 1 else '',
                                         self.world.fish.translate("meta","doors",entry['entrance']),
                                         '<=>' if entry['direction'] == 'both' else '<=' if entry['direction'] == 'exit' else '=>',
                                         self.world.fish.translate("meta","doors",entry['exit']),
@@ -1810,7 +1811,7 @@ class Spoiler(object):
                 # doorNames: For some reason these come in combined, somehow need to split on the thing to translate
                 # doorTypes: Small Key, Bombable, Bonkable
                 outfile.write('\n\nDoor Types:\n\n')
-                outfile.write('\n'.join(['%s%s %s' % ('Player {0}: '.format(entry['player']) if self.world.players > 1 else '', self.world.fish.translate("meta","doors",entry['doorNames']), self.world.fish.translate("meta","doorTypes",entry['type'])) for entry in self.doorTypes.values()]))
+                outfile.write('\n'.join(['%s%s %s' % (f'{self.world.get_player_names(entry["player"])}: ' if self.world.players > 1 else '', self.world.fish.translate("meta","doors",entry['doorNames']), self.world.fish.translate("meta","doorTypes",entry['type'])) for entry in self.doorTypes.values()]))
             if self.entrances:
                 # entrances: To/From overworld; Checking w/ & w/out "Exit" and translating accordingly
                 outfile.write('\n\nEntrances:\n\n')
