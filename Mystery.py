@@ -14,6 +14,7 @@ from Utils import parse_yaml
 from Rom import get_sprite_from_name
 from DungeonRandomizer import parse_cli
 from Main import main as DRMain
+from Items import item_name_groups, item_table
 from source.classes.BabelFish import BabelFish
 
 
@@ -362,10 +363,21 @@ def roll_settings(weights):
                 startitems.append(item)
         elif itemvalue:
             startitems.append(item)
-    ret.glitch_boots = get_choice('glitch_boots', weights) if 'glitch_boots' in weights else True
     ret.startinventory = ','.join(startitems)
 
+    ret.glitch_boots = get_choice('glitch_boots', weights) if 'glitch_boots' in weights else True
+
     ret.remote_items = get_choice('remote_items', weights) if 'remote_items' in weights else False
+
+    ret.local_items = set()
+    for item_name in weights.get('local_items', []):
+        items = item_name_groups.get(item_name, {item_name})
+        for item in items:
+            if item in item_table:
+                ret.local_items.add(item)
+            else:
+                logging.warning(f"Could not force item {item} to be world-local, as it was not recognized.")
+    ret.local_items = ",".join(ret.local_items)
 
     if 'rom' in weights:
         romweights = weights['rom']

@@ -112,9 +112,12 @@ def global_rules(world, player):
     # ganon can only carry triforce
     add_item_rule(world.get_location('Ganon', player), lambda item: item.name == 'Triforce' and item.player == player)
     if world.goal[player] == "localtriforcehunt":
+        world.local_items[player].add('Triforce Piece')
+    if world.local_items[player]:
         for location in world.get_locations():
             if location.player != player:
-                forbid_item(location, 'Triforce Piece', player)
+                for item in world.local_items[player]:
+                    forbid_item(location, item, player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
     old_rule = world.get_region('Old Man House', player).can_reach_private

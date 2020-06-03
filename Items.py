@@ -191,3 +191,24 @@ item_table = {'Bow': (True, False, None, 0x0B, 'You have\nchosen the\narcher cla
 lookup_id_to_name = {data[3]: name for name, data in item_table.items()}
 
 hint_blacklist = {"Triforce"}
+
+item_name_groups = {"Bows": {"Bow", "Silver Arrows", "Progressive Bow (Alt)", "Progressive Bow"}}
+# generic groups, (Name, substring)
+_simple_groups = {("Swords", "Sword"),
+
+                  ("Small Keys", "Small Key"),
+                  ("Big Keys", "Big Key"),
+                  ("Compasses", "Compass"),
+                  ("Maps", "Map"),
+
+                  ("Bottles", "Bottle"),
+                  ("Potions", "Potion"),
+                  ("Rupees", "Rupee")
+                  }
+for basename, substring in _simple_groups:
+    tempset = item_name_groups[basename] = set()
+    for itemname in item_table:
+        if substring in itemname:
+            tempset.add(itemname)
+
+del (_simple_groups)
