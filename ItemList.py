@@ -179,31 +179,29 @@ def get_custom_array_key(item):
 
 
 def generate_itempool(world, player):
-    if (world.difficulty[player] not in ['normal', 'hard', 'expert'] or world.goal[player] not in ['ganon', 'pedestal',
-                                                                                                   'dungeons',
-                                                                                                   'triforcehunt',
-                                                                                                   'crystals']
-            or world.mode[player] not in ['open', 'standard', 'inverted'] or world.timer[player] not in [False,
-                                                                                                         'none',
-                                                                                                         'display',
-                                                                                                         'timed',
-                                                                                                         'timed-ohko',
-                                                                                                         'ohko',
-                                                                                                         'timed-countdown']):
-        raise NotImplementedError(f'Not supported yet: {(world.difficulty[player], world.goal[player], world.mode[player], world.timer[player])}')
+    if world.difficulty[player] not in ['normal', 'hard', 'expert']:
+        raise NotImplementedError(f"Diffulty {world.difficulty[player]}")
+    if world.goal[player] not in {'ganon', 'pedestal', 'dungeons', 'triforcehunt', 'localtriforcehunt', 'crystals'}:
+        raise NotImplementedError(f"Goal {world.goal[player]}")
+    if world.mode[player] not in {'open', 'standard', 'inverted'}:
+        raise NotImplementedError(f"Mode {world.mode[player]}")
+    if world.timer[player] not in {False, 'none', 'display', 'timed', 'timed-ohko', 'ohko', 'timed-countdown'}:
+        raise NotImplementedError(f"Timer {world.mode[player]}")
+
     if world.timer[player] in ['ohko', 'timed-ohko']:
         world.can_take_damage[player] = False
-
-    if world.goal[player] in ['pedestal', 'triforcehunt']:
+    if world.goal[player] in ['pedestal', 'triforcehunt', 'localtriforcehunt']:
         world.push_item(world.get_location('Ganon', player), ItemFactory('Nothing', player), False)
     else:
         world.push_item(world.get_location('Ganon', player), ItemFactory('Triforce', player), False)
 
-    if world.goal[player] in ['triforcehunt']:
-        region = world.get_region('Light World',player)
+    if world.goal[player] in ['triforcehunt', 'localtriforcehunt']:
+        region = world.get_region('Light World', player)
 
         loc = Location(player, "Murahdahla", parent=region)
-        loc.access_rule = lambda state: state.item_count('Triforce Piece', player) + state.item_count('Power Star', player) > state.world.treasure_hunt_count[player]
+        loc.access_rule = lambda state: state.item_count('Triforce Piece', player) + state.item_count('Power Star',
+                                                                                                      player) > \
+                                        state.world.treasure_hunt_count[player]
         region.locations.append(loc)
         world.dynamic_locations.append(loc)
 
@@ -604,7 +602,7 @@ def get_pool_core(world, player: int):
         pool.extend(diff.timedohko)
         extraitems -= len(diff.timedohko)
         clock_mode = 'countdown-ohko'
-    if goal == 'triforcehunt':
+    if goal in {'triforcehunt', 'localtriforcehunt'}:
         pool.extend(diff.triforcehunt)
         extraitems -= len(diff.triforcehunt)
         treasure_hunt_count = diff.triforce_pieces_required
@@ -700,7 +698,7 @@ def make_custom_item_pool(progressive, shuffle, difficulty, timer, goal, mode, s
         treasure_hunt_count = max(min(customitemarray["triforcepiecesgoal"], 99), 1) #To display, count must be between 1 and 99.
         treasure_hunt_icon = 'Triforce Piece'
         # Ensure game is always possible to complete here, force sufficient pieces if the player is unwilling.
-        if (customitemarray["triforcepieces"] < treasure_hunt_count) and (goal == 'triforcehunt') and (customitemarray["triforce"] == 0):
+        if (customitemarray["triforcepieces"] < treasure_hunt_count) and (goal in {'triforcehunt', 'localtriforcehunt'}) and (customitemarray["triforce"] == 0):
             extrapieces = treasure_hunt_count - customitemarray["triforcepieces"]
             pool.extend(['Triforce Piece'] * extrapieces)
             itemtotal = itemtotal + extrapieces

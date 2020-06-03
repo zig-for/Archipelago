@@ -111,6 +111,10 @@ def item_name(state, location, player):
 def global_rules(world, player):
     # ganon can only carry triforce
     add_item_rule(world.get_location('Ganon', player), lambda item: item.name == 'Triforce' and item.player == player)
+    if world.goal[player] == "localtriforcehunt":
+        for location in world.get_locations():
+            if location.player != player:
+                forbid_item(location, 'Triforce Piece', player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
     old_rule = world.get_region('Old Man House', player).can_reach_private
@@ -118,7 +122,8 @@ def global_rules(world, player):
 
     set_rule(world.get_location('Sunken Treasure', player), lambda state: state.has('Open Floodgate', player))
     set_rule(world.get_location('Dark Blacksmith Ruins', player), lambda state: state.has('Return Smith', player))
-    set_rule(world.get_location('Purple Chest', player), lambda state: state.has('Pick Up Purple Chest', player))  # Can S&Q with chest
+    set_rule(world.get_location('Purple Chest', player),
+             lambda state: state.has('Pick Up Purple Chest', player))  # Can S&Q with chest
     set_rule(world.get_location('Ether Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has_beam_sword(player))
     set_rule(world.get_location('Master Sword Pedestal', player), lambda state: state.has('Red Pendant', player) and state.has('Blue Pendant', player) and state.has('Green Pendant', player))
 

@@ -285,7 +285,9 @@ def roll_settings(weights):
                 'fast_ganon': 'crystals',
                 'dungeons': 'dungeons',
                 'pedestal': 'pedestal',
-                'triforce-hunt': 'triforcehunt'
+                'triforce_hunt': 'triforcehunt',
+                'triforce-hunt': 'triforcehunt',  # deprecated, moving all goals to `_`
+                'local_triforce_hunt': 'localtriforcehunt'
                 }[goal]
     ret.openpyramid = goal == 'fast_ganon' if ret.shuffle in ['vanilla', 'dungeonsfull', 'dungeonssimple'] else False
 
