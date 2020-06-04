@@ -529,6 +529,9 @@ def persistent_store(category, key, value):
 
 
 def persistent_load() -> typing.Dict[dict]:
+    storage = getattr(persistent_load, "storage", None)
+    if storage:
+        return storage
     path = local_path("_persistent_storage.yaml")
     storage: dict = {}
     if os.path.exists(path):
@@ -540,6 +543,7 @@ def persistent_load() -> typing.Dict[dict]:
             logging.debug(f"Could not read store: {e}")
     if storage is None:
         storage = {}
+    persistent_load.storage = storage
     return storage
 
 
@@ -547,3 +551,14 @@ class ReceivedItem(typing.NamedTuple):
     item: int
     location: int
     player: int
+
+
+def get_unique_identifier():
+    uuid = persistent_load().get("client", {}).get("uuid", None)
+    if uuid:
+        return uuid
+
+    import uuid
+    uuid = uuid.getnode()
+    persistent_store("client", "uuid", uuid)
+    return uuid
