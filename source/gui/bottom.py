@@ -265,6 +265,9 @@ def create_guiargs(parent):
     # Starting Inventory is a CSV
     guiargs.startinventory = ','.join(guiargs.startinventory)
 
+    # Local Items is a CSV
+    guiargs.local_items = ""
+
     # Get Sprite Selection (set or random)
     guiargs.sprite = parent.pages["randomizer"].pages["gameoptions"].widgets["sprite"]["spriteObject"]
     guiargs.randomSprite = parent.randomSprite.get()
