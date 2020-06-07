@@ -35,7 +35,7 @@ Difficulty = namedtuple('Difficulty',
                         ['baseitems', 'bottles', 'bottle_count', 'same_bottle', 'progressiveshield',
                          'basicshield', 'progressivearmor', 'basicarmor', 'swordless',
                          'progressivesword', 'basicsword', 'basicbow', 'timedohko', 'timedother',
-                         'triforcehunt', 'triforce_pieces_required', 'retro',
+                         'triforcehunt', 'retro',
                          'extras', 'progressive_sword_limit', 'progressive_shield_limit',
                          'progressive_armor_limit', 'progressive_bottle_limit',
                          'progressive_bow_limit', 'heart_piece_limit', 'boss_heart_container_limit'])
@@ -59,8 +59,7 @@ difficulties = {
         timedohko = ['Green Clock'] * 25,
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
-        triforce_pieces_required = 20,
-        retro = ['Small Key (Universal)'] * 18 + ['Rupees (20)'] * 10,
+        retro = ['Small Key (Universal)'] * 17 + ['Rupees (20)'] * 10,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 4,
         progressive_shield_limit = 3,
@@ -86,8 +85,7 @@ difficulties = {
         timedohko = ['Green Clock'] * 25,
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
-        triforce_pieces_required = 20,
-        retro = ['Small Key (Universal)'] * 13 + ['Rupees (5)'] * 15,
+        retro = ['Small Key (Universal)'] * 12 + ['Rupees (5)'] * 15,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 3,
         progressive_shield_limit = 2,
@@ -113,8 +111,7 @@ difficulties = {
         timedohko = ['Green Clock'] * 20 + ['Red Clock'] * 5,
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
-        triforce_pieces_required = 20,
-        retro = ['Small Key (Universal)'] * 13 + ['Rupees (5)'] * 15,
+        retro = ['Small Key (Universal)'] * 12 + ['Rupees (5)'] * 15,
         extras = [normalfirst15extra, normalsecond15extra, normalthird10extra, normalfourth5extra, normalfinal25extra],
         progressive_sword_limit = 2,
         progressive_shield_limit = 1,
@@ -603,7 +600,7 @@ def get_pool_core(world, player: int):
     if goal in {'triforcehunt', 'localtriforcehunt'}:
         pool.extend(diff.triforcehunt)
         extraitems -= len(diff.triforcehunt)
-        treasure_hunt_count = diff.triforce_pieces_required
+        treasure_hunt_count = world.triforce_pieces_required[player]
         treasure_hunt_icon = 'Triforce Piece'
 
     for extra in diff.extras:

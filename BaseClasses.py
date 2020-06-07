@@ -133,6 +133,7 @@ class World(object):
             set_player_attr('glitch_boots', True)
             set_player_attr('progression_balancing', True)
             set_player_attr('local_items', set())
+            set_player_attr('triforce_pieces_required', 20)
 
     def get_name_string_for_object(self, obj) -> str:
         return obj.name if self.players == 1 else f'{obj.name} ({self.get_player_names(obj.player)})'
@@ -1713,6 +1714,7 @@ class Spoiler(object):
                          'players': self.world.players,
                          'teams': self.world.teams,
                          'progression_balancing': self.world.progression_balancing,
+                         'triforce_pieces_required': self.world.triforce_pieces_required,
                          'experimental' : self.world.experimental
                          }
 
@@ -1750,15 +1752,20 @@ class Spoiler(object):
                 if len(self.hashes) > 0:
                     for team in range(self.world.teams):
                         outfile.write('%s%s\n' % (
-                    f"Hash - {self.world.player_names[player][team]} (Team {team + 1}): " if self.world.teams > 1 else 'Hash: ',
-                    self.hashes[player, team]))
+                            f"Hash - {self.world.player_names[player][team]} (Team {team + 1}): " if self.world.teams > 1 else 'Hash: ',
+                            self.hashes[player, team]))
                 outfile.write('Logic:                           %s\n' % self.metadata['logic'][player])
                 if self.world.players > 1:
-                    outfile.write('Progression Balanced:            %s\n' % ('Yes' if self.metadata['progression_balancing'][player] else 'No'))
+                    outfile.write('Progression Balanced:            %s\n' % (
+                        'Yes' if self.metadata['progression_balancing'][player] else 'No'))
                 outfile.write('Mode:                            %s\n' % self.metadata['mode'][player])
-                outfile.write('Retro:                           %s\n' % ('Yes' if self.metadata['retro'][player] else 'No'))
+                outfile.write(
+                    'Retro:                           %s\n' % ('Yes' if self.metadata['retro'][player] else 'No'))
                 outfile.write('Swords:                          %s\n' % self.metadata['weapons'][player])
                 outfile.write('Goal:                            %s\n' % self.metadata['goal'][player])
+                if "triforce" in self.metadata["goal"][player]:  # triforce hunt
+                    outfile.write(
+                        "Pieces required for Triforce:    %s\n" % self.metadata["triforce_pieces_required"][player])
                 outfile.write('Difficulty:                      %s\n' % self.metadata['item_pool'][player])
                 outfile.write('Item Functionality:              %s\n' % self.metadata['item_functionality'][player])
                 outfile.write('Item Progression:                %s\n' % self.metadata['progressive'][player])
@@ -1766,10 +1773,13 @@ class Spoiler(object):
                 outfile.write('Door Shuffle:                    %s\n' % self.metadata['door_shuffle'][player])
                 outfile.write('Crystals required for GT:        %s\n' % self.metadata['gt_crystals'][player])
                 outfile.write('Crystals required for Ganon:     %s\n' % self.metadata['ganon_crystals'][player])
-                outfile.write('Pyramid hole pre-opened:         %s\n' % ('Yes' if self.metadata['open_pyramid'][player] else 'No'))
+                outfile.write('Pyramid hole pre-opened:         %s\n' % (
+                    'Yes' if self.metadata['open_pyramid'][player] else 'No'))
                 outfile.write('Accessibility:                   %s\n' % self.metadata['accessibility'][player])
-                outfile.write('Map shuffle:                     %s\n' % ('Yes' if self.metadata['mapshuffle'][player] else 'No'))
-                outfile.write('Compass shuffle:                 %s\n' % ('Yes' if self.metadata['compassshuffle'][player] else 'No'))
+                outfile.write(
+                    'Map shuffle:                     %s\n' % ('Yes' if self.metadata['mapshuffle'][player] else 'No'))
+                outfile.write('Compass shuffle:                 %s\n' % (
+                    'Yes' if self.metadata['compassshuffle'][player] else 'No'))
                 outfile.write('Small Key shuffle:               %s\n' % ('Yes' if self.metadata['keyshuffle'][player] else 'No'))
                 outfile.write('Big Key shuffle:                 %s\n' % ('Yes' if self.metadata['bigkeyshuffle'][player] else 'No'))
                 outfile.write('Boss shuffle:                    %s\n' % self.metadata['boss_shuffle'][player])
