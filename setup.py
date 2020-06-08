@@ -113,6 +113,9 @@ for data in extra_data:
 
 os.makedirs(buildfolder / "Players", exist_ok=True)
 shutil.copyfile("easy.yaml", buildfolder / "Players" / "easy.yaml")
+userfolder = buildfolder / "resources" / "user"
+if os.path.exists(buildfolder / "resources" / "user"):
+    shutil.rmtree(userfolder)
 
 qusb2sneslog = buildfolder / "QUsb2Snes" / "log.txt"
 if os.path.exists(qusb2sneslog):
@@ -121,7 +124,7 @@ if os.path.exists(qusb2sneslog):
 if signtool:
     for exe in exes:
         print(f"Signing {exe.targetName}")
-        os.system(signtool+exe.targetName)
+        os.system(signtool + exe.targetName)
 
 
 manifest_creation()
