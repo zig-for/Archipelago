@@ -114,7 +114,7 @@ for data in extra_data:
 os.makedirs(buildfolder / "Players", exist_ok=True)
 shutil.copyfile("easy.yaml", buildfolder / "Players" / "easy.yaml")
 userfolder = buildfolder / "resources" / "user"
-if os.path.exists(buildfolder / "resources" / "user"):
+if os.path.exists(userfolder):
     shutil.rmtree(userfolder)
 
 qusb2sneslog = buildfolder / "QUsb2Snes" / "log.txt"
