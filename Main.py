@@ -25,6 +25,7 @@ from ItemList import generate_itempool, difficulties, fill_prizes
 from Utils import output_path, parse_player_names, get_options, __version__, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
 
+__dr_version__ = '0.1.0.7-u'
 
 class EnemizerError(RuntimeError):
     pass
@@ -75,6 +76,7 @@ def main(args, seed=None, fish=None):
     logger.info(
       world.fish.translate("cli","cli","app.title") + "\n",
       __version__,
+      __dr_version__,
       world.seed
     )
 
