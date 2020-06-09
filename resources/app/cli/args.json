@@ -291,9 +291,6 @@
   "gui": {
     "action": "store_true"
   },
-  "jsonout": {
-    "action": "store_true"
-  },
   "enemizercli": {
     "setting": "enemizercli"
   },
@@ -353,5 +350,9 @@
     "action": "store_true",
     "type": "bool"
   },
-  "outputname": {}
+  "outputname": {},
+  "create_diff": {
+    "action": "store_true",
+    "type": "bool"
+  }
 }

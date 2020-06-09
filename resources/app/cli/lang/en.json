@@ -277,9 +277,6 @@
     ],
     "create_rom": [ "Create an output rom file. (default: %(default)s)" ],
     "gui": [ "Launch the GUI. (default: %(default)s)" ],
-    "jsonout": [
-      "Output .json patch to stdout instead of a patched rom. Used",
-      "for VT site integration, do not use otherwise. (default: %(default)s)"
-    ]
+    "create_diff": ["create a binary patch file from which the randomized rom can be recreated using MultiClient."]
   }
 }
