@@ -197,7 +197,6 @@ def main(args, seed=None, fish=None):
     outfilebase = 'BMD_%s' % (args.outputname if args.outputname else world.seed)
 
     rom_names = []
-    jsonout = {}
 
     enemized = False
     def _gen_rom(team: int, player: int):
@@ -207,23 +206,23 @@ def main(args, seed=None, fish=None):
                         or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
                         or args.shufflepots[player] or sprite_random_on_hit)
 
-        rom = JsonRom() if args.jsonout or use_enemizer else LocalRom(args.rom)
+        rom = LocalRom(args.rom)
 
-        if use_enemizer and (args.enemizercli or not args.jsonout):
+        patch_rom(world, rom, player, team, use_enemizer)
+
+        if use_enemizer:
             if args.rom and not(os.path.isfile(args.rom)):
                 raise RuntimeError("Could not find valid base rom for enemizing at expected path %s." % args.rom)
             if os.path.exists(args.enemizercli):
                 patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
                 enemized = True
-                if not args.jsonout:
-                    rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000)
+                rom = LocalRom.fromJsonRom(rom, args.rom, 0x400000)
             else:
                 enemizerMsg  = world.fish.translate("cli","cli","enemizer.not.found") + ': ' + args.enemizercli + "\n"
                 enemizerMsg += world.fish.translate("cli","cli","enemizer.nothing.applied")
                 logging.warning(enemizerMsg)
                 raise EnemizerError(enemizerMsg)
 
-        patch_rom(world, rom, player, team, enemized)
 
         if args.race:
             patch_race_rom(rom)
@@ -233,63 +232,64 @@ def main(args, seed=None, fish=None):
 
         apply_rom_settings(rom, args.heartbeep[player], args.heartcolor[player], args.quickswap[player], args.fastmenu[player], args.disablemusic[player], args.sprite[player], args.ow_palettes[player], args.uw_palettes[player])
 
-        if args.jsonout:
-            jsonout[f'patch_t{team}_p{player}'] = rom.patches
-        else:
-            mcsb_name = ''
-            if all([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
-                mcsb_name = '-keysanity'
-            elif [world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]].count(True) == 1:
-                mcsb_name = '-mapshuffle' if world.mapshuffle[player] else '-compassshuffle' if world.compassshuffle[player] else '-keyshuffle' if world.keyshuffle[player] else '-bigkeyshuffle'
-            elif any([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
-                mcsb_name = '-%s%s%s%sshuffle' % (
-                'M' if world.mapshuffle[player] else '', 'C' if world.compassshuffle[player] else '',
-                'S' if world.keyshuffle[player] else '', 'B' if world.bigkeyshuffle[player] else '')
+        mcsb_name = ''
+        if all([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
+            mcsb_name = '-keysanity'
+        elif [world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]].count(True) == 1:
+            mcsb_name = '-mapshuffle' if world.mapshuffle[player] else '-compassshuffle' if world.compassshuffle[player] else '-keyshuffle' if world.keyshuffle[player] else '-bigkeyshuffle'
+        elif any([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
+            mcsb_name = '-%s%s%s%sshuffle' % (
+            'M' if world.mapshuffle[player] else '', 'C' if world.compassshuffle[player] else '',
+            'S' if world.keyshuffle[player] else '', 'B' if world.bigkeyshuffle[player] else '')
 
-            outfilepname = f'_T{team+1}' if world.teams > 1 else ''
-            if world.players > 1:
-                outfilepname += f'_P{player}'
-            if world.players > 1 or world.teams > 1:
-                outfilepname += f"_{world.player_names[player][team].replace(' ', '_')}" if world.player_names[player][team] != 'Player %d' % player else ''
-            outfilestuffs = {
-              "logic": world.logic[player],                                   # 0
-              "difficulty": world.difficulty[player],                         # 1
-              "difficulty_adjustments": world.difficulty_adjustments[player], # 2
-              "mode": world.mode[player],                                     # 3
-              "goal": world.goal[player],                                     # 4
-              "timer": str(world.timer[player]),                                      # 5
-              "shuffle": world.shuffle[player],                               # 6
-              "doorShuffle": world.doorShuffle[player],                       # 7
-              "algorithm": world.algorithm,                                   # 8
-              "mscb": mcsb_name,                                              # 9
-              "retro": world.retro[player],                                   # A
-              "progressive": world.progressive,                               # B
-              "hints": 'True' if world.hints[player] else 'False'             # C
-            }
-            #                  0  1  2  3  4 5  6  7  8 9 A B C
-            outfilesuffix = ('_%s_%s-%s-%s-%s%s_%s_%s-%s%s%s%s%s' % (
-              #  0          1      2      3    4     5    6      7     8        9         A     B           C
-              # _noglitches_normal-normal-open-ganon-ohko_simple_basic-balanced-keysanity-retro-prog_swords-nohints
-              # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity-retro
-              # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity      -prog_swords
-              # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity                  -nohints
-              outfilestuffs["logic"], # 0
+        outfilepname = f'_T{team+1}' if world.teams > 1 else ''
+        if world.players > 1:
+            outfilepname += f'_P{player}'
+        if world.players > 1 or world.teams > 1:
+            outfilepname += f"_{world.player_names[player][team].replace(' ', '_')}" if world.player_names[player][team] != 'Player %d' % player else ''
+        outfilestuffs = {
+          "logic": world.logic[player],                                   # 0
+          "difficulty": world.difficulty[player],                         # 1
+          "difficulty_adjustments": world.difficulty_adjustments[player], # 2
+          "mode": world.mode[player],                                     # 3
+          "goal": world.goal[player],                                     # 4
+          "timer": str(world.timer[player]),                                      # 5
+          "shuffle": world.shuffle[player],                               # 6
+          "doorShuffle": world.doorShuffle[player],                       # 7
+          "algorithm": world.algorithm,                                   # 8
+          "mscb": mcsb_name,                                              # 9
+          "retro": world.retro[player],                                   # A
+          "progressive": world.progressive,                               # B
+          "hints": 'True' if world.hints[player] else 'False'             # C
+        }
+        #                  0  1  2  3  4 5  6  7  8 9 A B C
+        outfilesuffix = ('_%s_%s-%s-%s-%s%s_%s_%s-%s%s%s%s%s' % (
+          #  0          1      2      3    4     5    6      7     8        9         A     B           C
+          # _noglitches_normal-normal-open-ganon-ohko_simple_basic-balanced-keysanity-retro-prog_swords-nohints
+          # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity-retro
+          # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity      -prog_swords
+          # _noglitches_normal-normal-open-ganon     _simple_basic-balanced-keysanity                  -nohints
+          outfilestuffs["logic"], # 0
 
-              outfilestuffs["difficulty"],             # 1
-              outfilestuffs["difficulty_adjustments"], # 2
-              outfilestuffs["mode"],                   # 3
-              outfilestuffs["goal"],                   # 4
-              "" if outfilestuffs["timer"] in ['False', 'none', 'display'] else "-" + outfilestuffs["timer"], # 5
+          outfilestuffs["difficulty"],             # 1
+          outfilestuffs["difficulty_adjustments"], # 2
+          outfilestuffs["mode"],                   # 3
+          outfilestuffs["goal"],                   # 4
+          "" if outfilestuffs["timer"] in ['False', 'none', 'display'] else "-" + outfilestuffs["timer"], # 5
 
-              outfilestuffs["shuffle"],     # 6
-              outfilestuffs["doorShuffle"], # 7
-              outfilestuffs["algorithm"],   # 8
-              outfilestuffs["mscb"],        # 9
+          outfilestuffs["shuffle"],     # 6
+          outfilestuffs["doorShuffle"], # 7
+          outfilestuffs["algorithm"],   # 8
+          outfilestuffs["mscb"],        # 9
 
-              "-retro" if outfilestuffs["retro"] == "True" else "", # A
-              "-prog_" + outfilestuffs["progressive"] if outfilestuffs["progressive"] in ['off', 'random'] else "", # B
-              "-nohints" if not outfilestuffs["hints"] == "True" else "")) if not args.outputname else '' # C
-            rom.write_to_file(output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc'))
+          "-retro" if outfilestuffs["retro"] == "True" else "", # A
+          "-prog_" + outfilestuffs["progressive"] if outfilestuffs["progressive"] in ['off', 'random'] else "", # B
+          "-nohints" if not outfilestuffs["hints"] == "True" else "")) if not args.outputname else '' # C
+        rompath = output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc')
+        rom.write_to_file(rompath)
+        if args.create_diff:
+            import Patch
+            Patch.create_patch_file(rompath)
         return (player, team, list(rom.name)), enemized
 
     if not args.suppress_rom:
@@ -343,19 +343,15 @@ def main(args, seed=None, fish=None):
                                               "server_options": get_options()["server_options"],
                                               "er_hint_data": er_hint_data,
                                               }).encode("utf-8"), 9)
-        if args.jsonout:
-            jsonout["multidata"] = list(multidata)
-        else:
-            with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
-                f.write(multidata)
+
+        with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
+            f.write(multidata)
 
     if not args.skip_playthrough:
         logger.info(world.fish.translate("cli","cli","calc.playthrough"))
         create_playthrough(world)
 
-    if args.jsonout:
-        print(json.dumps({**jsonout, 'spoiler': world.spoiler.to_json()}))
-    elif args.create_spoiler:
+    if args.create_spoiler:
         logger.info(world.fish.translate("cli","cli","patching.spoiler"))
         if args.jsonout:
             with open(output_path('%s_Spoiler.json' % outfilebase), 'w') as outfile:
