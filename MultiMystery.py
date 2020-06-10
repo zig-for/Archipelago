@@ -300,8 +300,8 @@ if __name__ == "__main__":
 
         print()
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate rom(s).")
-        multidataname = f"DR_{seedname}_multidata"
-        spoilername = f"DR_{seedname}_Spoiler.txt"
+        multidataname = f"BMD_{seedname}.multidata"
+        spoilername = f"BMD_{seedname}_Spoiler.txt"
         romfilename = ""
 
         if player_name:

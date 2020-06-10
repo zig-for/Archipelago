@@ -194,7 +194,7 @@ def main(args, seed=None, fish=None):
     if not world.can_beat_game():
         raise RuntimeError(world.fish.translate("cli","cli","cannot.beat.game"))
 
-    outfilebase = 'DR_%s' % (args.outputname if args.outputname else world.seed)
+    outfilebase = 'BMD_%s' % (args.outputname if args.outputname else world.seed)
 
     rom_names = []
     jsonout = {}
@@ -346,7 +346,7 @@ def main(args, seed=None, fish=None):
         if args.jsonout:
             jsonout["multidata"] = list(multidata)
         else:
-            with open(output_path('%s_multidata' % outfilebase), 'wb') as f:
+            with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
                 f.write(multidata)
 
     if not args.skip_playthrough:
