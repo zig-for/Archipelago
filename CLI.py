@@ -74,9 +74,6 @@ def parse_cli(argv, no_defaults=False):
     parser.add_argument('--beemizer', default=defval(settings["beemizer"]), type=lambda value: min(max(int(value), 0), 4))
     parser.add_argument('--multi', default=defval(settings["multi"]), type=lambda value: min(max(int(value), 1), 255))
     parser.add_argument('--teams', default=defval(1), type=lambda value: max(int(value), 1))
-    parser.add_argument('--create_diff', default=defval(False), action='store_true', help='''\
-    create a binary patch file from which the randomized rom can be recreated using MultiClient.
-    Does not work with jsonout.''')
 
     if multiargs.multi:
         for player in range(1, multiargs.multi + 1):

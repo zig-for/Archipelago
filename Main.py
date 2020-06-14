@@ -352,11 +352,7 @@ def main(args, seed=None, fish=None):
 
     if args.create_spoiler:
         logger.info(world.fish.translate("cli","cli","patching.spoiler"))
-        if args.jsonout:
-            with open(output_path('%s_Spoiler.json' % outfilebase), 'w') as outfile:
-              outfile.write(world.spoiler.to_json())
-        else:
-            world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
+        world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
 
     YES = world.fish.translate("cli","cli","yes")
     NO = world.fish.translate("cli","cli","no")
@@ -365,7 +361,7 @@ def main(args, seed=None, fish=None):
     logger.info("")
     logger.info(world.fish.translate("cli","cli","made.rom") % (YES if (args.create_rom) else NO))
     logger.info(world.fish.translate("cli","cli","made.playthrough") % (YES if (args.calc_playthrough) else NO))
-    logger.info(world.fish.translate("cli","cli","made.spoiler") % (YES if (not args.jsonout and args.create_spoiler) else NO))
+    logger.info(world.fish.translate("cli","cli","made.spoiler") % (YES if (args.create_spoiler) else NO))
     logger.info(world.fish.translate("cli","cli","used.enemizer") % (YES if enemized else NO))
     logger.info(world.fish.translate("cli","cli","seed") + ": %d", world.seed)
     logger.info(world.fish.translate("cli","cli","total.time"), time.perf_counter() - start)
