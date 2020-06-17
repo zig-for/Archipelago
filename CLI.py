@@ -101,7 +101,7 @@ def parse_cli(argv, no_defaults=False):
                          'local_items', 'retro', 'accessibility', 'hints', 'beemizer', 'experimental', 'dungeon_counters',
                          'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage', 'shufflepots',
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
-                         'heartbeep',  "skip_progression_balancing", "triforce_pieces_required",
+                         'heartbeep',  "skip_progression_balancing", "triforce_pieces_available", "triforce_pieces_required",
                          'remote_items', 'timer', 'progressive', "glitch_boots"]:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
@@ -123,6 +123,7 @@ def parse_settings():
         "crystals_gt": "7",
         "crystals_ganon": "7",
         "swords": "random",
+        "triforce_pieces_available": 30,
         "triforce_pieces_required": 20,
         "difficulty": "normal",
         "item_functionality": "normal",

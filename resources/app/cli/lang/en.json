@@ -104,6 +104,9 @@
       "Local Triforce Hunt: Places 30 Triforce Pieces in your world, collect",
       "                20 of them to beat the game."
     ],
+    "triforce_pieces_available" : [
+      "Set Triforce Pieces available in item pool"
+    ],
     "triforce_pieces_required": [
       "Set Triforce Pieces required to win a Triforce Hunt"
     ],

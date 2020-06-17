@@ -69,6 +69,7 @@ def main(args, seed=None, fish=None):
     world.experimental = args.experimental.copy()
     world.fish = fish if fish else BabelFish(lang="en")
     world.glitch_boots = args.glitch_boots.copy()
+    world.triforce_pieces_available = args.triforce_pieces_available.copy()
     world.triforce_pieces_required = args.triforce_pieces_required.copy()
     world.progression_balancing = {player: not balance for player, balance in args.skip_progression_balancing.items()}
 
