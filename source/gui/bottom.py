@@ -125,7 +125,7 @@ def bottom_frame(self, parent, args=None):
                     made[k] = m.group(1) + m.group(2) + ' ' + m.group(4)
                 successMsg += (made["rom"] % (YES if (guiargs.create_rom) else NO)) + "\n"
                 successMsg += (made["playthrough"] % (YES if (guiargs.calc_playthrough) else NO)) + "\n"
-                successMsg += (made["spoiler"] % (YES if (not guiargs.jsonout and guiargs.create_spoiler) else NO)) + "\n"
+                successMsg += (made["spoiler"] % (YES if guiargs.create_spoiler else NO)) + "\n"
                 successMsg += (made["enemizer"] % (YES if needEnemizer else NO)) + "\n"
                 # FIXME: English
                 successMsg += ("Seed%s: %s" % ('s' if len(seeds) > 1 else "", ','.join(str(x) for x in seeds)))
