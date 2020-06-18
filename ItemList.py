@@ -66,8 +66,8 @@ difficulties = {
         progressive_armor_limit = 2,
         progressive_bow_limit = 2,
         progressive_bottle_limit = 4,
-        boss_heart_container_limit = 255,
-        heart_piece_limit = 255,
+        boss_heart_container_limit = 10,
+        heart_piece_limit = 24,
     ),
     'hard': Difficulty(
         baseitems = normalbaseitems,
