@@ -7,7 +7,7 @@ from RoomData import DoorKind
 
 
 def set_rules(world, player):
-
+    locality_rules(world, player)
     if world.logic[player] == 'nologic':
         logging.getLogger('').info('WARNING! Seeds generated under this logic often require major glitches and may be impossible!')
         world.get_region('Menu', player).can_reach_private = lambda state: True
@@ -93,15 +93,15 @@ def item_in_locations(state, item, player, locations):
             return True
     return False
 
+
 def item_name(state, location, player):
     location = state.world.get_location(location, player)
     if location.item is None:
         return None
     return (location.item.name, location.item.player)
 
-def global_rules(world, player):
-    # ganon can only carry triforce
-    add_item_rule(world.get_location('Ganon', player), lambda item: item.name == 'Triforce' and item.player == player)
+
+def locality_rules(world, player):
     if world.goal[player] == "localtriforcehunt":
         world.local_items[player].add('Triforce Piece')
     if world.local_items[player]:
@@ -111,6 +111,11 @@ def global_rules(world, player):
                     forbid_item(location, item, player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
+
+def global_rules(world, player):
+    # ganon can only carry triforce
+    add_item_rule(world.get_location('Ganon', player), lambda item: item.name == 'Triforce' and item.player == player)
+    # determines which S&Q locations are available - hide from paths since it isn't an in-game location
     world.get_region('Menu', player).can_reach_private = lambda state: True
     for exit in world.get_region('Menu', player).exits:
         exit.hide_path = True
