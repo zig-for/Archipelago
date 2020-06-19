@@ -2,6 +2,7 @@ import logging
 from collections import deque
 
 from BaseClasses import CollectionState, RegionType, DoorType, Entrance
+from Items import progression_items, item_name_groups
 from Regions import key_only_locations
 from RoomData import DoorKind
 
@@ -9,13 +10,17 @@ from RoomData import DoorKind
 def set_rules(world, player):
     locality_rules(world, player)
     if world.logic[player] == 'nologic':
-        logging.getLogger('').info('WARNING! Seeds generated under this logic often require major glitches and may be impossible!')
+        logging.getLogger('').info(
+            'WARNING! Seeds generated under this logic often require major glitches and may be impossible!')
         world.get_region('Menu', player).can_reach_private = lambda state: True
         for exit in world.get_region('Menu', player).exits:
             exit.hide_path = True
         return
 
+    crossover_logic(world, player)
+
     global_rules(world, player)
+
     if world.mode[player] != 'inverted':
         default_rules(world, player)
 
@@ -111,6 +116,23 @@ def locality_rules(world, player):
                     forbid_item(location, item, player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
+
+def crossover_logic(world, player):
+    """ Simple and not graceful solution to logic loops if you mix no logic and logic.
+    Making it so that logical progression cannot be placed in no logic worlds."""
+    no_logic_players = set()
+    for other_player in world.player_ids:
+        if world.logic[other_player] == 'nologic':
+            no_logic_players.add(other_player)
+    if no_logic_players:
+        for location in world.get_locations():
+            if location.player in no_logic_players:
+                for item in progression_items:
+                    forbid_item(location, item, player)
+                for item in item_name_groups["Small Keys"]:
+                    forbid_item(location, item, player)
+                for item in item_name_groups["Big Keys"]:
+                    forbid_item(location, item, player)
 
 def global_rules(world, player):
     # ganon can only carry triforce
