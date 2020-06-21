@@ -107,7 +107,7 @@ class LocalRom(object):
         if self.verify(self.buffer):
             with open(local_path('basepatch.sfc'), 'wb') as stream:
                 stream.write(self.buffer)
-            create_patch_file(local_path('basepatch.sfc'))
+            create_patch_file(local_path('basepatch.sfc'), destination=local_path(os.path.join('data', 'basepatch.bmbp')))
             os.remove(local_path('data/base2current.json'))
         else:
             raise RuntimeError(
