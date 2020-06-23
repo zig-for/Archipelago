@@ -18,7 +18,7 @@ class SpriteSelector(object):
             self.deploy_icons()
         self.parent = parent
         self.window = Toplevel(parent)
-        self.window.geometry("800x650")
+        self.window.geometry("810x650")
         self.sections = []
         self.callback = callback
         self.adjuster = adjuster
@@ -116,7 +116,7 @@ class SpriteSelector(object):
             button = Button(content_frame, image=image, command=lambda spr=sprite: self.select_sprite(spr))
             ToolTips.register(button, sprite.name + ("\nBy: %s" % sprite.author_name if sprite.author_name else ""))
             button.image = image
-            button.grid(row=i // 16, column=i % 16)
+            button.grid(row=i // 20, column=i % 20)
             i += 1
 
         if i == 0:
