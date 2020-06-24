@@ -1033,7 +1033,7 @@ def patch_rom(world, rom, player, team, enemized):
                     'Big Key (Eastern Palace)': (0x367, 0x20), 'Compass (Eastern Palace)': (0x365, 0x20), 'Map (Eastern Palace)': (0x369, 0x20),
                     'Big Key (Desert Palace)': (0x367, 0x10), 'Compass (Desert Palace)': (0x365, 0x10), 'Map (Desert Palace)': (0x369, 0x10),
                     'Big Key (Tower of Hera)': (0x366, 0x20), 'Compass (Tower of Hera)': (0x364, 0x20), 'Map (Tower of Hera)': (0x368, 0x20),
-                    'Big Key (Escape)': (0x367, 0xC0), 'Compass (Escape)': (0x365, 0xC0), 'Map (Escape)': (0x369, 0xC0),
+                    'Big Key (Hyrule Castle)': (0x367, 0xC0), 'Compass (Hyrule Castle)': (0x365, 0xC0), 'Map (Hyrule Castle)': (0x369, 0xC0),
                     'Big Key (Agahnims Tower)': (0x367, 0x08), 'Compass (Agahnims Tower)': (0x365, 0x08), 'Map (Agahnims Tower)': (0x369, 0x08),
                     'Big Key (Palace of Darkness)': (0x367, 0x02), 'Compass (Palace of Darkness)': (0x365, 0x02), 'Map (Palace of Darkness)': (0x369, 0x02),
                     'Big Key (Thieves Town)': (0x366, 0x10), 'Compass (Thieves Town)': (0x364, 0x10), 'Map (Thieves Town)': (0x368, 0x10),
@@ -1055,7 +1055,7 @@ def patch_rom(world, rom, player, team, enemized):
                 'Small Key (Ice Palace)': [0x385],
                 'Small Key (Misery Mire)': [0x383], 'Small Key (Turtle Rock)': [0x388],
                 'Small Key (Ganons Tower)': [0x389],
-                'Small Key (Universal)': [0x38B], 'Small Key (Escape)': [0x37C, 0x37D]}
+                'Small Key (Universal)': [0x38B], 'Small Key (Hyrule Castle)': [0x37C, 0x37D]}
         bottles = {'Bottle': 2, 'Bottle (Red Potion)': 3, 'Bottle (Green Potion)': 4, 'Bottle (Blue Potion)': 5,
                    'Bottle (Fairy)': 6, 'Bottle (Bee)': 7, 'Bottle (Good Bee)': 8}
         rupees = {'Rupee (1)': 1, 'Rupees (5)': 5, 'Rupees (20)': 20, 'Rupees (50)': 50, 'Rupees (100)': 100, 'Rupees (300)': 300}
@@ -2411,7 +2411,7 @@ RelevantItems = ['Bow',
                  ]
 
 SmallKeys = ['Small Key (Eastern Palace)',
-             'Small Key (Escape)',
+             'Small Key (Hyrule Castle)',
              'Small Key (Desert Palace)',
              'Small Key (Tower of Hera)',
              'Small Key (Agahnims Tower)',

@@ -795,8 +795,8 @@ def no_glitches_rules(world, player):
 
 def open_rules(world, player):
     # softlock protection as you can reach the sewers small key door with a guard drop key
-    set_rule(world.get_location('Hyrule Castle - Boomerang Chest', player), lambda state: state.has_key('Small Key (Escape)', player))
-    set_rule(world.get_location('Hyrule Castle - Zelda\'s Chest', player), lambda state: state.has_key('Small Key (Escape)', player))
+    set_rule(world.get_location('Hyrule Castle - Boomerang Chest', player), lambda state: state.has_key('Small Key (Hyrule Castle)', player))
+    set_rule(world.get_location('Hyrule Castle - Zelda\'s Chest', player), lambda state: state.has_key('Small Key (Hyrule Castle)', player))
 
 
 def swordless_rules(world, player):
@@ -901,7 +901,7 @@ def standard_rules(world, player):
             for ent in std_kill_rooms[region.name]:
                 add_rule(world.get_entrance(ent, player), lambda state: standard_escape_rule(state))
 
-    set_rule(world.get_location('Zelda Pickup', player), lambda state: state.has('Big Key (Escape)', player))
+    set_rule(world.get_location('Zelda Pickup', player), lambda state: state.has('Big Key (Hyrule Castle)', player))
     set_rule(world.get_entrance('Hyrule Castle Throne Room Tapestry', player), lambda state: state.has('Zelda Herself', player))
     set_rule(world.get_entrance('Hyrule Castle Tapestry Backwards', player), lambda state: state.has('Zelda Herself', player))
 

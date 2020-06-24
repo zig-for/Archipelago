@@ -525,7 +525,7 @@ def cross_dungeon(world, player):
     check_required_paths(paths, world, player)
 
     hc = world.get_dungeon('Hyrule Castle', player)
-    hc.dungeon_items.append(ItemFactory('Compass (Escape)', player))
+    hc.dungeon_items.append(ItemFactory('Compass (Hyrule Castle)', player))
     at = world.get_dungeon('Agahnims Tower', player)
     at.dungeon_items.append(ItemFactory('Compass (Agahnims Tower)', player))
     at.dungeon_items.append(ItemFactory('Map (Agahnims Tower)', player))

@@ -15,7 +15,7 @@ def create_dungeons(world, player):
             dungeon.world = world
         return dungeon
 
-    ES = make_dungeon('Hyrule Castle', None, hyrule_castle_regions, None, [ItemFactory('Small Key (Escape)', player)], [ItemFactory('Map (Escape)', player)])
+    ES = make_dungeon('Hyrule Castle', None, hyrule_castle_regions, None, [ItemFactory('Small Key (Hyrule Castle)', player)], [ItemFactory('Map (Hyrule Castle)', player)])
     EP = make_dungeon('Eastern Palace', 'Armos Knights', eastern_regions, ItemFactory('Big Key (Eastern Palace)', player), [], ItemFactory(['Map (Eastern Palace)', 'Compass (Eastern Palace)'], player))
     DP = make_dungeon('Desert Palace', 'Lanmolas', desert_regions, ItemFactory('Big Key (Desert Palace)', player), [ItemFactory('Small Key (Desert Palace)', player)], ItemFactory(['Map (Desert Palace)', 'Compass (Desert Palace)'], player))
     ToH = make_dungeon('Tower of Hera', 'Moldorm', hera_regions, ItemFactory('Big Key (Tower of Hera)', player), [ItemFactory('Small Key (Tower of Hera)', player)], ItemFactory(['Map (Tower of Hera)', 'Compass (Tower of Hera)'], player))
@@ -355,7 +355,7 @@ flexible_starts = {
 }
 
 dungeon_keys = {
-    'Hyrule Castle': 'Small Key (Escape)',
+    'Hyrule Castle': 'Small Key (Hyrule Castle)',
     'Eastern Palace': 'Small Key (Eastern Palace)',
     'Desert Palace': 'Small Key (Desert Palace)',
     'Tower of Hera': 'Small Key (Tower of Hera)',
@@ -371,7 +371,7 @@ dungeon_keys = {
 }
 
 dungeon_bigs = {
-    'Hyrule Castle': 'Big Key (Escape)',
+    'Hyrule Castle': 'Big Key (Hyrule Castle)',
     'Eastern Palace': 'Big Key (Eastern Palace)',
     'Desert Palace': 'Big Key (Desert Palace)',
     'Tower of Hera': 'Big Key (Tower of Hera)',

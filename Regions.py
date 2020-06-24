@@ -855,10 +855,10 @@ shop_table = {
 }
 
 key_only_locations = {
-  'Hyrule Castle - Map Guard Key Drop': 'Small Key (Escape)',
-  'Hyrule Castle - Boomerang Guard Key Drop': 'Small Key (Escape)',
-  'Hyrule Castle - Key Rat Key Drop': 'Small Key (Escape)',
-  'Hyrule Castle - Big Key Drop': 'Big Key (Escape)',
+  'Hyrule Castle - Map Guard Key Drop': 'Small Key (Hyrule Castle)',
+  'Hyrule Castle - Boomerang Guard Key Drop': 'Small Key (Hyrule Castle)',
+  'Hyrule Castle - Key Rat Key Drop': 'Small Key (Hyrule Castle)',
+  'Hyrule Castle - Big Key Drop': 'Big Key (Hyrule Castle)',
   'Eastern Palace - Dark Square Pot Key': 'Small Key (Eastern Palace)',
   'Eastern Palace - Dark Eyegore Key Drop': 'Small Key (Eastern Palace)',
   'Desert Palace - Desert Tiles 1 Pot Key': 'Small Key (Desert Palace)',
