@@ -22,7 +22,7 @@ from EntranceShuffle import door_addresses, exit_ids
 
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '228548732e4755e222cb15d3d0f1b69e'
+RANDOMIZERBASEHASH = 'c5354ea3ef07f7ea73c998fed702e66e'
 
 class LocalRom(object):
 
@@ -2125,7 +2125,7 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 # 24B116 and 20BAD8
 compass_r_addr = 0x123116  # a9 90 24 8f 9a c7 7e
-compass_w_addr = 0x103af6  # e2 20 ad 0c 04 c9 00 d0
+compass_w_addr = 0x103b2c  # e2 20 ad 0c 04 c9 00 d0
 
 
 def compass_code_good(rom):
