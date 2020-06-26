@@ -1129,6 +1129,8 @@ def patch_rom(world, rom, player, team, enemized):
 
     if world.goal[player] in ['pedestal', 'triforcehunt', 'localtriforcehunt']:
         rom.write_byte(0x18003E, 0x01)  # make ganon invincible
+    elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+        rom.write_byte(0x18003E, 0x05)  # make ganon invincible until 20 triforce pieces are collected
     elif world.goal[player] in ['dungeons']:
         rom.write_byte(0x18003E, 0x02)  # make ganon invincible until all dungeons are beat
     elif world.goal[player] in ['crystals']:
@@ -1844,6 +1846,10 @@ def write_strings(rom, world, player, team):
         tt['ganon_fall_in'] = Ganon1_texts[random.randint(0, len(Ganon1_texts) - 1)]
         tt['ganon_fall_in_alt'] = 'You cannot defeat me until you finish your goal!'
         tt['ganon_phase_3_alt'] = 'Got wax in\nyour ears?\nI can not die!'
+        if world.goal[player] == 'ganontriforcehunt' and world.players > 1:
+            tt['sign_ganon'] = 'You need to find %d Triforce pieces with your friends to defeat Ganon.' % world.treasure_hunt_count[player]
+        elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+            tt['sign_ganon'] = 'You need to find %d Triforce pieces to defeat Ganon.' % world.treasure_hunt_count[player]
 
     tt['kakariko_tavern_fisherman'] = TavernMan_texts[random.randint(0, len(TavernMan_texts) - 1)]
 

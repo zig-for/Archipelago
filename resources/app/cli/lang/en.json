@@ -102,7 +102,11 @@
       "Triforce Hunt:  Places 30 Triforce Pieces in the world, collect",
       "                20 of them to beat the game.",
       "Local Triforce Hunt: Places 30 Triforce Pieces in your world, collect",
-      "                20 of them to beat the game."
+      "                20 of them to beat the game.",
+      "Ganon Triforce Hunt:  Places 30 Triforce Pieces in the world, collect",
+      "                20 of them, then defeat Ganon.",
+      "Local Ganon Triforce Hunt: Places 30 Triforce Pieces in your world, collect",
+      "                20 of them, then defeat Ganon."
     ],
     "triforce_pieces_available" : [
       "Set Triforce Pieces available in item pool"

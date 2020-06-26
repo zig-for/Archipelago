@@ -29,6 +29,8 @@
         "dungeons",
         "triforcehunt",
         "localtriforcehunt",
+        "ganontriforcehunt",
+        "localganontriforcehunt",
         "crystals"
       ]
     },

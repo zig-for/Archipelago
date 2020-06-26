@@ -289,9 +289,12 @@ def roll_settings(weights):
                 'pedestal': 'pedestal',
                 'triforce_hunt': 'triforcehunt',
                 'triforce-hunt': 'triforcehunt',  # deprecated, moving all goals to `_`
-                'local_triforce_hunt': 'localtriforcehunt'
+                'local_triforce_hunt': 'localtriforcehunt',
+                'ganon_triforce_hunt': 'ganontriforcehunt',
+                'local_ganon_triforce_hunt': 'localganontriforcehunt'
                 }[goal]
-    ret.openpyramid = goal == 'fast_ganon' if ret.shuffle in ['vanilla', 'dungeonsfull', 'dungeonssimple'] else False
+    ret.openpyramid = goal in ['fast_ganon', 'ganon_triforce_hunt', 'local_ganon_triforce_hunt'] \
+        and ret.shuffle in ['vanilla', 'dungeonsfull', 'dungeonssimple']
 
     ret.crystals_gt = get_choice('tower_open', weights)
 
