@@ -20,12 +20,22 @@ from DoorShuffle import link_doors
 from RoomData import create_rooms
 from Rules import set_rules
 from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive, dungeon_regions
-from Fill import distribute_items_cutoff, distribute_items_staleness, distribute_items_restrictive, flood_items, balance_multiworld_progression
+from Fill import distribute_items_cutoff, distribute_items_staleness, distribute_items_restrictive, flood_items, \
+    balance_multiworld_progression
 from ItemList import generate_itempool, difficulties, fill_prizes
 from Utils import output_path, parse_player_names, get_options, __version__, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
 
 __dr_version__ = '0.1.0.10-u'
+seeddigits = 20
+
+
+def get_seed(seed=None):
+    if seed is None:
+        random.seed(None)
+        return random.randint(0, pow(10, seeddigits) - 1)
+    return seed
+
 
 class EnemizerError(RuntimeError):
     pass
@@ -42,11 +52,7 @@ def main(args, seed=None, fish=None):
                   args.item_functionality, args.timer, args.progressive.copy(), args.goal, args.algorithm,
                   args.accessibility, args.shuffleganon, args.retro, args.custom, args.customitemarray, args.hints)
     logger = logging.getLogger('')
-    if seed is None:
-        random.seed(None)
-        world.seed = random.randint(0, 999999999)
-    else:
-        world.seed = int(seed)
+    world.seed = get_seed(seed)
     random.seed(world.seed)
 
     world.remote_items = args.remote_items.copy()

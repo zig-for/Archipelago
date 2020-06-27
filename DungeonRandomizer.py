@@ -7,7 +7,7 @@ import sys
 from source.classes.BabelFish import BabelFish
 
 from CLI import parse_cli, get_args_priority
-from Main import main, EnemizerError, __version__
+from Main import main, get_seed, EnemizerError, __version__
 from Rom import get_sprite_from_name
 from Utils import is_bundled, close_console
 from Fill import FillError
@@ -59,7 +59,7 @@ def start():
         guiMain(args)
     elif args.count is not None and args.count > 1:
         random.seed(None)
-        seed = args.seed or random.randint(0, 999999999)
+        seed = get_seed(args.seed)
         failures = []
         logger = logging.getLogger('')
         for _ in range(args.count):
@@ -69,7 +69,7 @@ def start():
             except (FillError, EnemizerError, Exception, RuntimeError) as err:
                 failures.append((err, seed))
                 logger.warning('%s: %s', fish.translate("cli","cli","generation.failed"), err)
-            seed = random.randint(0, 999999999)
+            seed = get_seed()
         for fail in failures:
             logger.info('%s\tseed failed with: %s', fail[1], fail[0])
         fail_rate = 100 * len(failures) / args.count

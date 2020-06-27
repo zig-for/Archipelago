@@ -6,7 +6,7 @@ import random
 import re
 from CLI import parse_cli
 from Fill import FillError
-from Main import main, EnemizerError
+from Main import main, get_seed, EnemizerError
 from Utils import local_path, output_path, open_file, update_deprecated_args
 import source.classes.constants as CONST
 from source.gui.randomize.multiworld import multiworld_page
@@ -44,7 +44,7 @@ def bottom_frame(self, parent, args=None):
     self.widgets[widget].storageVar = StringVar(value=savedSeed)
     # textbox
     self.widgets[widget].type = "textbox"
-    self.widgets[widget].pieces["textbox"] = Entry(self.widgets[widget].pieces["frame"], width=15, textvariable=self.widgets[widget].storageVar)
+    self.widgets[widget].pieces["textbox"] = Entry(self.widgets[widget].pieces["frame"], width=20, textvariable=self.widgets[widget].storageVar)
     self.widgets[widget].pieces["textbox"].pack(side=LEFT)
 
     def saveSeed(caller,_,mode):
@@ -98,14 +98,10 @@ def bottom_frame(self, parent, args=None):
                     for _ in range(guiargs.count):
                         seeds.append(seed)
                         main(seed=seed, args=guiargs, fish=parent.fish)
-                        seed = random.randint(0, 999999999)
+                        seed = get_seed()
                 else:
-                    if guiargs.seed:
-                        seeds.append(guiargs.seed)
-                    else:
-                        random.seed(None)
-                        guiargs.seed = random.randint(0, 999999999)
-                        seeds.append(guiargs.seed)
+                    guiargs.seed = get_seed(guiargs.seed)
+                    seeds.append(guiargs.seed)
                     main(seed=guiargs.seed, args=guiargs, fish=parent.fish)
             except (FillError, EnemizerError, Exception, RuntimeError) as e:
                 logging.exception(e)
