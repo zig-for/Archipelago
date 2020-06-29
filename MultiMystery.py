@@ -159,12 +159,11 @@ if __name__ == "__main__":
             task_mapping = {}
 
             def gen_seed(command: str):
+                from Main import get_seed, seeddigits
                 starttime = time.perf_counter()
                 folder = tempfile.TemporaryDirectory()
-                random.seed(None)
-                seed = random.randint(0, 999999999)
-                random.seed(seed)
-                seedname = "M"+(f"{random.randint(0, 999999999)}".zfill(9))
+                seed = get_seed()
+                seedname = "M"+(f"{random.randint(0, pow(10, seeddigits))}".zfill(seeddigits))
                 taskcommand = command + f" --outputpath {folder.name} --seed {seed}"
                 result = subprocess.run(taskcommand, capture_output=True, shell=False, text=True)
                 return result, folder, seed, seedname, time.perf_counter() - starttime
