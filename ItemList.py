@@ -55,7 +55,7 @@ difficulties = {
         swordless = ['Rupees (20)'] * 4,
         progressivesword = ['Progressive Sword'] * 4,
         basicsword = ['Fighter Sword', 'Master Sword', 'Tempered Sword', 'Golden Sword'],
-        basicbow = ['Bow', 'Silver Arrows'],
+        basicbow = ['Bow', 'Silver Bow'],
         timedohko = ['Green Clock'] * 25,
         timedother = ['Green Clock'] * 20 + ['Blue Clock'] * 10 + ['Red Clock'] * 10,
         triforcehunt = ['Triforce Piece'] * 30,
@@ -569,7 +569,7 @@ def get_pool_core(world, player: int):
     elif swords != 'swordless':
         pool.extend(diff.basicbow)
     else:
-        pool.extend(['Bow', 'Silver Arrows'])
+        pool.extend(['Bow', 'Silver Bow'])
 
     if swords == 'swordless':
         pool.extend(diff.swordless)
@@ -673,7 +673,7 @@ def make_custom_item_pool(progressive, shuffle, difficulty, timer, goal, mode, s
     itemtotal = itemtotal + customitemarray["generickeys"]
 
     customitems = [
-        "Bow", "Silver Arrows", "Blue Boomerang", "Red Boomerang", "Hookshot", "Mushroom", "Magic Powder", "Fire Rod",
+        "Bow", "Silver Bow", "Blue Boomerang", "Red Boomerang", "Hookshot", "Mushroom", "Magic Powder", "Fire Rod",
         "Ice Rod", "Bombos", "Ether", "Quake", "Lamp", "Hammer", "Shovel", "Flute", "Bug Catching Net",
         "Book of Mudora", "Cane of Somaria", "Cane of Byrna", "Cape", "Pegasus Boots", "Power Glove", "Titans Mitts",
         "Progressive Glove", "Flippers", "Piece of Heart", "Boss Heart Container", "Sanctuary Heart Container",
