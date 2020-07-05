@@ -223,7 +223,8 @@ def main(args, seed=None, fish=None):
             if args.rom and not(os.path.isfile(args.rom)):
                 raise RuntimeError("Could not find valid base rom for enemizing at expected path %s." % args.rom)
             if os.path.exists(args.enemizercli):
-                patch_enemizer(world, player, rom, args.rom, args.enemizercli, args.shufflepots[player], sprite_random_on_hit)
+                patch_enemizer(world, player, rom, args.enemizercli,
+                               sprite_random_on_hit)
                 enemized = True
             else:
                 enemizerMsg  = world.fish.translate("cli","cli","enemizer.not.found") + ': ' + args.enemizercli + "\n"
