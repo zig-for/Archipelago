@@ -315,7 +315,8 @@
     "choices": [
       "none",
       "shuffled",
-      "random"
+      "random",
+      "randomthieves"
     ]
   },
   "enemy_health": {
