@@ -37,7 +37,8 @@ def set_rules(world, player):
     if world.logic[player] == 'noglitches':
         no_glitches_rules(world, player)
     elif world.logic[player] == 'minorglitches':
-        logging.getLogger('').info('Minor Glitches may be buggy still. No guarantee for proper logic checks.')
+        no_glitches_rules(world, player)
+        fake_flipper_rules(world, player)
     else:
         raise NotImplementedError('Not implemented yet')
 
@@ -84,13 +85,20 @@ def add_lamp_requirement(spot, player):
     add_rule(spot, lambda state: state.has('Lamp', player, state.world.lamps_needed_for_dark_rooms))
 
 
-def forbid_item(location, item, player):
+def forbid_item(location, item, player: int):
     old_rule = location.item_rule
     location.item_rule = lambda i: (i.name != item or i.player != player) and old_rule(i)
+
+
+def forbid_items(location, items: set, player: int):
+    old_rule = location.item_rule
+    location.item_rule = lambda i: (i.player != player or i.name not in items) and old_rule(i)
+
 
 def add_item_rule(location, rule):
     old_rule = location.item_rule
     location.item_rule = lambda item: rule(item) and old_rule(item)
+
 
 def item_in_locations(state, item, player, locations):
     for location in locations:
@@ -112,8 +120,7 @@ def locality_rules(world, player):
     if world.local_items[player]:
         for location in world.get_locations():
             if location.player != player:
-                for item in world.local_items[player]:
-                    forbid_item(location, item, player)
+                forbid_items(location, world.local_items[player], player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
 
@@ -795,6 +802,27 @@ def no_glitches_rules(world, player):
     add_conditional_lamp('Death Mountain Return Cave Exit (West)', 'Death Mountain Return Cave', 'Entrance')
     add_conditional_lamp('Old Man House Front to Back', 'Old Man House', 'Entrance')
     add_conditional_lamp('Old Man House Back to Front', 'Old Man House', 'Entrance')
+
+
+def fake_flipper_rules(world, player):
+    if world.mode[player] != 'inverted':
+        set_rule(world.get_entrance('Zoras River', player), lambda state: True)
+        set_rule(world.get_entrance('Lake Hylia Central Island Pier', player), lambda state: True)
+        set_rule(world.get_entrance('Hobo Bridge', player), lambda state: True)
+        set_rule(world.get_entrance('Dark Lake Hylia Drop (East)', player), lambda state: state.has_Pearl(player) and state.has('Flippers', player))
+        set_rule(world.get_entrance('Dark Lake Hylia Teleporter', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Dark Lake Hylia Ledge Drop', player), lambda state: state.has_Pearl(player))
+    else:
+        set_rule(world.get_entrance('Zoras River', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Lake Hylia Central Island Pier', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Lake Hylia Island Pier', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Lake Hylia Warp', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Northeast Light World Warp', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Hobo Bridge', player), lambda state: state.has_Pearl(player))
+        set_rule(world.get_entrance('Dark Lake Hylia Drop (East)', player), lambda state: state.has('Flippers', player))
+        set_rule(world.get_entrance('Dark Lake Hylia Teleporter', player), lambda state: True)
+        set_rule(world.get_entrance('Dark Lake Hylia Ledge Drop', player), lambda state: True)
+        set_rule(world.get_entrance('East Dark World Pier', player), lambda state: True)
 
 
 def open_rules(world, player):
