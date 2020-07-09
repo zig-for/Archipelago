@@ -124,6 +124,10 @@ def locality_rules(world, player):
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
 
+non_crossover_items = (item_name_groups["Small Keys"] | item_name_groups["Big Keys"] | progression_items) - {
+    "Small Key (Universal)"}
+
+
 def crossover_logic(world, player):
     """ Simple and not graceful solution to logic loops if you mix no logic and logic.
     Making it so that logical progression cannot be placed in no logic worlds."""
@@ -134,12 +138,7 @@ def crossover_logic(world, player):
     if no_logic_players:
         for location in world.get_locations():
             if location.player in no_logic_players:
-                for item in progression_items:
-                    forbid_item(location, item, player)
-                for item in item_name_groups["Small Keys"] - {"Small Key (Universal)"}:
-                    forbid_item(location, item, player)
-                for item in item_name_groups["Big Keys"]:
-                    forbid_item(location, item, player)
+                forbid_items(location, non_crossover_items, player)
 
 def global_rules(world, player):
     # ganon can only carry triforce
