@@ -25,6 +25,7 @@ from Fill import distribute_items_cutoff, distribute_items_staleness, distribute
 from ItemList import generate_itempool, difficulties, fill_prizes
 from Utils import output_path, parse_player_names, get_options, __version__, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
+import Patch
 
 __dr_version__ = '0.1.0.10-u'
 seeddigits = 20
@@ -297,7 +298,6 @@ def main(args, seed=None, fish=None):
         rompath = output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc')
         rom.write_to_file(rompath)
         if args.create_diff:
-            import Patch
             Patch.create_patch_file(rompath)
         return (player, team, list(rom.name)), enemized
 
