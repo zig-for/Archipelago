@@ -77,7 +77,7 @@ def adjust_page(top, parent, settings):
     romEntry2 = Entry(adjustRomFrame, textvariable=self.romVar2)
 
     def RomSelect2():
-        rom = filedialog.askopenfilename(filetypes=[("Rom Files", (".sfc", ".smc")), ("All Files", "*")])
+        rom = filedialog.askopenfilename(filetypes=[("Rom Files", (".sfc", ".smc", "*.bmbp")), ("All Files", "*")])
         if rom:
             settings["rom"] = rom
             self.romVar2.set(rom)
