@@ -196,7 +196,7 @@ def patch_enemizer(world, player: int, rom: LocalRom, enemizercli, random_sprite
         'AllowEnemyZeroDamage': True,
         'ShuffleEnemyDamageGroups': world.enemy_damage[player] != 'default',
         'EnemyDamageChaosMode': world.enemy_damage[player] == 'random',
-        'EasyModeEscape': world.mode[player] == "standard",
+        'EasyModeEscape': world.mode[player] == "standard" and world.doorShuffle[player] != "crossed",
         'EnemiesAbsorbable': False,
         'AbsorbableSpawnRate': 10,
         'AbsorbableTypes': {
