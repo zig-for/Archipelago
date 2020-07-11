@@ -163,6 +163,7 @@ if __name__ == "__main__":
                 starttime = time.perf_counter()
                 folder = tempfile.TemporaryDirectory()
                 seed = get_seed()
+                random.seed(seed)
                 seedname = "M"+(f"{random.randint(0, pow(10, seeddigits))}".zfill(seeddigits))
                 taskcommand = command + f" --outputpath {folder.name} --seed {seed}"
                 result = subprocess.run(taskcommand, capture_output=True, shell=False, text=True)
