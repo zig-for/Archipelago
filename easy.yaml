@@ -74,7 +74,7 @@ entrance_shuffle: # Documentation: https://alttpr.com/en/options#entrance_shuffl
   full: 0 # Less strict than restricted
   crossed: 0 # Less strict than full
   insanity: 0 # Very few grouping rules. Good luck.
-door_shuffle: # not available if the host uses bonta's
+door_shuffle: # Only available if the host uses the doors branch, it is ignored otherwise
   vanilla: 1 # everything should be like in vanilla
   basic: 0 # dungeons are shuffled within themselves.
   crossed: 0 # dungeons are shuffled across each other.
@@ -190,10 +190,6 @@ timer:
 glitch_boots:
   on: 1 # enables that you start with Pegasus Boots in any glitched logic mode
   off: 0
-door_shuffle: # Only available if the host uses the doors branch, it is ignored otherwise
-  vanilla: 1 # everything should be like in vanilla
-  basic: 0 # dungeons are shuffled within themselves.
-  crossed: 0 # dungeons are shuffled across each other.
 linked_options:
   - name: crosskeys
     options: # these overwrite earlier options if the percentage chance triggers
