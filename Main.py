@@ -23,7 +23,7 @@ from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive, 
 from Fill import distribute_items_cutoff, distribute_items_staleness, distribute_items_restrictive, flood_items, \
     balance_multiworld_progression
 from ItemList import generate_itempool, difficulties, fill_prizes
-from Utils import output_path, parse_player_names, get_options, __version__, print_wiki_doors_by_region, print_wiki_doors_by_room
+from Utils import output_path, parse_player_names, get_options, __version__, _version_tuple, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
 import Patch
 
@@ -299,7 +299,7 @@ def main(args, seed=None, fish=None):
         rom.write_to_file(rompath)
         if args.create_diff:
             Patch.create_patch_file(rompath)
-        return (player, team, list(rom.name)), enemized
+        return (player, team, bytes(rom.name).decode()), enemized
 
     if not args.suppress_rom:
         logger.info(world.fish.translate("cli", "cli", "patching.rom"))
@@ -356,7 +356,8 @@ def main(args, seed=None, fish=None):
                                                             type(location.address) is int],
                                               "server_options": get_options()["server_options"],
                                               "er_hint_data": er_hint_data,
-                                              "precollected_items": precollected_items
+                                              "precollected_items": precollected_items,
+                                              "version": _version_tuple
                                               }).encode("utf-8"), 9)
 
         with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
