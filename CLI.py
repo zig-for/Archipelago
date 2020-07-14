@@ -3,7 +3,6 @@ import copy
 import json
 import os
 import logging
-import random
 import textwrap
 import shlex
 import sys

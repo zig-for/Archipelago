@@ -20,6 +20,10 @@ from Tables import normal_offset_table, spiral_offset_table, multiply_lookup, di
 from RoomData import Room
 from typing import Union
 
+import secrets
+import random
+
+
 class World(object):
     player_names: list
     _region_cache: dict
@@ -28,6 +32,8 @@ class World(object):
 
     def __init__(self, players, shuffle, doorShuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive,
                  goal, algorithm, accessibility, shuffle_ganon, retro, custom, customitemarray, hints):
+        self.random = random.Random()  # world-local random state is saved in case of future use a
+        # persistently running program with multiple worlds rolling concurrently
         self.players = players
         self.teams = 1
         self.shuffle = shuffle.copy()
@@ -134,6 +140,9 @@ class World(object):
             set_player_attr('local_items', set())
             set_player_attr('triforce_pieces_available', 30)
             set_player_attr('triforce_pieces_required', 20)
+
+    def secure(self):
+        self.random = secrets.SystemRandom()
 
     @property
     def player_ids(self):
