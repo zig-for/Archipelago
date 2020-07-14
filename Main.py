@@ -245,7 +245,6 @@ def main(args, seed=None, fish=None):
         if args.race:
             patch_race_rom(rom)
 
-        rom_names.append((player, team, list(rom.name)))
         world.spoiler.hashes[(player, team)] = get_hash_string(rom.hash)
 
         apply_rom_settings(rom, args.heartbeep[player], args.heartcolor[player], args.quickswap[player], args.fastmenu[player], args.disablemusic[player], args.sprite[player], args.ow_palettes[player], args.uw_palettes[player])
