@@ -1,4 +1,3 @@
-import random
 from collections import defaultdict, deque
 import logging
 import operator as op
@@ -800,7 +799,7 @@ def find_valid_combination(builder, start_regions, world, player, drop_keys=True
     itr = 0
     start = time.process_time()
     sample_list = list(range(0, int(combinations)))
-    random.shuffle(sample_list)
+    world.random.shuffle(sample_list)
     proposal = kth_combination(sample_list[itr], builder.candidates, builder.key_doors_num)
 
     key_layout = build_key_layout(builder, start_regions, proposal, world, player)
@@ -821,7 +820,7 @@ def find_valid_combination(builder, start_regions, world, player, drop_keys=True
                 raise Exception('Bad dungeon %s - 0 key doors not valid' % builder.name)
             combinations = ncr(len(builder.candidates), builder.key_doors_num)
             sample_list = list(range(0, int(combinations)))
-            random.shuffle(sample_list)
+            world.random.shuffle(sample_list)
             itr = 0
             start = time.process_time()  # reset time since itr reset
         proposal = kth_combination(sample_list[itr], builder.candidates, builder.key_doors_num)
@@ -1121,7 +1120,7 @@ def stateful_door(door, kind):
 
 
 def random_door_type(door, partner, world, player, type_a, type_b, room_a, room_b):
-    r_kind = random.choices([DoorKind.Normal, DoorKind.Bombable, DoorKind.Dashable], [15, 4, 6], k=1)[0]
+    r_kind = world.random.choices([DoorKind.Normal, DoorKind.Bombable, DoorKind.Dashable], [15, 4, 6], k=1)[0]
     if r_kind != DoorKind.Normal:
         if door.type == DoorType.Normal:
             add_pair(door, partner, world, player)

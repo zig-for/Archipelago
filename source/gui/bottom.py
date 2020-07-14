@@ -2,7 +2,6 @@ from tkinter import ttk, messagebox, StringVar, Button, Entry, Frame, Label, E, 
 from argparse import Namespace
 import logging
 import os
-import random
 import re
 from CLI import parse_cli
 from Fill import FillError
