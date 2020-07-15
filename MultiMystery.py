@@ -307,10 +307,10 @@ if __name__ == "__main__":
         if player_name:
             for file in os.listdir(output_path):
                 if player_name in file:
-                    import webbrowser
-                    romfilename = os.path.join(output_path, file)
-                    print(f"Launching ROM file {romfilename}")
-                    webbrowser.open(romfilename)
+                    import MultiClient
+                    import asyncio
+
+                    asyncio.run(MultiClient.run_game(os.path.join(output_path, file)))
                     break
 
         if any((zip_roms, zip_multidata, zip_spoiler, zip_diffs)):
