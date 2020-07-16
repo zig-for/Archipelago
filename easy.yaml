@@ -188,7 +188,7 @@ timer:
 #  - "Small Keys"
 #  - "Big Keys"
 glitch_boots:
-  on: 1 # enables that you start with Pegasus Boots in any glitched logic mode
+  on: 1 # enables that you start with Pegasus Boots in any glitched logic mode that makes use of them
   off: 0
 linked_options:
   - name: crosskeys
