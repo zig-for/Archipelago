@@ -124,6 +124,8 @@ if __name__ == "__main__":
         import time
         start = time.perf_counter()
 
+        from Main import get_seed, seeddigits
+
         def seed_exists(task):
             for file in os.listdir(task.folder.name):
                 if task.seedname in file:
@@ -159,7 +161,6 @@ if __name__ == "__main__":
             task_mapping = {}
 
             def gen_seed(command: str):
-                from Main import get_seed, seeddigits
                 starttime = time.perf_counter()
                 folder = tempfile.TemporaryDirectory()
                 seed = get_seed()
