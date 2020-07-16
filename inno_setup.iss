@@ -6,7 +6,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
-AppId={{6D826EE0-49BE-4B36-BACE-09C6971CD85C}}
+AppId={{99323E49-AF01-4627-A7C3-B8B8730CACA8}}
 AppName={#MyAppName}
 AppVerName={#MyAppName}
 DefaultDirName={commonappdata}\{#MyAppName}
