@@ -2074,7 +2074,7 @@ def simple_shuffle_dungeons(world, player):
 
     # door shuffle should restrict hyrule castle to the light world due to sanc being limited to the LW
     if world.doorShuffle[player] != 'vanilla' and hc_target == 'Turtle Rock':
-        swap_w_dp = random.choice([True, False])
+        swap_w_dp = world.random.choice([True, False])
         if swap_w_dp:
             hc_target, dp_target = dp_target, hc_target
         else:
