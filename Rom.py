@@ -1813,7 +1813,7 @@ def write_strings(rom, world, player, team):
                 hint_count -= 1
 
         # Adding a hint for the Thieves' Town Attic location in Crossed door shuffle.
-        if local_random.doorShuffle[player] in ['crossed']:
+        if world.doorShuffle[player] in ['crossed']:
             attic_hint = world.get_location("Thieves' Town - Attic", player).parent_region.dungeon.name
             this_hint = 'A cracked floor can be found in ' + attic_hint + '.'
             if hint_locations[0] == 'telepathic_tile_thieves_town_upstairs':
