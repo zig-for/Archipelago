@@ -88,7 +88,7 @@ def main(args, seed=None, fish=None):
     world.triforce_pieces_required = args.triforce_pieces_required.copy()
     world.progression_balancing = {player: not balance for player, balance in args.skip_progression_balancing.items()}
 
-    world.rom_seeds = {player: world.random.randint(0, 999999999) for player in range(1, world.players + 1)}
+    world.rom_seeds = {player: random.Random(world.random.randint(0, 999999999)) for player in range(1, world.players + 1)}
 
     logger.info(
       world.fish.translate("cli","cli","app.title") + "\n",
