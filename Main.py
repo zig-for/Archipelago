@@ -135,6 +135,10 @@ def main(args, seed=None, fish=None):
     logger.info(world.fish.translate("cli","cli","shuffling.world"))
 
     for player in range(1, world.players + 1):
+        if world.logic[player] != "noglitches" and world.shuffle[player] in \
+                {"vanilla", "dungeonssimple", "dungeonsfull", "simple", "restricted", "full"}:
+            world.fix_fake_world[player] = False
+
         if world.mode[player] != 'inverted':
             link_entrances(world, player)
         else:
