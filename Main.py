@@ -216,7 +216,7 @@ def main(args, seed=None, fish=None):
     if not world.can_beat_game():
         raise RuntimeError(world.fish.translate("cli","cli","cannot.beat.game"))
 
-    outfilebase = 'BMD_%s' % (args.outputname if args.outputname else world.seed)
+    outfilebase = 'BD_%s' % (args.outputname if args.outputname else world.seed)
 
     rom_names = []
 

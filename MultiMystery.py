@@ -301,8 +301,8 @@ if __name__ == "__main__":
 
         print()
         print(f"Took {time.perf_counter()-start:.3f} seconds to generate rom(s).")
-        multidataname = f"BMD_{seedname}.multidata"
-        spoilername = f"BMD_{seedname}_Spoiler.txt"
+        multidataname = f"BD_{seedname}.multidata"
+        spoilername = f"BD_{seedname}_Spoiler.txt"
         romfilename = ""
 
         if player_name:
@@ -338,7 +338,7 @@ if __name__ == "__main__":
                 print(f"Removed {file} which is now present in the zipfile")
 
 
-            zipname = os.path.join(output_path, f"BMD_{seedname}.{typical_zip_ending}")
+            zipname = os.path.join(output_path, f"BD_{seedname}.{typical_zip_ending}")
 
             print(f"Creating zipfile {zipname}")
             ipv4 = (host if host else get_public_ipv4()) + ":" + str(port)
