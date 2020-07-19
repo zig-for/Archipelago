@@ -373,7 +373,7 @@ def main(args, seed=None, fish=None):
                                               "er_hint_data": er_hint_data,
                                               "precollected_items": precollected_items,
                                               "version": _version_tuple,
-                                              "tags": ["ER"]
+                                              "tags": ["ER", "DR"]
                                               }).encode("utf-8"), 9)
 
         with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
