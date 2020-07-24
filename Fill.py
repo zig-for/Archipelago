@@ -244,8 +244,6 @@ def track_outside_keys(item, location, world):
     if not item.smallkey:
         return
     item_dungeon = item.name.split('(')[1][:-1]
-    if item_dungeon == 'Escape':
-        item_dungeon = 'Hyrule Castle'
     if location.player == item.player:
         loc_dungeon = location.parent_region.dungeon
         if loc_dungeon and loc_dungeon.name == item_dungeon:
