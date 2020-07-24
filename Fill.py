@@ -229,7 +229,7 @@ def valid_key_placement(item, location, itempool, world):
         return True
     dungeon = location.parent_region.dungeon
     if dungeon:
-        if dungeon.name not in item.name and (dungeon.name != 'Hyrule Castle' or 'Escape' not in item.name):
+        if dungeon.name not in item.name:
             return True
         key_logic = world.key_logic[item.player][dungeon.name]
         unplaced_keys = len([x for x in itempool if x.name == key_logic.small_key_name and x.player == item.player])
