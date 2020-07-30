@@ -80,6 +80,8 @@
     "randomizer.enemizer.bossshuffle.simple": "Simple",
     "randomizer.enemizer.bossshuffle.full": "Full",
     "randomizer.enemizer.bossshuffle.random": "Random",
+    "randomizer.enemizer.bossshuffle.singularity": "Singularity",
+    "randomizer.enemizer.bossshuffle.duality": "Duality",
 
     "randomizer.enemizer.enemydamage": "Enemy Damage",
     "randomizer.enemizer.enemydamage.default": "Default",

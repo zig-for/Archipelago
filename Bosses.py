@@ -120,6 +120,8 @@ boss_table = {
     'Agahnim2': ('Agahnim2', AgahnimDefeatRule)
 }
 
+anywhere_bosses = ["Moldorm", "Helmasaur King", "Mothula", "Vitreous"]
+
 def can_place_boss(world, player, boss, dungeon_name, level=None):
     if world.swords[player] in ['swordless'] and boss == 'Kholdstare' and dungeon_name != 'Ice Palace':
         return False
@@ -162,7 +164,7 @@ def place_bosses(world, player):
         ['Ganons Tower', 'bottom'],
     ]
 
-    all_bosses = sorted(boss_table.keys()) #s orted to be deterministic on older pythons
+    all_bosses = sorted(boss_table.keys()) #sorted to be deterministic on older pythons
     placeable_bosses = [boss for boss in all_bosses if boss not in ['Agahnim', 'Agahnim2', 'Ganon']]
 
     if world.boss_shuffle[player] in ["simple", "full"]:
@@ -178,7 +180,7 @@ def place_bosses(world, player):
         else: # all bosses present, the three duplicates chosen at random
             bosses = all_bosses + [world.random.choice(placeable_bosses) for _ in range(3)]
 
-        logging.getLogger('').debug('Bosses chosen %s', bosses)
+        logging.debug('Bosses chosen %s', bosses)
 
         world.random.shuffle(bosses)
         for [loc, level] in boss_locations:
@@ -192,7 +194,7 @@ def place_bosses(world, player):
             if level:
                 loc = [x.name for x in world.dungeons if x.player == player and level in x.bosses.keys()][0]
                 loc_text = loc + ' (' + level + ')'
-            logging.getLogger('').debug('Placing boss %s at %s', boss, loc_text)
+            logging.debug('Placing boss %s at %s', boss, loc_text)
             world.get_dungeon(loc, player).bosses[level] = BossFactory(boss, player)
     elif world.boss_shuffle[player] == "random": #all bosses chosen at random
         for [loc, level] in boss_locations:
@@ -207,5 +209,38 @@ def place_bosses(world, player):
             if level:
                 loc = [x.name for x in world.dungeons if x.player == player and level in x.bosses.keys()][0]
                 loc_text = loc + ' (' + level + ')'
-            logging.getLogger('').debug('Placing boss %s at %s', boss, loc_text)
+            logging.debug('Placing boss %s at %s', boss, loc_text)
+            world.get_dungeon(loc, player).bosses[level] = BossFactory(boss, player)
+    elif world.boss_shuffle[player] == "singularity":
+        if world.swords[player] == 'swordless':
+            boss = world.random.choice(anywhere_bosses)
+        else:
+            boss = world.random.choice(anywhere_bosses + ["Kholdstare"])
+        for [loc, level] in boss_locations:
+            loc_text = loc + (' ('+level+')' if level else '')
+
+            # GT Bosses can move dungeon - find the real dungeon to place them in
+            if level:
+                loc = [x.name for x in world.dungeons if x.player == player and level in x.bosses.keys()][0]
+                loc_text = loc + ' (' + level + ')'
+            logging.debug('Placing boss %s at %s', boss, loc_text)
+            world.get_dungeon(loc, player).bosses[level] = BossFactory(boss, player)
+    elif world.boss_shuffle[player] == "duality":
+        if world.swords[player] == 'swordless':
+            used_anywhere_bosses = anywhere_bosses
+        else:
+            used_anywhere_bosses = anywhere_bosses + ["Kholdstare"]
+
+        limited_boss = world.random.choice([boss for boss in placeable_bosses if boss not in used_anywhere_bosses])
+        anywhere_boss = world.random.choice(used_anywhere_bosses)
+
+        for [loc, level] in boss_locations:
+            loc_text = loc + (' (' + level + ')' if level else '')
+            boss = limited_boss if can_place_boss(world, player, limited_boss, loc, level) else anywhere_boss
+
+            # GT Bosses can move dungeon - find the real dungeon to place them in
+            if level:
+                loc = [x.name for x in world.dungeons if x.player == player and level in x.bosses.keys()][0]
+                loc_text = loc + ' (' + level + ')'
+            logging.debug('Placing boss %s at %s', boss, loc_text)
             world.get_dungeon(loc, player).bosses[level] = BossFactory(boss, player)

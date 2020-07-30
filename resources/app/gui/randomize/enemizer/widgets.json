@@ -18,7 +18,9 @@
         "none",
         "simple",
         "full",
-        "random"
+        "random",
+        "singularity",
+        "duality"
       ]
     }
   },
