@@ -28,38 +28,38 @@ class SpriteSelector(object):
         self.window['pady'] = 5
         self.all_sprites = []
 
-        def open_official_sprite_listing(_evt):
+        def open_alttpr_sprite_listing(_evt):
             webbrowser.open("http://alttpr.com/sprite_preview")
 
-        def open_unofficial_sprite_dir(_evt):
-            if not os.path.isdir(self.unofficial_sprite_dir):
-                os.makedirs(self.unofficial_sprite_dir)
-            open_file(self.unofficial_sprite_dir)
+        def open_custom_sprite_dir(_evt):
+            if not os.path.isdir(self.custom_sprite_dir):
+                os.makedirs(self.custom_sprite_dir)
+            open_file(self.custom_sprite_dir)
 
         # Open SpriteSomething directory for Link sprites
         def open_spritesomething_listing(_evt):
             webbrowser.open("https://artheau.github.io/SpriteSomething/resources/app/snes/zelda3/link/sprites.html")
 
-        official_frametitle = Frame(self.window)
-        official_title_text = Label(official_frametitle, text="Official Sprites")
-        official_title_link = Label(official_frametitle, text="(open)", fg="blue", cursor="hand2")
-        official_title_text.pack(side=LEFT)
-        official_title_link.pack(side=LEFT)
-        official_title_link.bind("<Button-1>", open_official_sprite_listing)
+        alttpr_frametitle = Frame(self.window)
+        alttpr_title_text = Label(alttpr_frametitle, text="ALttPR Sprites")
+        alttpr_title_link = Label(alttpr_frametitle, text="(open)", fg="blue", cursor="hand2")
+        alttpr_title_text.pack(side=LEFT)
+        alttpr_title_link.pack(side=LEFT)
+        alttpr_title_link.bind("<Button-1>", open_alttpr_sprite_listing)
 
-        unofficial_frametitle = Frame(self.window)
-        unofficial_title_text = Label(unofficial_frametitle, text="Unofficial Sprites")
-        unofficial_title_link = Label(unofficial_frametitle, text="(open)", fg="blue", cursor="hand2")
-        unofficial_title_text.pack(side=LEFT)
-        unofficial_title_link.pack(side=LEFT)
-        unofficial_title_link.bind("<Button-1>", open_unofficial_sprite_dir)
+        custom_frametitle = Frame(self.window)
+        custom_title_text = Label(custom_frametitle, text="Custom Sprites")
+        custom_title_link = Label(custom_frametitle, text="(open)", fg="blue", cursor="hand2")
+        custom_title_text.pack(side=LEFT)
+        custom_title_link.pack(side=LEFT)
+        custom_title_link.bind("<Button-1>", open_custom_sprite_dir)
         # Include hyperlink to SpriteSomething directory for Link sprites
-        spritesomething_title_link = Label(unofficial_frametitle, text="(SpriteSomething)", fg="blue", cursor="hand2")
+        spritesomething_title_link = Label(custom_frametitle, text="(SpriteSomething)", fg="blue", cursor="hand2")
         spritesomething_title_link.pack(side=LEFT)
         spritesomething_title_link.bind("<Button-1>", open_spritesomething_listing)
 
-        self.icon_section(official_frametitle, os.path.join(self.official_sprite_dir,"*"), 'Official sprites not found. Click "Update official sprites" to download them.')
-        self.icon_section(unofficial_frametitle, os.path.join(self.unofficial_sprite_dir,"*"), 'Put sprites in the unofficial sprites folder (see open link above) to have them appear here.')
+        self.icon_section(alttpr_frametitle, os.path.join(self.alttpr_sprite_dir,"*"), 'ALttPR sprites not found. Click "Update alttpr sprites" to download them.')
+        self.icon_section(custom_frametitle, os.path.join(self.custom_sprite_dir,"*"), 'Put sprites in the custom sprites folder (see open link above) to have them appear here.')
 
         frame = Frame(self.window)
         frame.pack(side=BOTTOM, fill=X, pady=5)
@@ -67,7 +67,7 @@ class SpriteSelector(object):
         button = Button(frame, text="Browse for file...", command=self.browse_for_sprite)
         button.pack(side=RIGHT, padx=(5, 0))
 
-        button = Button(frame, text="Update official sprites", command=self.update_official_sprites)
+        button = Button(frame, text="Update alttpr sprites", command=self.update_alttpr_sprites)
         button.pack(side=RIGHT, padx=(5, 0))
 
         button = Button(frame, text="Default Link sprite", command=self.use_default_link_sprite)
@@ -134,7 +134,7 @@ class SpriteSelector(object):
         for i, button in enumerate(frame.buttons):
             button.grid(row=i // sprites_per_row, column=i % sprites_per_row)
 
-    def update_official_sprites(self):
+    def update_alttpr_sprites(self):
         # need to wrap in try catch. We don't want errors getting the json or downloading the files to break us.
         self.window.destroy()
         self.parent.update()
@@ -152,25 +152,25 @@ class SpriteSelector(object):
                 SpriteSelector(self.parent, self.callback, self.adjuster)
 
             try:
-                task.update_status("Downloading official sprites list")
+                task.update_status("Downloading alttpr sprites list")
                 with urlopen('https://alttpr.com/sprites') as response:
                     sprites_arr = json.loads(response.read().decode("utf-8"))
             except Exception as e:
-                resultmessage = "Error getting list of official sprites. Sprites not updated.\n\n%s: %s" % (type(e).__name__, e)
+                resultmessage = "Error getting list of alttpr sprites. Sprites not updated.\n\n%s: %s" % (type(e).__name__, e)
                 successful = False
                 task.queue_event(finished)
                 return
 
             try:
                 task.update_status("Determining needed sprites")
-                current_sprites = [os.path.basename(file) for file in glob(os.path.join(self.official_sprite_dir,"*"))]
-                official_sprites = [(sprite['file'], os.path.basename(urlparse(sprite['file']).path)) for sprite in sprites_arr]
-                needed_sprites = [(sprite_url, filename) for (sprite_url, filename) in official_sprites if filename not in current_sprites]
-                bundled_sprites = [os.path.basename(file) for file in glob(os.path.join(self.unofficial_sprite_dir,"*"))]
+                current_sprites = [os.path.basename(file) for file in glob(os.path.join(self.alttpr_sprite_dir,"*"))]
+                alttpr_sprites = [(sprite['file'], os.path.basename(urlparse(sprite['file']).path)) for sprite in sprites_arr]
+                needed_sprites = [(sprite_url, filename) for (sprite_url, filename) in alttpr_sprites if filename not in current_sprites]
+                bundled_sprites = [os.path.basename(file) for file in glob(os.path.join(self.custom_sprite_dir,"*"))]
                 # todo: eventually use the above list to avoid downloading any sprites that we already have cached in the bundle.
 
-                official_filenames = [filename for (_, filename) in official_sprites]
-                obsolete_sprites = [sprite for sprite in current_sprites if sprite not in official_filenames]
+                alttpr_filenames = [filename for (_, filename) in alttpr_sprites]
+                obsolete_sprites = [sprite for sprite in current_sprites if sprite not in alttpr_filenames]
             except Exception as e:
                 resultmessage = "Error Determining which sprites to update. Sprites not updated.\n\n%s: %s" % (type(e).__name__, e)
                 successful = False
@@ -181,7 +181,7 @@ class SpriteSelector(object):
             for (sprite_url, filename) in needed_sprites:
                 try:
                     task.update_status("Downloading needed sprite %g/%g" % (updated + 1, len(needed_sprites)))
-                    target = os.path.join(self.official_sprite_dir, filename)
+                    target = os.path.join(self.alttpr_sprite_dir, filename)
                     with urlopen(sprite_url) as response, open(target, 'wb') as out:
                         shutil.copyfileobj(response, out)
                 except Exception as e:
@@ -193,14 +193,14 @@ class SpriteSelector(object):
             for sprite in obsolete_sprites:
                 try:
                     task.update_status("Removing obsolete sprite %g/%g" % (deleted + 1, len(obsolete_sprites)))
-                    os.remove(os.path.join(self.official_sprite_dir, sprite))
+                    os.remove(os.path.join(self.alttpr_sprite_dir, sprite))
                 except Exception as e:
                     resultmessage = "Error removing obsolete sprite. Not all sprites updated.\n\n%s: %s" % (type(e).__name__, e)
                     successful = False
                 deleted += 1
 
             if successful:
-                resultmessage = "official sprites updated successfully"
+                resultmessage = "alttpr sprites updated successfully"
 
             task.queue_event(finished)
 
@@ -236,30 +236,30 @@ class SpriteSelector(object):
         self.window.destroy()
 
     def deploy_icons(self):
-        if not os.path.exists(self.unofficial_sprite_dir):
-            os.makedirs(self.unofficial_sprite_dir)
-        if not os.path.exists(self.official_sprite_dir):
-            shutil.copytree(self.local_official_sprite_dir, self.official_sprite_dir)
+        if not os.path.exists(self.custom_sprite_dir):
+            os.makedirs(self.custom_sprite_dir)
+        if not os.path.exists(self.alttpr_sprite_dir):
+            shutil.copytree(self.local_alttpr_sprite_dir, self.alttpr_sprite_dir)
 
     @property
-    def official_sprite_dir(self):
+    def alttpr_sprite_dir(self):
 #        if is_bundled():
-#            return output_path(os.path.join("sprites","official"))
-        return self.local_official_sprite_dir
+#            return output_path(os.path.join("sprites","alttpr"))
+        return self.local_alttpr_sprite_dir
 
     @property
-    def local_official_sprite_dir(self):
-        return local_path(os.path.join("data","sprites","official"))
+    def local_alttpr_sprite_dir(self):
+        return local_path(os.path.join("data","sprites","alttpr"))
 
     @property
-    def unofficial_sprite_dir(self):
+    def custom_sprite_dir(self):
 #        if is_bundled():
-#            return output_path(os.path.join("sprites","unofficial"))
-        return self.local_unofficial_sprite_dir
+#            return output_path(os.path.join("sprites","custom"))
+        return self.local_custom_sprite_dir
 
     @property
-    def local_unofficial_sprite_dir(self):
-        return local_path(os.path.join("data","sprites","unofficial"))
+    def local_custom_sprite_dir(self):
+        return local_path(os.path.join("data","sprites","custom"))
 
 
 def get_image_for_sprite(sprite):
