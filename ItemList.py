@@ -300,12 +300,12 @@ def generate_itempool(world, player):
 
     # set up item pool
     if world.custom:
-        (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon,
-         lamps_needed_for_dark_rooms) = make_custom_item_pool(world, player)
-        world.rupoor_cost = min(world.customitemarray[player]["rupoorcost"], 9999)
+        (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count,
+         treasure_hunt_icon) = make_custom_item_pool(world, player)
+        world.rupoor_cost = min(world.customitemarray["rupoorcost"], 9999)
     else:
-        (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon,
-         lamps_needed_for_dark_rooms) = get_pool_core(world, player)
+        (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon) = get_pool_core(
+            world, player)
 
     if player in world.pool_adjustment.keys():
         amt = world.pool_adjustment[player]
@@ -351,8 +351,6 @@ def generate_itempool(world, player):
         world.get_location(location, player).locked = True
 
     items = ItemFactory(pool, player)
-
-    world.lamps_needed_for_dark_rooms = lamps_needed_for_dark_rooms
 
     if clock_mode is not None:
         world.clock_mode[player] = clock_mode
@@ -569,8 +567,6 @@ def get_pool_core(world, player: int):
     else:
         pool.extend(basicgloves)
 
-    lamps_needed_for_dark_rooms = 1
-
     # insanity shuffle doesn't have fake LW/DW logic so for now guaranteed Mirror and Moon Pearl at the start
     if shuffle == 'insanity_legacy':
         place_item('Link\'s House', 'Magic Mirror')
@@ -676,7 +672,7 @@ def get_pool_core(world, player: int):
                 pool.extend(['Small Key (Universal)'])
         else:
             pool.extend(['Small Key (Universal)'])
-    return (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon, lamps_needed_for_dark_rooms)
+    return (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon)
 
 
 def make_custom_item_pool(world, player):
@@ -737,7 +733,6 @@ def make_custom_item_pool(world, player):
 
     diff = difficulties[difficulty]
 
-    lamps_needed_for_dark_rooms = 1
 
     # expert+ difficulties produce the same contents for
     # all bottles, since only one bottle is available
@@ -799,4 +794,4 @@ def make_custom_item_pool(world, player):
 #        print("Placing " + str(nothings) + " Nothings")
         pool.extend(['Nothing'] * nothings)
 
-    return (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon, lamps_needed_for_dark_rooms)
+    return (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon)

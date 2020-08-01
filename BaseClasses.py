@@ -79,7 +79,6 @@ class World(object):
         self.dynamic_regions = []
         self.dynamic_locations = []
         self.spoiler = Spoiler(self)
-        self.lamps_needed_for_dark_rooms = 1
         self.doors = []
         self._door_cache = {}
         self.paired_doors = {}
