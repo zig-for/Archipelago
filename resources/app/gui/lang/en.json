@@ -227,6 +227,7 @@
     "randomizer.item.weapons.vanilla": "Vanilla",
 
     "randomizer.item.itempool": "Item Pool",
+    "randomizer.item.itempool.easy": "Easy",
     "randomizer.item.itempool.normal": "Normal",
     "randomizer.item.itempool.hard": "Hard",
     "randomizer.item.itempool.expert": "Expert",

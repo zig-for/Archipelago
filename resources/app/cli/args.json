@@ -71,6 +71,7 @@
   },
   "difficulty": {
     "choices": [
+      "easy",
       "normal",
       "hard",
       "expert"
