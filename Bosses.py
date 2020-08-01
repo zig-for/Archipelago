@@ -161,8 +161,8 @@ def place_boss(world, player: int, boss: str, location: str, level: Optional[str
     loc_text = location + (' (' + level + ')' if level else '')
     # GT Bosses can move dungeon - find the real dungeon to place them in
     if level:
-        loc = [x.name for x in world.dungeons if x.player == player and level in x.bosses.keys()][0]
-        loc_text = loc + ' (' + level + ')'
+        location = [x.name for x in world.dungeons if x.player == player and level in x.bosses.keys()][0]
+        loc_text = location + ' (' + level + ')'
     logging.debug('Placing boss %s at %s', boss, loc_text)
     world.get_dungeon(location, player).bosses[level] = BossFactory(boss, player)
 
