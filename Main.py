@@ -553,7 +553,7 @@ def create_playthrough(world):
     collection_spheres = []
     state = CollectionState(world)
     sphere_candidates = list(prog_locations)
-    logging.getLogger('').debug(world.fish.translate("cli","cli","building.collection.spheres"))
+    logging.debug(world.fish.translate("cli","cli","building.collection.spheres"))
     while sphere_candidates:
         state.sweep_for_events(key_only=True)
 
@@ -571,9 +571,9 @@ def create_playthrough(world):
 
         state_cache.append(state.copy())
 
-        logging.getLogger('').debug(world.fish.translate("cli","cli","building.calculating.spheres"), len(collection_spheres), len(sphere), len(prog_locations))
+        logging.debug(world.fish.translate("cli","cli","building.calculating.spheres"), len(collection_spheres), len(sphere), len(prog_locations))
         if not sphere:
-            logging.getLogger('').error(world.fish.translate("cli","cli","cannot.reach.items"), [world.fish.translate("cli","cli","cannot.reach.item") % (location.item.name, location.item.player, location.name, location.player) for location in sphere_candidates])
+            logging.error(world.fish.translate("cli","cli","cannot.reach.items"), [world.fish.translate("cli","cli","cannot.reach.item") % (location.item.name, location.item.player, location.name, location.player) for location in sphere_candidates])
             if any([world.accessibility[location.item.player] != 'none' for location in sphere_candidates]):
                 raise RuntimeError(world.fish.translate("cli","cli","cannot.reach.progression"))
             else:
