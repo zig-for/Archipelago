@@ -1089,6 +1089,16 @@ class Polarity:
                 return False
         return True
 
+    def __hash__(self):
+        h = 17
+        spot = self.vector[0]
+        h *= 31 + (spot if spot >= 0 else spot + 100)
+        spot = self.vector[1]
+        h *= 43 + (spot if spot >= 0 else spot + 100)
+        spot = self.vector[2]
+        h *= 73 + (spot if spot >= 0 else spot + 100)
+        return h
+
     def is_neutral(self):
         for i in range(len(self.vector)):
             if self.vector[i] != 0:
@@ -1106,6 +1116,12 @@ class Polarity:
         for i in range(len(self.vector)):
             result += abs(self.vector[i])
         return result
+
+    def __str__(self):
+        return str(self.__unicode__())
+
+    def __unicode__(self):
+        return f'{self.vector}'
 
 
 pol_idx = {
@@ -1135,11 +1151,13 @@ pol_comp = {
     'Mod': lambda x: 0 if x == 0 else 1
 }
 
+
 @unique
 class PolSlot(Enum):
     NorthSouth = 0
     EastWest = 1
     Stairs = 2
+
 
 class CrystalBarrier(FastEnum):
     Null = 0  # no special requirement
@@ -1414,11 +1432,23 @@ class Sector(object):
                         self.entrance_sector = True
         return self.entrance_sector
 
+    def get_start_regions(self):
+        if self.is_entrance_sector():
+            starts = []
+            for region in self.regions:
+                for ent in region.entrances:
+                    if ent.parent_region.type in [RegionType.LightWorld, RegionType.DarkWorld] or ent.parent_region.name == 'Sewer Drop':
+                        starts.append(region)
+            return starts
+        return None
+
     def __str__(self):
         return str(self.__unicode__())
 
     def __unicode__(self):
-        return '%s' % next(iter(self.region_set()))
+        if len(self.regions) > 0:
+            return f'{self.regions[0].name}'
+        return f'{next(iter(self.region_set()))}'
 
 
 class Boss(object):

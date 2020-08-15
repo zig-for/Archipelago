@@ -6,12 +6,14 @@ from functools import reduce
 import logging
 import math
 import operator as op
+import time
 from typing import List
 
 from BaseClasses import DoorType, Direction, CrystalBarrier, RegionType, Polarity, PolSlot, flooded_keys
 from BaseClasses import Hook, hook_from_door
 from Regions import key_only_locations, dungeon_events, flooded_keys_reverse
 from Dungeons import dungeon_regions, split_region_starts
+from RoomData import DoorKind
 
 
 class GraphPiece:
@@ -22,6 +24,7 @@ class GraphPiece:
         self.hooks = {}
         self.visited_regions = set()
         self.possible_bk_locations = set()
+        self.pinball_used = False
 
 
 # Dungeons shouldn't be generated until all entrances are appropriately accessible
@@ -38,9 +41,11 @@ def pre_validate(builder, entrance_region_names, split_dungeon, world, player):
         all_regions.update(sector.regions)
         bk_needed = bk_needed or determine_if_bk_needed(sector, split_dungeon, world, player)
         bk_special = bk_special or check_for_special(sector)
-    dungeon, hangers, hooks = gen_dungeon_info(builder.name, builder.sectors, entrance_regions, proposed_map,
-                                               doors_to_connect, bk_needed, bk_special, world, player)
-    return check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions, bk_needed, False)
+    paths = determine_required_paths(world, player, split_dungeon, all_regions, builder.name)[builder.name]
+    dungeon, hangers, hooks = gen_dungeon_info(builder.name, builder.sectors, entrance_regions, all_regions,
+                                               proposed_map, doors_to_connect, bk_needed, bk_special, world, player)
+    return check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
+                       bk_needed, paths, entrance_regions)
 
 
 def generate_dungeon(builder, entrance_region_names, split_dungeon, world, player):
@@ -60,6 +65,25 @@ def check_for_stonewall(builder):
 
 
 def generate_dungeon_main(builder, entrance_region_names, split_dungeon, world, player):
+    if builder.valid_proposal:  # we made this earlier in gen, just use it
+        proposed_map = builder.valid_proposal
+    else:
+        proposed_map = generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon, world, player)
+    queue = collections.deque(proposed_map.items())
+    while len(queue) > 0:
+        a, b = queue.popleft()
+        connect_doors(a, b)
+        queue.remove((b, a))
+    available_sectors = list(builder.sectors)
+    master_sector = available_sectors.pop()
+    for sub_sector in available_sectors:
+        master_sector.regions.extend(sub_sector.regions)
+    master_sector.outstanding_doors.clear()
+    master_sector.r_name_set = None
+    return master_sector
+
+
+def generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon, world, player):
     logger = logging.getLogger('')
     name = builder.name
     entrance_regions = convert_regions(entrance_region_names, world, player)
@@ -82,13 +106,13 @@ def generate_dungeon_main(builder, entrance_region_names, split_dungeon, world, 
     attempt = 1
     finished = False
     # flag if standard and this is hyrule castle
-    std_flag = world.mode[player] == 'standard' and bk_special
+    paths = determine_required_paths(world, player, split_dungeon, all_regions, name)[name]
     while not finished:
         # what are my choices?
         itr += 1
         if itr > 1000:
             if attempt > 9:
-                raise Exception('Generation taking too long. Ref %s' % name)
+                raise GenerationException('Generation taking too long. Ref %s' % name)
             proposed_map = {}
             choices_master = [[]]
             depth = 0
@@ -98,15 +122,23 @@ def generate_dungeon_main(builder, entrance_region_names, split_dungeon, world, 
             attempt += 1
             logger.debug(f'Starting new attempt {attempt}')
         if depth not in dungeon_cache.keys():
-            dungeon, hangers, hooks = gen_dungeon_info(name, builder.sectors, entrance_regions, proposed_map,
+            dungeon, hangers, hooks = gen_dungeon_info(name, builder.sectors, entrance_regions, all_regions, proposed_map,
                                                        doors_to_connect, bk_needed, bk_special, world, player)
             dungeon_cache[depth] = dungeon, hangers, hooks
-            valid = check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions, bk_needed, std_flag)
+            valid = check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
+                                bk_needed, paths, entrance_regions)
         else:
             dungeon, hangers, hooks = dungeon_cache[depth]
             valid = True
         if valid:
             if len(proposed_map) == len(doors_to_connect):
+                if dungeon['Origin'].pinball_used:
+                    door = world.get_door('Skull Pinball WS', player)
+                    room = world.get_room(door.roomIndex, player)
+                    if room.doorList[door.doorListPos][1] == DoorKind.Trap:
+                        room.change(door.doorListPos, DoorKind.Normal)
+                        door.trapFlag = 0x0
+                        door.blocked = False
                 finished = True
                 continue
             prev_choices = choices_master[depth]
@@ -130,23 +162,12 @@ def generate_dungeon_main(builder, entrance_region_names, split_dungeon, world, 
             dungeon_cache.pop(depth, None)
             depth -= 1
             if depth < 0:
-                raise Exception('Invalid dungeon. Ref %s' % name)
+                raise GenerationException('Invalid dungeon. Ref %s' % name)
             a, b = choices_master[depth][-1]
             logger.debug(' ' * depth + "%d: Rescinding %s, %s", depth, a.name, b.name)
             proposed_map.pop(a, None)
             proposed_map.pop(b, None)
-    queue = collections.deque(proposed_map.items())
-    while len(queue) > 0:
-        a, b = queue.pop()
-        connect_doors(a, b)
-        queue.remove((b, a))
-    available_sectors = list(builder.sectors)
-    master_sector = available_sectors.pop()
-    for sub_sector in available_sectors:
-        master_sector.regions.extend(sub_sector.regions)
-    master_sector.outstanding_doors.clear()
-    master_sector.r_name_set = None
-    return master_sector
+    return proposed_map
 
 
 def determine_if_bk_needed(sector, split_dungeon, world, player):
@@ -163,7 +184,7 @@ def check_for_special(sector):
     return 'Hyrule Dungeon Cellblock' in sector.region_set()
 
 
-def gen_dungeon_info(name, available_sectors, entrance_regions, proposed_map, valid_doors, bk_needed, bk_special, world, player):
+def gen_dungeon_info(name, available_sectors, entrance_regions, all_regions, proposed_map, valid_doors, bk_needed, bk_special, world, player):
     # step 1 create dungeon: Dict<DoorName|Origin, GraphPiece>
     dungeon = {}
     start = ExplorationState(dungeon=name)
@@ -172,7 +193,7 @@ def gen_dungeon_info(name, available_sectors, entrance_regions, proposed_map, va
 
     def exception(d):
         return name == 'Skull Woods 2' and d.name == 'Skull Pinball WS'
-    original_state = extend_reachable_state_improved(entrance_regions, start, proposed_map,
+    original_state = extend_reachable_state_improved(entrance_regions, start, proposed_map, all_regions,
                                                      valid_doors, bk_needed, world, player, exception)
     dungeon['Origin'] = create_graph_piece_from_state(None, original_state, original_state, proposed_map, exception)
     either_crystal = True  # if all hooks from the origin are either, explore all bits with either
@@ -192,12 +213,13 @@ def gen_dungeon_info(name, available_sectors, entrance_regions, proposed_map, va
                 crystal_start = CrystalBarrier.Either if parent.crystal_switch else init_crystal
                 init_state = ExplorationState(crystal_start, dungeon=name)
                 init_state.big_key_special = start.big_key_special
-                o_state = extend_reachable_state_improved([parent], init_state, proposed_map,
+                o_state = extend_reachable_state_improved([parent], init_state, proposed_map, all_regions,
                                                           valid_doors, bk_flag, world, player, exception)
                 o_state_cache[door.name] = o_state
                 piece = create_graph_piece_from_state(door, o_state, o_state, proposed_map, exception)
                 dungeon[door.name] = piece
-    check_blue_states(hanger_set, dungeon, o_state_cache, proposed_map, valid_doors, group_flags, door_map, world, player, exception)
+    check_blue_states(hanger_set, dungeon, o_state_cache, proposed_map, all_regions, valid_doors,
+                      group_flags, door_map, world, player, exception)
 
     # catalog hooks: Dict<Hook, List<Door, Crystal, Door>>
     # and hangers: Dict<Hang, List<Door>>
@@ -252,7 +274,7 @@ def find_bk_groups(name, available_sectors, proposed_map, bk_special):
     return groups, door_ids
 
 
-def check_blue_states(hanger_set, dungeon, o_state_cache, proposed_map, valid_doors, group_flags, door_map,
+def check_blue_states(hanger_set, dungeon, o_state_cache, proposed_map, all_regions, valid_doors, group_flags, door_map,
                       world, player, exception):
     not_blue = set()
     not_blue.update(hanger_set)
@@ -282,17 +304,17 @@ def check_blue_states(hanger_set, dungeon, o_state_cache, proposed_map, valid_do
             hook_type = hook_from_door(door)  # am I hookable onto a hanger?
             if (hang_type in blue_hooks and not door.stonewall) or hook_type in blue_hangers:
                 bk_flag = group_flags[door_map[door]]
-                explore_blue_state(door, dungeon, o_state_cache[door.name], proposed_map, valid_doors, bk_flag,
-                                   world, player, exception)
+                explore_blue_state(door, dungeon, o_state_cache[door.name], proposed_map, all_regions, valid_doors,
+                                   bk_flag, world, player, exception)
                 doors_to_check.add(door)
         not_blue.difference_update(doors_to_check)
 
 
-def explore_blue_state(door, dungeon, o_state, proposed_map, valid_doors, bk_flag, world, player, exception):
+def explore_blue_state(door, dungeon, o_state, proposed_map, all_regions, valid_doors, bk_flag, world, player, exception):
     parent = door.entrance.parent_region
     blue_start = ExplorationState(CrystalBarrier.Blue, o_state.dungeon)
     blue_start.big_key_special = o_state.big_key_special
-    b_state = extend_reachable_state_improved([parent], blue_start, proposed_map, valid_doors, bk_flag,
+    b_state = extend_reachable_state_improved([parent], blue_start, proposed_map, all_regions, valid_doors, bk_flag,
                                               world, player, exception)
     dungeon[door.name] = create_graph_piece_from_state(door, o_state, b_state, proposed_map, exception)
 
@@ -318,7 +340,7 @@ def make_a_choice(dungeon, hangers, avail_hooks, prev_choices, name):
     hookable_hangers = collections.deque()
     queue = collections.deque(candidate_hangers)
     while len(queue) > 0:
-        c_hang = queue.pop()
+        c_hang = queue.popleft()
         if c_hang in all_hooks.keys():
             hookable_hangers.append(c_hang)
         else:
@@ -363,7 +385,8 @@ def filter_choices(next_hanger, door, orig_hang, prev_choices, hook_candidates):
     return next_hanger != door and orig_hang != next_hanger and door not in hook_candidates
 
 
-def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions, bk_needed, std_flag):
+def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
+                bk_needed, paths, entrance_regions):
     # evaluate if everything is still plausible
 
     # only origin is left in the dungeon and not everything is connected
@@ -411,7 +434,7 @@ def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_reg
         return False
     if not bk_possible:
         return False
-    if std_flag and not cellblock_valid(doors_to_connect, all_regions, proposed_map):
+    if not valid_paths(paths, entrance_regions, doors_to_connect, all_regions, proposed_map):
         return False
     new_hangers_found = True
     accessible_hook_types = []
@@ -440,17 +463,29 @@ def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_reg
     return len(all_hangers.difference(hanger_matching)) == 0
 
 
-def cellblock_valid(valid_doors, all_regions, proposed_map):
-    cellblock = None
-    for region in all_regions:
-        if 'Hyrule Dungeon Cellblock' == region.name:
-            cellblock = region
-            break
-    queue = deque([cellblock])
-    visited = {cellblock}
+def valid_paths(paths, entrance_regions, valid_doors, all_regions, proposed_map):
+    for path in paths:
+        if type(path) is tuple:
+            target = path[1]
+            start_regions = []
+            for region in all_regions:
+                if path[0] == region.name:
+                    start_regions.append(region)
+                    break
+        else:
+            target = path
+            start_regions = entrance_regions
+        if not valid_path(start_regions, target, valid_doors, proposed_map):
+            return False
+    return True
+
+
+def valid_path(starting_regions, target, valid_doors, proposed_map):
+    queue = deque(starting_regions)
+    visited = set(starting_regions)
     while len(queue) > 0:
         region = queue.popleft()
-        if region.name == 'Sanctuary':
+        if region.name == target:
             return True
         for ext in region.exits:
             connect = ext.connected_region
@@ -469,7 +504,47 @@ def cellblock_valid(valid_doors, all_regions, proposed_map):
                 if door is not None and not door.blocked and connect not in visited:
                     visited.add(connect)
                     queue.append(connect)
-    return False  # couldn't find an outstanding door or the sanctuary
+    return False  # couldn't find an outstanding door or the target
+
+
+def determine_required_paths(world, player, split_dungeon=False, all_regions=None, name=None):
+    if all_regions is None:
+        all_regions = set()
+    paths = {
+        'Hyrule Castle': ['Hyrule Castle Lobby', 'Hyrule Castle West Lobby', 'Hyrule Castle East Lobby'],
+        'Eastern Palace': ['Eastern Boss'],
+        'Desert Palace': ['Desert Main Lobby', 'Desert East Lobby', 'Desert West Lobby', 'Desert Boss'],
+        'Tower of Hera': ['Hera Boss'],
+        'Agahnims Tower': ['Tower Agahnim 1'],
+        'Palace of Darkness': ['PoD Boss'],
+        'Swamp Palace': ['Swamp Boss'],
+        'Skull Woods': ['Skull 1 Lobby', 'Skull 2 East Lobby', 'Skull 2 West Lobby', 'Skull Boss'],
+        'Thieves Town': ['Thieves Boss', ('Thieves Blind\'s Cell', 'Thieves Boss')],
+        'Ice Palace': ['Ice Boss'],
+        'Misery Mire': ['Mire Boss'],
+        'Turtle Rock': ['TR Main Lobby', 'TR Lazy Eyes', 'TR Big Chest Entrance', 'TR Eye Bridge', 'TR Boss'],
+        'Ganons Tower': ['GT Agahnim 2'],
+        'Skull Woods 1': ['Skull 1 Lobby'],
+        'Skull Woods 2': ['Skull 2 East Lobby', 'Skull 2 West Lobby'],
+        'Skull Woods 3': [],
+        'Desert Palace Main': ['Desert Main Lobby', 'Desert East Lobby', 'Desert West Lobby'],
+        'Desert Palace Back': []
+    }
+    if world.mode[player] == 'standard':
+        paths['Hyrule Castle'].append('Hyrule Dungeon Cellblock')
+        # noinspection PyTypeChecker
+        paths['Hyrule Castle'].append(('Hyrule Dungeon Cellblock', 'Sanctuary'))
+    if world.doorShuffle[player] in ['basic']:
+        paths['Thieves Town'].append('Thieves Attic Window')
+    if split_dungeon:
+        if world.get_region('Desert Boss', player) in all_regions:
+            paths[name].append('Desert Boss')
+        if world.get_region('Skull Boss', player) in all_regions:
+            paths[name].append('Skull Boss')
+    return paths
+
+
+
 
 
 def winnow_hangers(hangers, hooks):
@@ -554,6 +629,7 @@ def create_graph_piece_from_state(door, o_state, b_state, proposed_map, exceptio
     graph_piece.visited_regions.update(b_state.visited_orange)
     graph_piece.possible_bk_locations.update(filter_for_potential_bk_locations(o_state.bk_found))
     graph_piece.possible_bk_locations.update(filter_for_potential_bk_locations(b_state.bk_found))
+    graph_piece.pinball_used = o_state.pinball_used or b_state.pinball_used
     return graph_piece
 
 
@@ -694,6 +770,7 @@ class ExplorationState(object):
 
         self.non_door_entrances = []
         self.dungeon = dungeon
+        self.pinball_used = False
 
     def copy(self):
         ret = ExplorationState(dungeon=self.dungeon)
@@ -719,6 +796,8 @@ class ExplorationState(object):
         ret.bk_found = set(self.bk_found)
 
         ret.non_door_entrances = list(self.non_door_entrances)
+        ret.dungeon = self.dungeon
+        ret.pinball_used = self.pinball_used
         return ret
 
     def next_avail_door(self):
@@ -774,7 +853,7 @@ class ExplorationState(object):
         self.events.add(location_name)
         queue = collections.deque(self.event_doors)
         while len(queue) > 0:
-            exp_door = queue.pop()
+            exp_door = queue.popleft()
             if exp_door.door.req_event == location_name:
                 self.avail_doors.append(exp_door)
                 self.event_doors.remove(exp_door)
@@ -803,6 +882,8 @@ class ExplorationState(object):
     def add_all_doors_check_unattached(self, region, world, player):
         for door in get_doors(world, region, player):
             if self.can_traverse(door):
+                if door.controller is not None:
+                    door = door.controller
                 if door.dest is None and not self.in_door_list_ic(door, self.unattached_doors):
                     self.append_door_to_list(door, self.unattached_doors)
                 elif door.req_event is not None and door.req_event not in self.events and not self.in_door_list(door,
@@ -813,6 +894,8 @@ class ExplorationState(object):
 
     def add_all_doors_check_proposed(self, region, proposed_map, valid_doors, flag, world, player, exception):
         for door in get_doors(world, region, player):
+            if door.blocked and exception(door):
+                self.pinball_used = True
             if self.can_traverse(door, exception):
                 if door.controller is not None:
                     door = door.controller
@@ -947,24 +1030,7 @@ class ExplorableDoor(object):
         return '%s (%s)' % (self.door.name, self.crystal.name)
 
 
-# todo: delete this
-def extend_reachable_state(search_regions, state, world, player):
-    local_state = state.copy()
-    for region in search_regions:
-        local_state.visit_region(region)
-        local_state.add_all_doors_check_unattached(region, world, player)
-    while len(local_state.avail_doors) > 0:
-        explorable_door = local_state.next_avail_door()
-        connect_region = world.get_entrance(explorable_door.door.name, player).connected_region
-        if connect_region is not None:
-            if valid_region_to_explore(connect_region, local_state.dungeon, world, player) and not local_state.visited(
-                 connect_region):
-                local_state.visit_region(connect_region)
-                local_state.add_all_doors_check_unattached(connect_region, world, player)
-    return local_state
-
-
-def extend_reachable_state_improved(search_regions, state, proposed_map, valid_doors, bk_flag, world, player, exception):
+def extend_reachable_state_improved(search_regions, state, proposed_map, all_regions, valid_doors, bk_flag, world, player, exception):
     local_state = state.copy()
     for region in search_regions:
         local_state.visit_region(region)
@@ -981,7 +1047,7 @@ def extend_reachable_state_improved(search_regions, state, proposed_map, valid_d
         else:
             connect_region = world.get_entrance(explorable_door.door.name, player).connected_region
         if connect_region is not None:
-            if valid_region_to_explore(connect_region, local_state.dungeon, world, player) and not local_state.visited(
+            if valid_region_to_explore_in_regions(connect_region, all_regions, world, player) and not local_state.visited(
                  connect_region):
                 flag = explorable_door.flag or explorable_door.door.bigKey
                 local_state.visit_region(connect_region, bk_Flag=flag)
@@ -992,6 +1058,12 @@ def extend_reachable_state_improved(search_regions, state, proposed_map, valid_d
 def special_big_key_found(state, world, player):
     cellblock = world.get_region('Hyrule Dungeon Cellblock', player)
     return state.visited(cellblock)
+
+
+def valid_region_to_explore_in_regions(region, all_regions, world, player):
+    if region is None:
+        return False
+    return (region.type == RegionType.Dungeon and region in all_regions) or region.name in world.inaccessible_regions[player]
 
 
 # cross-utility methods
@@ -1085,6 +1157,10 @@ class DungeonBuilder(object):
         if self.allowance is None:
             self.allowance = 1
 
+        self.valid_proposal = None
+        self.split_dungeon_map = None
+        self.exception_list = []
+
     def polarity_complement(self):
         pol = Polarity()
         for sector in self.sectors:
@@ -1114,82 +1190,93 @@ def simple_dungeon_builder(name, sector_list):
     return builder
 
 
-def create_dungeon_builders(all_sectors, connections_tuple, world, player, dungeon_entrances=None, split_dungeon_entrances=None):
+def create_dungeon_builders(all_sectors, connections_tuple, world, player,
+                            dungeon_entrances=None, split_dungeon_entrances=None):
     logger = logging.getLogger('')
-    logger.info('Shuffling Dungeon Sectors')
+
     if dungeon_entrances is None:
         dungeon_entrances = default_dungeon_entrances
     if split_dungeon_entrances is None:
         split_dungeon_entrances = split_region_starts
     define_sector_features(all_sectors)
-    candidate_sectors = dict.fromkeys(all_sectors)
-    global_pole = GlobalPolarity(candidate_sectors)
+    finished, dungeon_map = False, {}
+    while not finished:
+        logger.info('Shuffling Dungeon Sectors')
+        candidate_sectors = dict.fromkeys(all_sectors)
+        global_pole = GlobalPolarity(candidate_sectors)
 
-    dungeon_map = {}
-    for key in dungeon_regions.keys():
-        dungeon_map[key] = DungeonBuilder(key)
-    for key in dungeon_boss_sectors.keys():
-        current_dungeon = dungeon_map[key]
-        for r_name in dungeon_boss_sectors[key]:
-            assign_sector(find_sector(r_name, candidate_sectors), current_dungeon, candidate_sectors, global_pole)
-        if key == 'Hyrule Castle' and world.mode[player] == 'standard':
-            for r_name in ['Hyrule Dungeon Cellblock', 'Sanctuary']:  # need to deliver zelda
+        dungeon_map = {}
+        for key in dungeon_regions.keys():
+            dungeon_map[key] = DungeonBuilder(key)
+        for key in dungeon_boss_sectors.keys():
+            current_dungeon = dungeon_map[key]
+            for r_name in dungeon_boss_sectors[key]:
                 assign_sector(find_sector(r_name, candidate_sectors), current_dungeon, candidate_sectors, global_pole)
-    entrances_map, potentials, connections = connections_tuple
-    accessible_sectors, reverse_d_map = set(), {}
-    for key in dungeon_entrances.keys():
-        current_dungeon = dungeon_map[key]
-        current_dungeon.all_entrances = dungeon_entrances[key]
-        for r_name in current_dungeon.all_entrances:
-            sector = find_sector(r_name, candidate_sectors)
-            assign_sector(sector, current_dungeon, candidate_sectors, global_pole)
-            if r_name in entrances_map[key]:
-                if sector:
-                    accessible_sectors.add(sector)
+            if key == 'Hyrule Castle' and world.mode[player] == 'standard':
+                for r_name in ['Hyrule Dungeon Cellblock', 'Sanctuary']:  # need to deliver zelda
+                    assign_sector(find_sector(r_name, candidate_sectors), current_dungeon,
+                                  candidate_sectors, global_pole)
+        entrances_map, potentials, connections = connections_tuple
+        accessible_sectors, reverse_d_map = set(), {}
+        for key in dungeon_entrances.keys():
+            current_dungeon = dungeon_map[key]
+            current_dungeon.all_entrances = dungeon_entrances[key]
+            for r_name in current_dungeon.all_entrances:
+                sector = find_sector(r_name, candidate_sectors)
+                assign_sector(sector, current_dungeon, candidate_sectors, global_pole)
+                if r_name in entrances_map[key]:
+                    if sector:
+                        accessible_sectors.add(sector)
+                else:
+                    if not sector:
+                        sector = find_sector(r_name, all_sectors)
+                    reverse_d_map[sector] = key
+
+        # categorize sectors
+        identify_destination_sectors(accessible_sectors, reverse_d_map, dungeon_map, connections,
+                                     dungeon_entrances, split_dungeon_entrances)
+        for name, builder in dungeon_map.items():
+            calc_allowance_and_dead_ends(builder, connections_tuple)
+
+        free_location_sectors = {}
+        crystal_switches = {}
+        crystal_barriers = {}
+        polarized_sectors = {}
+        neutral_sectors = {}
+        for sector in candidate_sectors:
+            if sector.chest_locations > 0:
+                free_location_sectors[sector] = None
+            elif sector.c_switch:
+                crystal_switches[sector] = None
+            elif sector.blue_barrier:
+                crystal_barriers[sector] = None
+            elif sector.polarity().is_neutral():
+                neutral_sectors[sector] = None
             else:
-                if not sector:
-                    sector = find_sector(r_name, all_sectors)
-                reverse_d_map[sector] = key
-
-    # categorize sectors
-    identify_destination_sectors(accessible_sectors, reverse_d_map, dungeon_map, connections, dungeon_entrances, split_dungeon_entrances)
-    for name, builder in dungeon_map.items():
-        calc_allowance_and_dead_ends(builder, connections_tuple)
-
-    free_location_sectors = {}
-    crystal_switches = {}
-    crystal_barriers = {}
-    polarized_sectors = {}
-    neutral_sectors = {}
-    for sector in candidate_sectors:
-        if sector.chest_locations > 0:
-            free_location_sectors[sector] = None
-        elif sector.c_switch:
-            crystal_switches[sector] = None
-        elif sector.blue_barrier:
-            crystal_barriers[sector] = None
-        elif sector.polarity().is_neutral():
-            neutral_sectors[sector] = None
-        else:
-            polarized_sectors[sector] = None
-    logger.info('-Assigning Chest Locations')
-    assign_location_sectors(dungeon_map, free_location_sectors, global_pole)
-    logger.info('-Assigning Crystal Switches and Barriers')
-    leftover = assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers, global_pole)
-    for sector in leftover:
-        if sector.polarity().is_neutral():
-            neutral_sectors[sector] = None
-        else:
-            polarized_sectors[sector] = None
-    # blue barriers
-    assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole)
-    # polarity:
-    if not global_pole.is_valid(dungeon_map):
-        raise NeutralizingException('Either free location/crystal assignment is already globally invalid - lazy dev check this earlier!')
-    logger.info(world.fish.translate("cli","cli","balance.doors"))
-    assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger, world.fish)
-    # the rest
-    assign_the_rest(dungeon_map, neutral_sectors, global_pole)
+                polarized_sectors[sector] = None
+        assign_location_sectors(dungeon_map, free_location_sectors, global_pole)
+        leftover = assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers, global_pole)
+        ensure_crystal_switches_reachable(dungeon_map, leftover, polarized_sectors, crystal_barriers, global_pole)
+        for sector in leftover:
+            if sector.polarity().is_neutral():
+                neutral_sectors[sector] = None
+            else:
+                polarized_sectors[sector] = None
+        # blue barriers
+        assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole)
+        try:
+            # polarity:
+            if not global_pole.is_valid(dungeon_map):
+                # restart
+                raise NeutralizingException('Either free location/crystal assignment is already globally invalid')
+            logger.info(world.fish.translate("cli", "cli", "balance.doors"))
+            builder_info = dungeon_entrances, split_dungeon_entrances, world, player
+            assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info)
+            # the rest
+            assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info)
+            finished = True
+        except NeutralizingException:
+            pass
     return dungeon_map
 
 
@@ -1311,21 +1398,32 @@ def define_sector_features(sectors):
 def assign_sector(sector, dungeon, candidate_sectors, global_pole):
     if sector:
         del candidate_sectors[sector]
-        dungeon.sectors.append(sector)
         global_pole.consume(sector)
-        dungeon.location_cnt += sector.chest_locations
-        dungeon.key_drop_cnt += sector.key_only_locations
-        if sector.c_switch:
-            dungeon.c_switch_present = True
-        if sector.blue_barrier:
-            dungeon.c_switch_required = True
-        if sector.bk_required:
-            dungeon.bk_required = True
-        if sector.bk_provided:
-            dungeon.bk_provided = True
-        count_conn_needed_supplied(sector, dungeon.conn_needed, dungeon.conn_supplied)
-        dungeon.dead_ends += sector.dead_ends()
-        dungeon.branches += sector.branches()
+        assign_sector_helper(sector, dungeon)
+
+
+def assign_sector_helper(sector, builder):
+    builder.sectors.append(sector)
+    builder.location_cnt += sector.chest_locations
+    builder.key_drop_cnt += sector.key_only_locations
+    if sector.c_switch:
+        builder.c_switch_present = True
+    if sector.blue_barrier:
+        builder.c_switch_required = True
+    if sector.bk_required:
+        builder.bk_required = True
+    if sector.bk_provided:
+        builder.bk_provided = True
+    count_conn_needed_supplied(sector, builder.conn_needed, builder.conn_supplied)
+    builder.dead_ends += sector.dead_ends()
+    builder.branches += sector.branches()
+    if sector in builder.exception_list:
+        builder.exception_list.remove(sector)
+    else:
+        if builder.split_dungeon_map:
+            builder.split_dungeon_map = None
+        if builder.valid_proposal:
+            builder.valid_proposal = None
 
 
 def count_conn_needed_supplied(sector, conn_needed, conn_supplied):
@@ -1399,7 +1497,7 @@ def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barrier
     if len(population) == 0:  # nothing needs a switch
         if assign_one and not some_c_switches_present:  # something should have one
             if len(crystal_switches) == 0:
-                raise Exception('No crystal switches to assign. Ref %s' % next(iter(dungeon_map.keys())))
+                raise GenerationException('No crystal switches to assign. Ref %s' % next(iter(dungeon_map.keys())))
             valid, builder_choice, switch_choice = False, None, None
             switch_candidates = list(crystal_switches)
             switch_choice = random.choice(switch_candidates)
@@ -1408,7 +1506,7 @@ def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barrier
             while not valid:
                 if len(builder_candidates) == 0:
                     if len(switch_candidates) == 0:
-                        raise Exception('No where to assign crystal switch. Ref %s' % next(iter(dungeon_map.keys())))
+                        raise GenerationException('No where to assign crystal switch. Ref %s' % next(iter(dungeon_map.keys())))
                     switch_choice = random.choice(switch_candidates)
                     switch_candidates.remove(switch_choice)
                     builder_candidates = list(dungeon_map.keys())
@@ -1426,6 +1524,141 @@ def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barrier
         builder = dungeon_map[population[i]]
         assign_sector(choice, builder, crystal_switches, global_pole)
     return crystal_switches
+
+
+def ensure_crystal_switches_reachable(dungeon_map, crystal_switches, polarized_sectors, crystal_barriers, global_pole):
+    invalid_builders = []
+    for name, builder in dungeon_map.items():
+        if builder.c_switch_present and not builder.c_locked:
+            invalid_builders.append(builder)
+    while len(invalid_builders) > 0:
+        valid_builders = []
+        for builder in invalid_builders:
+            entrance_sectors = []
+            reachable_crystals = defaultdict()
+            for sector in builder.sectors:
+                if sector.equations is None:
+                    sector.equations = calc_sector_equations(sector, builder)
+                if sector.is_entrance_sector() and not sector.destination_entrance:
+                    need_switch = True
+                    for region in sector.get_start_regions():
+                        if region.crystal_switch:
+                            need_switch = False
+                            break
+                    any_benefit = False
+                    for eq in sector.equations:
+                        if len(eq.benefit) > 0:
+                            any_benefit = True
+                            break
+                    if need_switch and any_benefit:
+                        entrance_sectors.append(sector)
+                for eq in sector.equations:
+                    if eq.c_switch:
+                        reachable_crystals[hook_from_door(eq.door)] = True
+            valid_ent_sectors = []
+            for entrance_sector in entrance_sectors:
+                other_sectors = [x for x in builder.sectors if x != entrance_sector]
+                reachable, access = is_c_switch_reachable(entrance_sector, reachable_crystals, other_sectors)
+                if reachable:
+                    valid_ent_sectors.append(entrance_sector)
+                else:
+                    candidates = {}
+                    for c in find_pol_cand_for_c_switch(access, reachable_crystals, polarized_sectors):
+                        candidates[c] = 'Polarized'
+                    for c in find_crystal_cand(access, crystal_switches):
+                        candidates[c] = 'Crystals'
+                    for c in find_pol_cand_for_c_switch(access, reachable_crystals, crystal_barriers):
+                        candidates[c] = 'Barriers'
+                    valid, sector, which_list = False, None, None
+                    while not valid:
+                        if len(candidates) <= 0:
+                            raise GenerationException(f'need to provide more sophisticatedted crystal connection for {entrance_sector}')
+                        sector, which_list = random.choice(list(candidates.items()))
+                        del candidates[sector]
+                        valid = global_pole.is_valid_choice(dungeon_map, builder, [sector])
+                    if which_list == 'Polarized':
+                        assign_sector(sector, builder, polarized_sectors, global_pole)
+                    elif which_list == 'Crystals':
+                        assign_sector(sector, builder, crystal_switches, global_pole)
+                    elif which_list == 'Barriers':
+                        assign_sector(sector, builder, crystal_barriers, global_pole)
+            entrance_sectors = [x for x in entrance_sectors if x not in valid_ent_sectors]
+            if len(entrance_sectors) == 0:
+                valid_builders.append(builder)
+        invalid_builders = [x for x in invalid_builders if x not in valid_builders]
+
+
+def is_c_switch_reachable(entrance_sector, reachable_crystals, other_sectors):
+    current_access = {}
+    for eq in entrance_sector.equations:
+        if eq.total_cost() <= 0:
+            for key, door_list in eq.benefit.items():
+                for door in door_list:
+                    if door not in eq.crystal_blocked.keys() or eq.crystal_blocked[door] != CrystalBarrier.Blue:
+                        current_access[key] = True
+                        break
+    for key, flag in current_access.items():
+        if opposite_h_type(key) in reachable_crystals.keys():
+            return True, {}
+    changed = True
+    while changed:
+        changed = False
+        for sector in other_sectors:
+            for eq in sector.equations:
+                key, cost_door = eq.cost
+                if key in current_access.keys() and current_access[key]:
+                    for bene_key, door_list in eq.benefit.items():
+                        for door in door_list:
+                            block_dict = eq.crystal_blocked
+                            if door not in block_dict.keys() or block_dict[door] != CrystalBarrier.Blue:
+                                if bene_key not in current_access.keys():
+                                    current_access[bene_key] = True
+                                    changed = True
+                                    break
+    for key, flag in current_access.items():
+        if opposite_h_type(key) in reachable_crystals.keys():
+            return True, {}
+    return False, current_access
+
+
+def find_pol_cand_for_c_switch(access, reachable_crystals, polarized_candidates):
+    candidates = []
+    for sector in polarized_candidates:
+        if pol_cand_matches_access_reach(sector, access, reachable_crystals):
+            candidates.append(sector)
+    return candidates
+
+
+def pol_cand_matches_access_reach(sector, access, reachable_crystals):
+    if sector.equations is None:
+        sector.equations = calc_sector_equations(sector, None)
+    for eq in sector.equations:
+        key, cost_door = eq.cost
+        if key in access.keys() and access[key]:
+            for bene_key, door_list in eq.benefit.items():
+                for door in door_list:
+                    if door not in eq.crystal_blocked.keys() or eq.crystal_blocked[door] != CrystalBarrier.Blue:
+                        if opposite_h_type(bene_key) in reachable_crystals.keys():
+                            return True
+    return False
+
+
+def find_crystal_cand(access, crystal_switches):
+    candidates = []
+    for sector in crystal_switches:
+        if crystal_cand_matches_access(sector, access):
+            candidates.append(sector)
+    return candidates
+
+
+def crystal_cand_matches_access(sector, access):
+    if sector.equations is None:
+        sector.equations = calc_sector_equations(sector, None)
+    for eq in sector.equations:
+        key, cost_door = eq.cost
+        if key in access.keys() and access[key] and eq.c_switch and len(sector.outstanding_doors) > 1:
+            return True
+    return False
 
 
 def assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole):
@@ -1591,9 +1824,8 @@ def sum_polarity(sector_list):
     return pol
 
 
-def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger, fish):
+def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info):
     # step 1: fix polarity connection issues
-    logger.info(fish.translate("cli","cli","basic.traversal"))
     unconnected_builders = identify_polarity_issues(dungeon_map)
     while len(unconnected_builders) > 0:
         for name, builder in unconnected_builders.items():
@@ -1601,7 +1833,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
             valid, sector = False, None
             while not valid:
                 if len(candidates) == 0:
-                    raise Exception('Cross Dungeon Builder: Cannot find a candidate for connectedness. %s' % name)
+                    raise GenerationException('Cross Dungeon Builder: Cannot find a candidate for connectedness. %s' % name)
                 sector = random.choice(candidates)
                 candidates.remove(sector)
                 valid = global_pole.is_valid_choice(dungeon_map, builder, [sector])
@@ -1614,16 +1846,20 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
     while len(problem_builders) > 0:
         for name, builder in problem_builders.items():
             candidates, charges = find_simple_branching_candidates(builder, polarized_sectors)
-            biggest = max(charges) + 1
-            weights = [biggest-x for x in charges]
+            best = min(charges)
+            best_candidates = [x for i, x in enumerate(candidates) if charges[i] <= best]
             valid, choice = False, None
             while not valid:
+                if len(best_candidates) == 0:
+                    best = min(charges)
+                    best_candidates = [x for i, x in candidates if charges[i] <= best]
                 if len(candidates) == 0:
-                    raise Exception('Cross Dungeon Builder: Simple branch problems: %s' % name)
-                choice = random.choices(candidates, weights)[0]
+                    raise GenerationException('Cross Dungeon Builder: Simple branch problems: %s' % name)
+                choice = random.choice(best_candidates)
+                best_candidates.remove(choice)
                 i = candidates.index(choice)
                 candidates.pop(i)
-                weights.pop(i)
+                charges.pop(i)
                 valid = global_pole.is_valid_choice(dungeon_map, builder, [choice]) and valid_connected_assignment(builder, [choice])
             assign_sector(choice, builder, polarized_sectors, global_pole)
             builder.total_conn_lack = 0
@@ -1631,18 +1867,18 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
         problem_builders = identify_simple_branching_issues(problem_builders)
 
     # step 3: fix neutrality issues
-    polarity_step_3(dungeon_map, polarized_sectors, global_pole, logger, fish)
+    polarity_step_3(dungeon_map, polarized_sectors, global_pole)
 
     # step 4: fix dead ends again
     neutral_choices: List[List] = neutralize_the_rest(polarized_sectors)
-    problem_builders = identify_branching_issues(dungeon_map)
+    problem_builders = identify_branching_issues(dungeon_map, builder_info)
     while len(problem_builders) > 0:
         for name, builder in problem_builders.items():
-            candidates = find_branching_candidates(builder, neutral_choices)
+            candidates = find_branching_candidates(builder, neutral_choices, builder_info)
             valid, choice = False, None
             while not valid:
                 if len(candidates) <= 0:
-                        raise Exception('Cross Dungeon Builder: Complex branch problems: %s' % name)
+                        raise GenerationException('Cross Dungeon Builder: Complex branch problems: %s' % name)
                 choice = random.choice(candidates)
                 candidates.remove(choice)
                 valid = global_pole.is_valid_choice(dungeon_map, builder, choice) and valid_polarized_assignment(builder, choice)
@@ -1650,7 +1886,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
             for sector in choice:
                 assign_sector(sector, builder, polarized_sectors, global_pole)
             builder.unfulfilled.clear()
-        problem_builders = identify_branching_issues(problem_builders)
+        problem_builders = identify_branching_issues(problem_builders, builder_info)
 
     # step 5: assign randomly until gone - must maintain connectedness, neutral polarity, branching, lack, etc.
     comb_w_replace = len(dungeon_map) ** len(neutral_choices)
@@ -1661,7 +1897,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
     tries = 0
     while len(polarized_sectors) > 0:
         if tries > 1000 or (combinations and tries >= len(combinations)):
-            raise Exception('No valid assignment found. Ref: %s' % next(iter(dungeon_map.keys())))
+            raise GenerationException('No valid assignment found. Ref: %s' % next(iter(dungeon_map.keys())))
         if combinations:
             choices = combinations[tries]
         else:
@@ -1671,7 +1907,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
             chosen_sectors[choice].extend(neutral_choices[i])
         all_valid = True
         for name, sector_list in chosen_sectors.items():
-            if not valid_assignment(dungeon_map[name], sector_list):
+            if not valid_assignment(dungeon_map[name], sector_list, builder_info):
                 all_valid = False
                 break
         if all_valid:
@@ -1682,7 +1918,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger
         tries += 1
 
 
-def polarity_step_3(dungeon_map, polarized_sectors, global_pole, logger, fish):
+def polarity_step_3(dungeon_map, polarized_sectors, global_pole):
     # step 3a: fix odd builders
     odd_builders = [x for x in dungeon_map.values() if sum_polarity(x.sectors).charge() % 2 != 0]
     grouped_choices: List[List] = find_forced_groupings(polarized_sectors, dungeon_map)
@@ -1691,21 +1927,37 @@ def polarity_step_3(dungeon_map, polarized_sectors, global_pole, logger, fish):
     tries = 0
     while len(odd_builders) > 0:
         if tries > 1000:
-            raise Exception('Unable to fix dungeon parity. Ref: %s' % next(iter(odd_builders)).name)
-        choices = random.sample(odd_candidates, k=len(odd_builders))
+            raise GenerationException('Unable to fix dungeon parity. Ref: %s' % next(iter(odd_builders)).name)
+        best_choices = None
+        best_charge = sum([x.polarity().charge() for x in dungeon_map.values()])
+        samples = 0
+        combos = ncr(len(odd_candidates), len(odd_builders))
+        sample_target = 100 if combos > 10 else combos * 2
+        while best_choices is None or samples < sample_target:
+            samples += 1
+            choices = random.sample(odd_candidates, k=len(odd_builders))
+            valid = global_pole.is_valid_multi_choice(dungeon_map, odd_builders, choices)
+            charge = calc_total_charge(dungeon_map, odd_builders, choices)
+            if valid and charge < best_charge:
+                best_choices = choices
+                best_charge = charge
+            if samples > sample_target and best_choices is None:
+                best_choices = choices
+                best_charge = charge
+                samples = 0
         all_valid = True
-        for i, candidate_list in enumerate(choices):
+        for i, candidate_list in enumerate(best_choices):
             test_set = find_forced_connections(dungeon_map, candidate_list, polarized_sectors)
             builder = odd_builders[i]
             if ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_map, global_pole):
-                all_valid &= global_pole.is_valid_choice(dungeon_map, builder, test_set) and valid_branch_only(builder, candidate_list)
+                all_valid &= valid_branch_only(builder, candidate_list)
             else:
                 all_valid = False
                 break
             if not all_valid:
                 break
         if all_valid:
-            for i, candidate_list in enumerate(choices):
+            for i, candidate_list in enumerate(best_choices):
                 builder = odd_builders[i]
                 for sector in candidate_list:
                     assign_sector(sector, builder, polarized_sectors, global_pole)
@@ -1714,27 +1966,58 @@ def polarity_step_3(dungeon_map, polarized_sectors, global_pole, logger, fish):
             tries += 1
 
     # step 3b: neutralize all builders
-    builder_order = list(dungeon_map.values())
-    random.shuffle(builder_order)
-    for builder in builder_order:
-        # global_pole.check_odd_polarities(polarized_sectors, dungeon_map)
-        logger.info('%s %s', fish.translate("cli", "cli", "balancing"), builder.name)
-        while not builder.polarity().is_neutral():
-            rejects = []
-            candidates = find_neutralizing_candidates(builder, polarized_sectors, rejects)
+    parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole)
+
+
+def parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole):
+    start = time.process_time()
+    builders = list(dungeon_map.values())
+    finished = all([x.polarity().is_neutral() for x in builders])
+    solution_list, current_depth = defaultdict(list), 1
+    complete_builders = [x for x in builders if x.polarity().is_neutral()]
+    avail_sectors = list(polarized_sectors)
+    while not finished:
+        builders_to_check = [x for x in builders if not (x.polarity()+sum_polarity(solution_list[x])).is_neutral()]
+        candidates, last_depth = find_exact_neutralizing_candidates_parallel_db(builders_to_check, solution_list,
+                                                                                avail_sectors, current_depth)
+        increment_depth = True
+        any_valid = False
+        for builder, candidate_list in candidates.items():
             valid, sectors = False, None
             while not valid:
-                if len(candidates) == 0:
-                    candidates = find_neutralizing_candidates(builder, polarized_sectors, rejects)
-                    if len(candidates) == 0:
-                        raise NeutralizingException('Unable to find a globally valid neutralizer: %s' % builder.name)
-                sectors = random.choice(candidates)
-                candidates.remove(sectors)
-                valid = global_pole.is_valid_choice(dungeon_map, builder, sectors)
-                if not valid:
-                    rejects.append(sectors)
-            for sector in sectors:
-                assign_sector(sector, builder, polarized_sectors, global_pole)
+                if len(candidate_list) == 0:
+                    increment_depth = False  #need to look again at current level
+                    break
+                sectors = random.choice(candidate_list)
+                candidate_list.remove(sectors)
+                proposal = solution_list.copy()
+                proposal[builder] = list(proposal[builder])
+                proposal[builder].extend(sectors)
+                valid = global_pole.is_valid_multi_choice_2(dungeon_map, builders, proposal)
+            if valid:
+                any_valid = True
+                solution_list[builder].extend(sectors)
+                for sector in sectors:
+                    avail_sectors.remove(sector)
+                complete_builders.append(builder)
+                for other_builder, other_cand_list in candidates.items():
+                    if other_builder not in complete_builders:
+                        candidates_to_remove = list()
+                        for candidate in other_cand_list:
+                            for sector in sectors:
+                                if sector in candidate:
+                                    candidates_to_remove.append(candidate)
+                                    break
+                        other_cand_list[:] = [x for x in other_cand_list if x not in candidates_to_remove]
+            # remove sectors from other candidate lists
+        if not any_valid:
+            increment_depth = True
+        current_depth = last_depth + 1 if increment_depth else last_depth
+        finished = all([(x.polarity()+sum_polarity(solution_list[x])).is_neutral() for x in builders])
+    logging.getLogger('').info(f'-Balanced solution found in {time.process_time()-start}')
+    for builder, sectors in solution_list.items():
+        for sector in sectors:
+            assign_sector(sector, builder, polarized_sectors, global_pole)
 
 
 def find_forced_connections(dungeon_map, candidate_list, polarized_sectors):
@@ -1747,7 +2030,7 @@ def find_forced_connections(dungeon_map, candidate_list, polarized_sectors):
             dungeon_hooks[val] += d_mag[val.value]
     queue = deque(candidate_list)
     while queue:
-        candidate = queue.pop()
+        candidate = queue.popleft()
         c_mag = candidate.hook_magnitude()
         other_candidates = [x for x in candidate_list if x != candidate]
         for val in Hook:
@@ -1792,6 +2075,15 @@ def ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_
         dummy_builder.sectors = builder.sectors + test_copy
     test_set[:] = test_copy
     return True
+
+
+def calc_total_charge(dungeon_map, builders, sector_lists):
+    polarity_list = [x.polarity() for x in dungeon_map.values() if x not in builders]
+    for i, sectors in enumerate(sector_lists):
+        builder = builders[i]
+        polarity = builder.polarity() + sum_polarity(sectors)
+        polarity_list.append(polarity)
+    return sum([x.charge() for x in polarity_list])
 
 
 class GlobalPolarity:
@@ -1870,17 +2162,17 @@ class GlobalPolarity:
                 if self.positives[slot.value] >= polarity[slot.value]:
                     self.positives[slot.value] -= polarity[slot.value]
                 else:
-                    raise Exception('Invalid assignment of %s' % sector.name)
+                    raise GenerationException('Invalid assignment of %s' % sector.name)
             elif polarity[slot.value] < 0 and slot != PolSlot.Stairs:
                 if self.negatives[slot.value] >= -polarity[slot.value]:
                     self.negatives[slot.value] += polarity[slot.value]
                 else:
-                    raise Exception('Invalid assignment of %s' % sector.name)
+                    raise GenerationException('Invalid assignment of %s' % sector.name)
             elif slot == PolSlot.Stairs:
                 if self.positives[slot.value] >= polarity[slot.value]:
                     self.positives[slot.value] -= polarity[slot.value]
                 else:
-                    raise Exception('Invalid assignment of %s' % sector.name)
+                    raise GenerationException('Invalid assignment of %s' % sector.name)
 
     def is_valid_choice(self, dungeon_map, builder, sectors):
         proposal = self.copy()
@@ -1889,6 +2181,29 @@ class GlobalPolarity:
         non_neutral_polarities.append(current_polarity)
         for sector in sectors:
             proposal.consume(sector)
+        return proposal._check_parity(non_neutral_polarities) and proposal._is_valid_polarities(non_neutral_polarities)
+
+    def is_valid_multi_choice(self, dungeon_map, builders, sector_lists):
+        proposal = self.copy()
+        non_neutral_polarities = [x.polarity() for x in dungeon_map.values() if not x.polarity().is_neutral()
+                                  and x not in builders]
+        for i, sectors in enumerate(sector_lists):
+            builder = builders[i]
+            current_polarity = builder.polarity() + sum_polarity(sectors)
+            non_neutral_polarities.append(current_polarity)
+            for sector in sectors:
+                proposal.consume(sector)
+        return proposal._check_parity(non_neutral_polarities) and proposal._is_valid_polarities(non_neutral_polarities)
+
+    def is_valid_multi_choice_2(self, dungeon_map, builders, sector_dict):
+        proposal = self.copy()
+        non_neutral_polarities = [x.polarity() for x in dungeon_map.values() if not x.polarity().is_neutral()
+                                  and x not in builders]
+        for builder, sectors in sector_dict.items():
+            current_polarity = builder.polarity() + sum_polarity(sectors)
+            non_neutral_polarities.append(current_polarity)
+            for sector in sectors:
+                proposal.consume(sector)
         return proposal._check_parity(non_neutral_polarities) and proposal._is_valid_polarities(non_neutral_polarities)
 
     # def check_odd_polarities(self, candidate_sectors, dungeon_map):
@@ -1941,9 +2256,9 @@ def find_simple_branching_candidates(builder, sector_pool):
             if ttl_lack < best_lack:
                 best_lack = ttl_lack
     if best_lack == original_lack and not outflow_needed:
-        raise Exception('These candidates may not help at all')
+        raise GenerationException('These candidates may not help at all')
     if len(candidates[best_lack]) <= 0:
-        raise Exception('Nothing can fix the simple branching issue. Panic ensues.')
+        raise GenerationException('Nothing can fix the simple branching issue. Panic ensues.')
     return candidates[best_lack], charges[best_lack]
 
 
@@ -1961,44 +2276,104 @@ def find_odd_sectors(grouped_candidates):
     return [x for x in grouped_candidates if sum_polarity(x).charge() % 2 != 0]
 
 
-# todo: refactor to return prioritized lists
-def find_neutralizing_candidates(builder, sector_pool, rejects):
-    polarity = builder.polarity()
-    candidates, official_candidates = defaultdict(list), []
-    original_charge = polarity.charge()
-    best_charge = original_charge
-    main_pool = list(sector_pool)
-    last_r = 0
-    scope = 2
-    while len(official_candidates) == 0:
-        while len(candidates) == 0:
-            r_range = range(last_r + 1, last_r + 1 + scope)
-            for r in r_range:
-                if r > len(main_pool):
-                    if len(candidates) == 0:
-                        raise NeutralizingException('Cross Dungeon Builder: No possible neutralizers left %s' % builder.name)
-                    else:
+# This is related to the perfect sum problem in CS
+# * Best algorithm so far - db for dynamic programming
+# * Keeps track of unique deviations from neutral in the index
+# * Another assumption is that solutions that take fewer sector are more ideal
+# * When attempting to add depth and there are no more possibilities, this raises an Exception
+# * Each depth should be checked before asking for another one
+# An alterative approach would be to trim the db after deciding the candidate at the current depth will be
+# part of the propsoal
+def find_exact_neutralizing_candidates_parallel_db(builders, proposal, avail_sectors, current_depth):
+    candidate_map = defaultdict(list)
+    polarity_map = {}
+    for builder in builders:
+        polarity_map[builder] = builder.polarity() + sum_polarity(proposal[builder])
+    finished = False
+    db, index = create_db_for_depth(current_depth, avail_sectors)
+    while not finished:
+        depth_map = db[current_depth]
+        for builder in builders:
+            target = polarity_map[builder].complement()
+            if target in depth_map.keys():
+                finished = True
+                candidate_map[builder].extend(depth_map[target].keys())
+        if finished:
+            for builder in list(candidate_map.keys()):
+                try:
+                    candidate_map[builder] = weed_candidates(builder, {0: candidate_map[builder]}, 0)
+                except NeutralizingException:
+                    del candidate_map[builder]
+            if len(candidate_map) == 0:
+                finished = False
+        if not finished:
+            current_depth += 1
+            add_depth_to_db(db, index, current_depth, avail_sectors)
+    return candidate_map, current_depth
+
+
+def create_db_for_depth(depth, avail_sectors):
+    db = {0: {Polarity(): {OrderedFrozenSet(): None}}}
+    db_index = {Polarity()}
+    for i in range(1, depth+1):
+        add_depth_to_db(db, db_index, i, avail_sectors)
+    return db, db_index
+
+
+def add_depth_to_db(db, db_index, i, avail_sectors):
+    previous = db[i-1]
+    depth_map = defaultdict(dict)
+    index_additions = set()
+    for sector in avail_sectors:
+        sector_set = {sector}
+        sector_pol = sector.polarity()
+        for polarity, choices in previous.items():
+            combo_pol = sector_pol + polarity
+            if combo_pol not in db_index:
+                index_additions.add(combo_pol)
+                for choice in choices:
+                    if sector in choice.frozen_set:
                         continue
-                last_r = r
-                combinations = ncr(len(main_pool), r)
-                if combinations > 100000:
-                    raise NeutralizingException('Cross Dungeon Builder: Too many combinations %s' % builder.name)
-                for i in range(0, combinations):
-                    choice = kth_combination(i, main_pool, r)
-                    p_charge = (polarity + sum_polarity(choice)).charge()
-                    if p_charge < original_charge and p_charge <= best_charge and choice not in rejects:
-                        candidates[p_charge].append(choice)
-                        if p_charge < best_charge:
-                            best_charge = p_charge
-            scope = 1
-
-        try:
-            official_candidates = weed_candidates(builder, candidates, best_charge)
-        except NeutralizingException:
-            official_candidates = []
-    return official_candidates
+                    new_set = choice.new_with_element(sector_set)
+                    depth_map[combo_pol][new_set] = None
+    for addition in index_additions:
+        if len(depth_map[addition]) > 0:
+            db_index.add(addition)
+        else:
+            del depth_map[addition]
+    if len(depth_map) == 0:
+        raise NeutralizingException('There is not a solution for this particular combination. Crystal switch issue?')  # restart required
+    db[i] = depth_map
 
 
+class OrderedFrozenSet:
+
+    def __init__(self):
+        self.frozen_set = frozenset()
+        self.order = []
+
+    def __eq__(self, other):
+        return self.frozen_set == other.frozen_set
+
+    def __hash__(self):
+        return hash(self.frozen_set)
+
+    def __iter__(self):
+        return self.order.__iter__()
+
+    def __len__(self):
+        return len(self.order)
+
+    def new_with_element(self, elements):
+        ret = OrderedFrozenSet()
+        ret.frozen_set = frozenset(self.frozen_set | elements)
+        ret.order = list(self.order)
+        ret.order.extend(elements)
+        return ret
+
+
+# this could be re-worked for the more complete solution
+# i'm not sure it does a whole lot now
 def weed_candidates(builder, candidates, best_charge):
     official_cand = []
     while len(official_cand) == 0:
@@ -2025,7 +2400,7 @@ def weed_candidates(builder, candidates, best_charge):
                 ttl_balance += lack
                 if lack < 0:
                     ttl_lack += -lack
-            forced_loops = calc_forced_loops(builder.sectors + cand)
+            forced_loops = calc_forced_loops(builder.sectors + list(cand))
             if ttl_balance >= 0 and builder.dead_ends + ttl_deads + forced_loops * 2 <= builder.branches + ttl_branches + builder.allowance:
                 if best_lack is None or ttl_lack < best_lack:
                     best_lack = ttl_lack
@@ -2046,18 +2421,11 @@ def weed_candidates(builder, candidates, best_charge):
     return cand_len
 
 
-def find_branching_candidates(builder, neutral_choices):
+def find_branching_candidates(builder, neutral_choices, builder_info):
     candidates = []
     for choice in neutral_choices:
-        door_match = False
-        flow_match = False
-        for sector in choice:
-            if sector.adj_outflow() >= 2:
-                flow_match = True
-            for door in sector.outstanding_doors:
-                if builder.unfulfilled[hanger_from_door(door)] > 0:
-                    door_match = True
-        if (door_match and flow_match) or len(resolve_equations(builder, choice)) == 0:
+        resolved, problem_list = check_for_valid_layout(builder, choice, builder_info)
+        if resolved:
             candidates.append(choice)
     return candidates
 
@@ -2083,7 +2451,7 @@ def neutralize_the_rest(sector_pool):
         candidate = random.choice(main_pool)
         main_pool.remove(candidate)
         if r_size > len(main_pool):
-            raise Exception("Cross Dungeon Builder: no more neutral pairings possible")
+            raise GenerationException("Cross Dungeon Builder: no more neutral pairings possible")
         combinations = ncr(len(main_pool), r_size)
         itr = 0
         done = False
@@ -2115,7 +2483,7 @@ def find_forced_groupings(sector_pool, dungeon_map):
     queue = deque(sector_pool)
     skips = set()
     while len(queue) > 0:
-        grouping = queue.pop()
+        grouping = queue.popleft()
         is_list = isinstance(grouping, List)
         if not is_list and grouping in skips:
             continue
@@ -2211,12 +2579,13 @@ def categorize_groupings(sectors):
     return hook_categories
 
 
-def valid_assignment(builder, sector_list):
+def valid_assignment(builder, sector_list, builder_info):
     if not valid_c_switch(builder, sector_list):
         return False
     if not valid_polarized_assignment(builder, sector_list):
         return False
-    return len(resolve_equations(builder, sector_list)) == 0
+    resolved, problems = check_for_valid_layout(builder, sector_list, builder_info)
+    return resolved
 
 
 def valid_c_switch(builder, sector_list):
@@ -2231,10 +2600,6 @@ def valid_c_switch(builder, sector_list):
         if sector.blue_barrier:
             return False
     return True
-
-
-def valid_equations(builder, sector_list):
-    return len(resolve_equations(builder, sector_list)) == 0
 
 
 def valid_connected_assignment(builder, sector_list):
@@ -2275,7 +2640,7 @@ def valid_polarized_assignment(builder, sector_list):
     return (sum_polarity(sector_list) + sum_polarity(builder.sectors)).is_neutral()
 
 
-def assign_the_rest(dungeon_map, neutral_sectors, global_pole):
+def assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info):
     comb_w_replace = len(dungeon_map) ** len(neutral_sectors)
     combinations = None
     if comb_w_replace <= 1000:
@@ -2284,7 +2649,7 @@ def assign_the_rest(dungeon_map, neutral_sectors, global_pole):
     tries = 0
     while len(neutral_sectors) > 0:
         if tries > 1000 or (combinations and tries >= len(combinations)):
-            raise Exception('No valid assignment found for "neutral" sectors. Ref: %s' % next(iter(dungeon_map.keys())))
+            raise GenerationException('No valid assignment found for "neutral" sectors. Ref: %s' % next(iter(dungeon_map.keys())))
         # sector_list = list(neutral_sectors)
         if combinations:
             choices = combinations[tries]
@@ -2296,7 +2661,7 @@ def assign_the_rest(dungeon_map, neutral_sectors, global_pole):
             chosen_sectors[choice].append(neutral_sector_list[i])
         all_valid = True
         for name, sector_list in chosen_sectors.items():
-            if not valid_assignment(dungeon_map[name], sector_list):
+            if not valid_assignment(dungeon_map[name], sector_list, builder_info):
                 all_valid = False
                 break
         if all_valid:
@@ -2307,42 +2672,50 @@ def assign_the_rest(dungeon_map, neutral_sectors, global_pole):
         tries += 1
 
 
-def split_dungeon_builder(builder, split_list, fish):
-    logger = logging.getLogger('')
-    logger.info(fish.translate("cli", "cli", "splitting.up") + ' ' + 'Desert/Skull')
-    candidate_sectors = dict.fromkeys(builder.sectors)
-    global_pole = GlobalPolarity(candidate_sectors)
+def split_dungeon_builder(builder, split_list, builder_info):
+    if builder.split_dungeon_map and len(builder.exception_list) == 0:
+        for name, proposal in builder.valid_proposal.items():
+            builder.split_dungeon_map[name].valid_proposal = proposal
+        return builder.split_dungeon_map  # we made this earlier in gen, just use it
 
-    dungeon_map = {}
-    for name, split_entrances in split_list.items():
-        key = builder.name + ' ' + name
-        dungeon_map[key] = sub_builder = DungeonBuilder(key)
-        sub_builder.all_entrances = split_entrances
-        for r_name in split_entrances:
-            assign_sector(find_sector(r_name, candidate_sectors), sub_builder, candidate_sectors, global_pole)
-    return balance_split(candidate_sectors, dungeon_map, global_pole, fish)
+    attempts, comb_w_replace = 0, None
+    while attempts < 5:  # does not solve coin flips 3% of the time
+        try:
+            candidate_sectors = dict.fromkeys(builder.sectors)
+            global_pole = GlobalPolarity(candidate_sectors)
+
+            dungeon_map = {}
+            for name, split_entrances in split_list.items():
+                key = builder.name + ' ' + name
+                dungeon_map[key] = sub_builder = DungeonBuilder(key)
+                sub_builder.all_entrances = split_entrances
+                for r_name in split_entrances:
+                    assign_sector(find_sector(r_name, candidate_sectors), sub_builder, candidate_sectors, global_pole)
+            comb_w_replace = len(dungeon_map) ** len(candidate_sectors)
+            return balance_split(candidate_sectors, dungeon_map, global_pole, builder_info)
+        except (GenerationException, NeutralizingException):
+            if comb_w_replace and comb_w_replace <= 10000:
+                attempts += 5  # all the combinations were tried already, no use repeating
+            else:
+                attempts += 1
+    raise GenerationException('Unable to resolve in 5 attempts')
 
 
-def balance_split(candidate_sectors, dungeon_map, global_pole, fish):
-    logger = logging.getLogger('')
-
+def balance_split(candidate_sectors, dungeon_map, global_pole, builder_info):
     comb_w_replace = len(dungeon_map) ** len(candidate_sectors)
-    if comb_w_replace <= 5000:
+    if comb_w_replace <= 10000:
         combinations = list(itertools.product(dungeon_map.keys(), repeat=len(candidate_sectors)))
         random.shuffle(combinations)
         tries = 0
         while tries < len(combinations):
-            if combinations:
-                choices = combinations[tries]
-            else:
-                choices = random.choices(list(dungeon_map.keys()), k=len(candidate_sectors))
+            choices = combinations[tries]
             main_sector_list = list(candidate_sectors)
             chosen_sectors = defaultdict(list)
             for i, choice in enumerate(choices):
                 chosen_sectors[choice].append(main_sector_list[i])
             all_valid = True
             for name, sector_list in chosen_sectors.items():
-                if not valid_assignment(dungeon_map[name], sector_list):
+                if not valid_assignment(dungeon_map[name], sector_list, builder_info):
                     all_valid = False
                     break
             if all_valid:
@@ -2352,7 +2725,7 @@ def balance_split(candidate_sectors, dungeon_map, global_pole, fish):
                         assign_sector(sector, builder, candidate_sectors, global_pole)
                 return dungeon_map
             tries += 1
-        raise Exception('Split Dungeon Builder: Impossible dungeon. Ref %s' % next(iter(dungeon_map.keys())))
+        raise GenerationException('Split Dungeon Builder: Impossible dungeon. Ref %s' % next(iter(dungeon_map.keys())))
 
     # categorize sectors
     check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole)
@@ -2361,6 +2734,7 @@ def balance_split(candidate_sectors, dungeon_map, global_pole, fish):
     crystal_switches, crystal_barriers, neutral_sectors, polarized_sectors = categorize_sectors(candidate_sectors)
     leftover = assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers,
                                              global_pole, len(crystal_barriers) > 0)
+    ensure_crystal_switches_reachable(dungeon_map, leftover, polarized_sectors, crystal_barriers, global_pole)
     for sector in leftover:
         if sector.polarity().is_neutral():
             neutral_sectors[sector] = None
@@ -2369,10 +2743,9 @@ def balance_split(candidate_sectors, dungeon_map, global_pole, fish):
     # blue barriers
     assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole)
     # polarity:
-    logger.info(fish.translate("cli", "cli", "re-balancing") + ' ' + next(iter(dungeon_map.keys())) + ' et al')
-    assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, logger, fish)
+    assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info)
     # the rest
-    assign_the_rest(dungeon_map, neutral_sectors, global_pole)
+    assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info)
     return dungeon_map
 
 
@@ -2391,7 +2764,7 @@ def check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole):
     for hook in Hook:
         opp = opposite_h_type(hook).value
         if dead_cnt[hook.value] > other_magnitude[opp]:
-            raise Exception('Impossible to satisfy all these dead ends')
+            raise GenerationException('Impossible to satisfy all these dead ends')
         elif dead_cnt[hook.value] == other_magnitude[opp]:
             candidates = [x for x in dead_end_sectors if x.hook_magnitude()[hook.value] > 0]
             for sector in other_sectors:
@@ -2404,7 +2777,7 @@ def check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole):
                     valid, candidate_sector = False, None
                     while not valid:
                         if len(candidates) == 0:
-                            raise Exception('Split Dungeon Builder: Bad dead end %s' % builder.name)
+                            raise GenerationException('Split Dungeon Builder: Bad dead end %s' % builder.name)
                         candidate_sector = random.choice(candidates)
                         candidates.remove(candidate_sector)
                         valid = global_pole.is_valid_choice(dungeon_map, builder, [candidate_sector]) and check_crystal(candidate_sector, sector)
@@ -2495,83 +2868,299 @@ class NeutralizingException(Exception):
     pass
 
 
+class GenerationException(Exception):
+    pass
+
+
 class DoorEquation:
 
     def __init__(self, door):
         self.door = door
-        self.cost = defaultdict(list)
+        self.cost = None, None
         self.benefit = defaultdict(list)
         self.required = False
         self.access_id = None
+        self.c_switch = False
+        self.crystal_blocked = {}
+        self.entrance_flag = False
 
     def copy(self):
         eq = DoorEquation(self.door)
-        for key, doors in self.cost.items():
-            eq.cost[key] = doors.copy()
+        eq.cost = self.cost
         for key, doors in self.benefit.items():
             eq.benefit[key] = doors.copy()
         eq.required = self.required
+        eq.c_switch = self.c_switch
+        eq.crystal_blocked = self.crystal_blocked.copy()
         return eq
 
     def total_cost(self):
-        ttl = 0
-        for key, door_list in self.cost.items():
-            ttl += len(door_list)
-        return ttl
+        return 0 if self.cost[0] is None else 1
 
-    def profit(self):
+    def gross(self, current_access):
+        key, cost_door = self.cost
+        if key is None:
+            # todo: could just be Orange as well (multiple entrance case)
+            crystal_access = current_access.access_door[None]
+        else:
+            crystal_access = None
+            for match_door, crystal in current_access.outstanding_doors.items():
+                if hook_from_door(match_door) == key:
+                    if crystal_access is None or current_access._better_crystal(crystal_access, crystal):
+                        crystal_access = crystal
         ttl = 0
         for key, door_list in self.benefit.items():
-            ttl += len(door_list)
-        return ttl - self.total_cost()
+            for door in door_list:
+                if door in current_access.outstanding_doors.keys() or door in current_access.proposed_connections.keys():
+                    continue
+                if door in self.crystal_blocked.keys() and not self.c_switch:
+                    if crystal_access == CrystalBarrier.Either or crystal_access == self.crystal_blocked[door]:
+                        ttl += 1
+                else:
+                    ttl += 1
+        return ttl
+
+    def profit(self, current_access):
+        return self.gross(current_access) - self.total_cost()
 
     def neutral(self):
-        for key in Hook:
-            if len(self.cost[key]) != len(self.benefit[key]):
-                return False
+        key, door = self.cost
+        if key is not None and len(self.benefit[key]) <= 0:
+            return False
         return True
 
     def neutral_profit(self):
-        better_found = False
-        for key in Hook:
-            if len(self.cost[key]) > len(self.benefit[key]):
+        key, door = self.cost
+        if key is not None:
+            if len(self.benefit[key]) < 1:
                 return False
-            if len(self.cost[key]) < len(self.benefit[key]):
-                better_found = True
-        return better_found
+            if len(self.benefit[key]) > 1:
+                return True
+            return False
+        else:
+            return True
 
     def can_cover_cost(self, current_access):
-        for key, door_list in self.cost.items():
-            if len(door_list) > current_access[key]:
-                return False
+        key, door = self.cost
+        if key is not None and current_access[key] < 1:
+            return False
         return True
 
 
-def identify_branching_issues(dungeon_map):
+class DungeonAccess:
+
+    def __init__(self):
+        self.access = defaultdict(int)
+        self.door_access = {}  # door -> crystal
+        self.door_sector_map = {}  # door -> original sector
+        self.outstanding_doors = {}
+        self.blocked_doors = {}
+        self.door_access[None] = CrystalBarrier.Orange
+        self.proposed_connections = {}
+        self.reached_doors = set()
+
+    def can_cover_equation(self, equation):
+        key, door = equation.cost
+        if key is None:
+            return True
+        return self.access[key] >= 1
+
+    def can_pay(self, key):
+        if key is None:
+            return True
+        return self.access[key] >= 1
+
+    def adjust_for_equation(self, equation, sector):
+        if equation.cost[0] is None:
+            original_crystal = self.door_access[None]
+            for key, door_list in equation.benefit.items():
+                self.access[key] += len(door_list)
+                for door in door_list:
+                    # I can't think of an entrance sector that forces blue
+                    crystal_state = CrystalBarrier.Either if equation.c_switch else original_crystal
+                    if crystal_state == CrystalBarrier.Either:
+                        self.door_access[None] = CrystalBarrier.Either
+                    self.door_access[door] = crystal_state
+                    self.door_sector_map[door] = sector
+                    self.outstanding_doors[door] = crystal_state
+                    self.reached_doors.add(door)
+        else:
+            key, door = equation.cost
+            self.access[key] -= 1
+            # find the a matching connection
+            best_door, best_crystal = None, None
+            for match_door, crystal in self.outstanding_doors.items():
+                if hook_from_door(match_door) == key:
+                    if best_door is None or self._better_crystal(best_crystal, crystal):
+                        best_door = match_door
+                        best_crystal = crystal
+            if best_door is None:
+                raise Exception('Something went terribly wrong I think')
+                # for match_door, crystal in self.blocked_doors.items():
+                #     if hook_from_door(match_door) == key:
+                #         if best_door is None or self._better_crystal(best_crystal, crystal):
+                #             best_door = match_door
+                #             best_crystal = crystal
+            self.door_sector_map[door] = sector
+            self.door_access[door] = best_crystal
+            self.reached_doors.add(door)
+            self.proposed_connections[door] = best_door
+            self.proposed_connections[best_door] = door
+            if best_door in self.outstanding_doors.keys():
+                del self.outstanding_doors[best_door]
+            elif best_door in self.blocked_doors.keys():
+                del self.blocked_doors[best_door]
+                self.reached_doors.add(best_door)
+
+            # todo: backpropagate crystal access
+            if equation.c_switch or best_crystal == CrystalBarrier.Either:
+                # if not equation.door.blocked:
+                self.door_access[door] = CrystalBarrier.Either
+                self.door_access[best_door] = CrystalBarrier.Either
+                queue = deque([best_door, door])
+                visited = set()
+                while len(queue) > 0:
+                    next_door = queue.popleft()
+                    visited.add(next_door)
+                    curr_sector = self.door_sector_map[next_door]
+                    next_eq = None
+                    for eq in curr_sector.equations:
+                        if eq.door == next_door:
+                            next_eq = eq
+                            break
+                    if next_eq.entrance_flag:
+                        crystal_state = self.door_access[next_door]
+                        self.door_access[None] = crystal_state
+                        for eq in curr_sector.equations:
+                            cand_door = eq.door
+                            crystal_state = self.door_access[None]
+                            if cand_door in next_eq.crystal_blocked.keys():
+                                crystal_state = next_eq.crystal_blocked[cand_door]
+                            if cand_door not in visited:
+                                self.door_access[cand_door] = crystal_state
+                                if not cand_door.blocked:
+                                    if cand_door in self.outstanding_doors.keys():
+                                        self.outstanding_doors[cand_door] = crystal_state
+                                    if cand_door in self.proposed_connections.keys():
+                                        partner_door = self.proposed_connections[cand_door]
+                                        self.door_access[partner_door] = crystal_state
+                                        if partner_door in self.outstanding_doors.keys():
+                                            self.outstanding_doors[partner_door] = crystal_state
+                                        if partner_door not in visited:
+                                            queue.append(partner_door)
+                    else:
+                        for key, door_list in next_eq.benefit.items():
+                            for cand_door in door_list:
+                                crystal_state = self.door_access[next_door]
+                                if cand_door in next_eq.crystal_blocked.keys():
+                                    crystal_state = next_eq.crystal_blocked[cand_door]
+                                if cand_door in self.blocked_doors.keys():
+                                    needed_crystal = self.blocked_doors[cand_door]
+                                    if meets_crystal_requirment(crystal_state, needed_crystal):
+                                        del self.blocked_doors[cand_door]
+                                        if cand_door != door:
+                                            self.access[key] += 1
+                                            self.outstanding_doors[cand_door] = crystal_state
+                                            self.door_access[cand_door] = crystal_state
+                                            self.reached_doors.add(cand_door)
+                                if cand_door not in visited:
+                                    self.door_access[cand_door] = crystal_state
+                                    if not cand_door.blocked:
+                                        if cand_door in self.outstanding_doors.keys():
+                                            self.outstanding_doors[cand_door] = crystal_state
+                                        if cand_door in self.proposed_connections.keys():
+                                            partner_door = self.proposed_connections[cand_door]
+                                            self.door_access[partner_door] = crystal_state
+                                            if partner_door in self.outstanding_doors.keys():
+                                                self.outstanding_doors[partner_door] = crystal_state
+                                            queue.append(cand_door)
+                                            queue.append(partner_door)
+
+            for key, door_list in equation.benefit.items():
+                for door in door_list:
+                    crystal_access = self.door_access[best_door]
+                    can_access = True
+                    if door in equation.crystal_blocked.keys():
+                        if crystal_access == CrystalBarrier.Either or crystal_access == equation.crystal_blocked[door]:
+                            crystal_access = equation.crystal_blocked[door]
+                        else:
+                            self.blocked_doors[door] = equation.crystal_blocked[door]
+                            can_access = False
+                    self.door_sector_map[door] = sector
+                    if can_access and door not in self.reached_doors:
+                        self.access[key] += 1
+                        self.door_access[door] = crystal_access
+                        self.outstanding_doors[door] = crystal_access
+                        self.reached_doors.add(door)
+
+    def _better_crystal(self, current_champ, contender):
+        if current_champ == CrystalBarrier.Either:
+            return False
+        elif contender == CrystalBarrier.Either:
+            return True
+        elif current_champ == CrystalBarrier.Blue:
+            return False
+        elif contender == CrystalBarrier.Blue:
+            return True
+        else:
+            return False
+
+
+def identify_branching_issues(dungeon_map, builder_info):
     unconnected_builders = {}
     for name, builder in dungeon_map.items():
-        unreached_doors = resolve_equations(builder, [])
-        if len(unreached_doors) > 0:
+        resolved, unreached_doors = check_for_valid_layout(builder, [], builder_info)
+        if not resolved:
             unconnected_builders[name] = builder
             for hook, door_list in unreached_doors.items():
                 builder.unfulfilled[hook] += len(door_list)
     return unconnected_builders
 
 
+def check_for_valid_layout(builder, sector_list, builder_info):
+    dungeon_entrances, split_dungeon_entrances, world, player = builder_info
+    if builder.name in split_dungeon_entrances.keys():
+        try:
+            temp_builder = DungeonBuilder(builder.name)
+            for s in sector_list + builder.sectors:
+                assign_sector_helper(s, temp_builder)
+            split_list = split_region_starts[builder.name]
+            builder.split_dungeon_map = split_dungeon_builder(temp_builder, split_list, builder_info)
+            builder.valid_proposal = {}
+            for name, split_build in builder.split_dungeon_map.items():
+                name_bits = name.split(" ")
+                orig_name = " ".join(name_bits[:-1])
+                entrance_regions = split_dungeon_entrances[orig_name][name_bits[-1]]
+                # todo: this is hardcoded information for random entrances
+                entrance_regions = [x for x in entrance_regions if x not in split_check_entrance_invalid]
+                proposal = generate_dungeon_find_proposal(split_build, entrance_regions, True, world, player)
+                # record split proposals
+                builder.valid_proposal[name] = proposal
+            builder.exception_list = list(sector_list)
+            return True, {}
+        except (GenerationException, NeutralizingException):
+            builder.split_dungeon_map = None
+            builder.valid_proposal = None
+        unreached_doors = resolve_equations(builder, sector_list)
+        return False, unreached_doors
+    else:
+        unreached_doors = resolve_equations(builder, sector_list)
+        return len(unreached_doors) == 0, unreached_doors
+
+
 def resolve_equations(builder, sector_list):
     unreached_doors = defaultdict(list)
     equations = copy_door_equations(builder, sector_list)
-    reached_doors = set()
     current_access = {}
     sector_split = {}  # those sectors that belong to a certain sector
     if builder.name in split_region_starts.keys():
         for name, region_list in split_region_starts[builder.name].items():
-            current_access[name] = defaultdict(int)
+            current_access[name] = DungeonAccess()
             for r_name in region_list:
                 sector = find_sector(r_name, builder.sectors)
                 sector_split[sector] = name
     else:
-        current_access[builder.name] = defaultdict(int)
+        current_access[builder.name] = DungeonAccess()
 
     # resolve all that provide more access
     free_sector, eq_list, free_eq = find_free_equation(equations)
@@ -2582,7 +3171,7 @@ def resolve_equations(builder, sector_list):
         else:
             access_id = next(iter(current_access.keys()))
             access = current_access[access_id]
-        resolve_equation(free_eq, eq_list, free_sector, access_id, access, reached_doors, equations)
+        resolve_equation(free_eq, eq_list, free_sector, access_id, access, equations)
         free_sector, eq_list, free_eq = find_free_equation(equations)
     while len(equations) > 0:
         valid_access = next_access(current_access)
@@ -2592,20 +3181,34 @@ def resolve_equations(builder, sector_list):
             eq, eq_list, sector = find_priority_equation(equations, access_id, access)
         elif len(valid_access) > 1:
             access_id, access = valid_access[0]
-            eq, eq_list, sector = find_greedy_equation(equations, access_id, access)
+            eq, eq_list, sector = find_greedy_equation(equations, access_id, access, sector_split)
         if eq:
-            resolve_equation(eq, eq_list, sector, access_id, access, reached_doors, equations)
+            resolve_equation(eq, eq_list, sector, access_id, access, equations)
         else:
             for sector, eq_list in equations.items():
                 for eq in eq_list:
                     unreached_doors[hook_from_door(eq.door)].append(eq.door)
             return unreached_doors
+    valid_access = next_access(current_access)
+    for access_id, dungeon_access in valid_access:
+        access = dungeon_access.access
+        access[Hook.Stairs] = access[Hook.Stairs] % 2
+        ns_leftover = min(access[Hook.North], access[Hook.South])
+        access[Hook.North] -= ns_leftover
+        access[Hook.South] -= ns_leftover
+        ew_leftover = min(access[Hook.West], access[Hook.East])
+        access[Hook.East] -= ew_leftover
+        access[Hook.West] -= ew_leftover
+        if sum(access.values()) > 0:
+            for hook, num in access.items():
+                for i in range(num):
+                    unreached_doors[hook].append('placeholder')
     return unreached_doors
 
 
 def next_access(current_access):
-    valid_ones = [(x, y) for x, y in current_access.items() if sum(y.values()) > 0]
-    valid_ones.sort(key=lambda x: sum(x[1].values()))
+    valid_ones = [(x, y) for x, y in current_access.items() if sum(y.access.values()) > 0]
+    valid_ones.sort(key=lambda x: sum(x[1].access.values()))
     return valid_ones
 
 
@@ -2623,13 +3226,13 @@ def find_priority_equation(equations, access_id, current_access):
     local_profit_map = {}
 
     for sector, eq_list in equations.items():
-        eq_list.sort(key=lambda eq: eq.profit(), reverse=True)
+        eq_list.sort(key=lambda eq: eq.profit(current_access), reverse=True)
         best_local_profit = None
         for eq in eq_list:
-            profit = eq.profit()
-            if eq.can_cover_cost(current_access) and (eq.access_id is None or eq.access_id == access_id):
-                if eq.neutral_profit() or eq.neutral():
-                    return eq, eq_list, sector  # don't need to compare - just use it now
+            profit = eq.profit(current_access)
+            if current_access.can_cover_equation(eq) and (eq.access_id is None or eq.access_id == access_id):
+                # if eq.neutral_profit() or eq.neutral():
+                #     return eq, eq_list, sector  # don't need to compare - just use it now
                 if best_local_profit is None or profit > best_local_profit:
                     best_local_profit = profit
                 all_candidates.append((eq, eq_list, sector))
@@ -2641,6 +3244,7 @@ def find_priority_equation(equations, access_id, current_access):
                     wanted_candidates.append(eq)
         local_profit_map[sector] = best_local_profit
     filtered_candidates = filter_requirements(all_candidates, equations, required, current_access)
+    filtered_candidates = [x for x in filtered_candidates if x[0].gross(current_access) > 0]
     if len(filtered_candidates) == 0:
         filtered_candidates = all_candidates  # probably bad things
     if len(filtered_candidates) == 0:
@@ -2648,10 +3252,22 @@ def find_priority_equation(equations, access_id, current_access):
     if len(filtered_candidates) == 1:
         return filtered_candidates[0]
 
+    neutral_candidates = [x for x in filtered_candidates if x[0].neutral_profit() or x[0].neutral()]
+    if len(neutral_candidates) == 0:
+        neutral_candidates = filtered_candidates
+    if len(neutral_candidates) == 1:
+        return neutral_candidates[0]
+
+    filtered_candidates = filter_requirements(neutral_candidates, equations, required, current_access)
+    if len(filtered_candidates) == 0:
+        filtered_candidates = neutral_candidates
+    if len(filtered_candidates) == 1:
+        return filtered_candidates[0]
+
     triplet_candidates = []
     best_profit = None
     for eq, eq_list, sector in filtered_candidates:
-        profit = eq.profit()
+        profit = eq.profit(current_access)
         if best_profit is None or profit >= best_profit:
             if best_profit is None or profit > best_profit:
                 triplet_candidates = [(eq, eq_list, sector)]
@@ -2671,13 +3287,23 @@ def find_priority_equation(equations, access_id, current_access):
     if len(required_candidates) == 1:
         return required_candidates[0]
 
-    flexible_candidates = [x for x in required_candidates if x[0].can_cover_cost(flex)]
+    c_switch_candidates = [x for x in required_candidates if x[0].c_switch]
+    if len(c_switch_candidates) == 0:
+        c_switch_candidates = required_candidates
+    if len(c_switch_candidates) == 1:
+        return c_switch_candidates[0]
+
+    loop_candidates = find_enabling_switch_connections(current_access)
+    if len(loop_candidates) >= 1:
+        return loop_candidates[0]  # just pick one
+
+    flexible_candidates = [x for x in c_switch_candidates if x[0].can_cover_cost(flex)]
     if len(flexible_candidates) == 0:
-        flexible_candidates = required_candidates
+        flexible_candidates = c_switch_candidates
     if len(flexible_candidates) == 1:
         return flexible_candidates[0]
 
-    good_local_candidates = [x for x in flexible_candidates if local_profit_map[x[2]] == x[0].profit()]
+    good_local_candidates = [x for x in flexible_candidates if local_profit_map[x[2]] == x[0].profit(current_access)]
     if len(good_local_candidates) == 0:
         good_local_candidates = flexible_candidates
     if len(good_local_candidates) == 1:
@@ -2697,27 +3323,45 @@ def find_priority_equation(equations, access_id, current_access):
     return cost_point_candidates[0]  # just pick one I guess
 
 
+def find_enabling_switch_connections(current_access):
+    triad_list = []
+    # probably should check for loop/branches in builder at some stage
+    # - but this could indicate that a loop or branch is necessary
+    for cand_door, crystal in current_access.outstanding_doors.items():
+        for blocked_door, req_crystal in current_access.blocked_doors.items():
+            if hook_from_door(cand_door) == hanger_from_door(blocked_door):
+                if crystal == CrystalBarrier.Either or crystal == req_crystal:
+                    sector, equation = current_access.door_sector_map[blocked_door], None
+                    for eq in sector.equations:
+                        if eq.door == blocked_door:
+                            equation = eq.copy()
+                            break
+                    if equation:
+                        triad_list.append((equation, [equation], sector))
+    return triad_list
+
+
 def find_cost_point(eq_triplet, access):
     cost_point = 0
-    for key, costs in eq_triplet[0].cost.items():
-        cost_count = len(costs)
-        if cost_count > 0:
-            cost_point += access[key] - cost_count
+    key, cost_door = eq_triplet[0].cost
+    if cost_door is not None:
+        cost_point += access.access[key] - 1
     return cost_point
 
 
-def find_greedy_equation(equations, access_id, current_access):
+def find_greedy_equation(equations, access_id, current_access, sector_split):
     all_candidates = []
     for sector, eq_list in equations.items():
-        eq_list.sort(key=lambda eq: eq.profit(), reverse=True)
-        for eq in eq_list:
-            if eq.can_cover_cost(current_access) and (eq.access_id is None or eq.access_id == access_id):
-                all_candidates.append((eq, eq_list, sector))
+        if sector not in sector_split.keys() or sector_split[sector] == access_id:
+            eq_list.sort(key=lambda eq: eq.profit(current_access), reverse=True)
+            for eq in eq_list:
+                if current_access.can_cover_equation(eq) and (eq.access_id is None or eq.access_id == access_id):
+                    all_candidates.append((eq, eq_list, sector))
     if len(all_candidates) == 0:
         return None, None, None  # can't pay for anything
     if len(all_candidates) == 1:
         return all_candidates[0]
-    filtered_candidates = [x for x in all_candidates if x[0].profit() + 2 >= len(x[2].outstanding_doors)]
+    filtered_candidates = [x for x in all_candidates if x[0].profit(current_access) + 2 >= len(x[2].outstanding_doors)]
     if len(filtered_candidates) == 0:
         filtered_candidates = all_candidates  # terrible! ugly dead ends
     if len(filtered_candidates) == 1:
@@ -2726,7 +3370,7 @@ def find_greedy_equation(equations, access_id, current_access):
     triplet_candidates = []
     worst_profit = None
     for eq, eq_list, sector in filtered_candidates:
-        profit = eq.profit()
+        profit = eq.profit(current_access)
         if worst_profit is None or profit <= worst_profit:
             if worst_profit is None or profit < worst_profit:
                 triplet_candidates = [(eq, eq_list, sector)]
@@ -2739,14 +3383,12 @@ def find_greedy_equation(equations, access_id, current_access):
 
 
 def calc_required(equations, current_access):
-    ttl = 0
-    for num in current_access.values():
-        ttl += num
+    ttl = sum(current_access.access.values())
     local_profit_map = {}
     for sector, eq_list in equations.items():
         best_local_profit = None
         for eq in eq_list:
-            profit = eq.profit()
+            profit = eq.profit(current_access)
             if best_local_profit is None or profit > best_local_profit:
                 best_local_profit = profit
         local_profit_map[sector] = best_local_profit
@@ -2757,7 +3399,7 @@ def calc_required(equations, current_access):
             if len(eq_list) > 1:
                 rem_list = []
                 for eq in eq_list:
-                    if eq.profit() < local_profit_map[sector]:
+                    if eq.profit(current_access) < local_profit_map[sector]:
                         rem_list.append(eq)
                 if len(rem_list) > 0:
                     new_lists[sector] = [x for x in eq_list if x not in rem_list]
@@ -2771,8 +3413,8 @@ def calc_required(equations, current_access):
     for sector, eq_list in equations.items():
         for eq in eq_list:
             if eq.required:
-                for key, door_list in eq.cost.items():
-                    required_costs[key] += len(door_list)
+                key, door = eq.cost
+                required_costs[key] += 1
                 for key, door_list in eq.benefit.items():
                     required_benefits[key] += len(door_list)
     return required_costs, required_benefits
@@ -2784,10 +3426,10 @@ def calc_flex(equations, current_access):
     for sector, eq_list in equations.items():
         for eq in eq_list:
             if eq.required:
-                for key, door_list in eq.cost.items():
-                    required_costs[key] += len(door_list)
+                key, door = eq.cost
+                required_costs[key] += 1
     for key in Hook:
-        flex_spending[key] = max(0, current_access[key]-required_costs[key])
+        flex_spending[key] = max(0, current_access.access[key]-required_costs[key])
     return flex_spending
 
 
@@ -2796,26 +3438,29 @@ def filter_requirements(triplet_candidates, equations, required, current_access)
     valid_candidates = []
     for cand, cand_list, cand_sector in triplet_candidates:
         valid = True
-        if not cand.required:
+        if not cand.required and not cand.c_switch:
             potential_benefit = defaultdict(int)
+            benefit_counted = set()
             potential_costs = defaultdict(int)
-            for h_type, benefit in current_access.items():
-                cur_cost = len(cand.cost[h_type])
+            for h_type, benefit in current_access.access.items():
+                cur_cost = 1 if cand.cost[0] is not None else 0
                 if benefit - cur_cost > 0:
                     potential_benefit[h_type] += benefit - cur_cost
             for h_type, benefit_list in cand.benefit.items():
                 potential_benefit[h_type] += len(benefit_list)
             for sector, eq_list in equations.items():
                 if sector == cand_sector:
-                    affected_doors = [d for x in cand.benefit.values() for d in x] + [d for x in cand.cost.values() for d in x]
+                    affected_doors = [d for x in cand.benefit.values() for d in x] + [cand.cost[1]]
                     adj_list = [x for x in eq_list if x.door not in affected_doors]
                 else:
                     adj_list = eq_list
                 for eq in adj_list:
                     for h_type, benefit_list in eq.benefit.items():
-                        potential_benefit[h_type] += len(benefit_list)
-                    for h_type, cost_list in eq.cost.items():
-                        potential_costs[h_type] += len(cost_list)
+                        total_benefit = set(benefit_list) - benefit_counted
+                        potential_benefit[h_type] += len(total_benefit)
+                        benefit_counted.update(benefit_list)
+                    h_type, cost_door = eq.cost
+                    potential_costs[h_type] += 1
             for h_type, requirement in r_costs.items():
                 if requirement > 0 and potential_benefit[h_type] < requirement:
                     valid = False
@@ -2833,38 +3478,31 @@ def filter_requirements(triplet_candidates, equations, required, current_access)
 def can_enable_wanted(test_eq, wanted_candidates):
     for wanted in wanted_candidates:
         covered = True
-        for key, door_list in wanted.cost.items():
-            if len(test_eq.benefit[key]) < len(door_list):
-                covered = False
-                break
+        key, cost_door = wanted.cost
+        if len(test_eq.benefit[key]) < 1:
+            covered = False
         if covered:
             return True
     return False
 
 
-def resolve_equation(equation, eq_list, sector, access_id, current_access, reached_doors, equations):
-    for key, door_list in equation.cost.items():
-        if current_access[key] - len(door_list) < 0:
-            raise Exception('Cannot pay for this connection')
-        current_access[key] -= len(door_list)
-        for door in door_list:
-            reached_doors.add(door)
-    for key, door_list in equation.benefit.items():
-        current_access[key] += len(door_list)
-        for door in door_list:
-            reached_doors.add(door)
+def resolve_equation(equation, eq_list, sector, access_id, current_access, equations):
+    if not current_access.can_pay(equation.cost[0]):
+        raise GenerationException('Cannot pay for this connection')
+    current_access.adjust_for_equation(equation, sector)
     eq_list.remove(equation)
-    removing = [x for x in eq_list if x.door in reached_doors]
-    for r_eq in removing:
-        all_benefits_met = True
+    reached_doors = set(current_access.reached_doors)
+    reached_doors.update(current_access.blocked_doors.keys())
+    for r_eq in list(eq_list):
+        all_benefits_met = r_eq.door in reached_doors
         for key in Hook:
             fringe_list = [x for x in r_eq.benefit[key] if x not in reached_doors]
+            r_eq.benefit[key] = fringe_list
             if len(fringe_list) > 0:
                 all_benefits_met = False
-                r_eq.benefit[key] = fringe_list
         if all_benefits_met:
             eq_list.remove(r_eq)
-    if len(eq_list) == 0:
+    if len(eq_list) == 0 and sector in equations.keys():
         del equations[sector]
     else:
         for eq in eq_list:
@@ -2920,27 +3558,37 @@ def calc_door_equation(door, sector, look_for_entrance):
             eq = DoorEquation(door)
             eq.benefit[hook_from_door(door)].append(door)
             eq.required = True
+            eq.c_switch = door.crystal == CrystalBarrier.Either
+            eq.entrance_flag = True
             return eq, flag
     eq = DoorEquation(door)
     eq.required = door.blocked or door.dead
-    eq.cost[hanger_from_door(door)].append(door)
+    eq.cost = (hanger_from_door(door), door)
+    eq.entrance_flag = sector.is_entrance_sector()
     if not door.stonewall:
         start_region = door.entrance.parent_region
-        visited = {start_region}
-        queue = deque([start_region])
+        visited = {(start_region, CrystalBarrier.Null)}
+        queue = deque([(start_region, CrystalBarrier.Null)])
         found_events = set()
         event_doors = set()
         while len(queue) > 0:
-            region = queue.popleft()
+            region, crystal_barrier = queue.popleft()
+            if region.crystal_switch and crystal_barrier == CrystalBarrier.Null:
+                eq.c_switch = True
+                crystal_barrier = CrystalBarrier.Either
+            # todo: backtracking from double switch with orange on--
             for loc in region.locations:
                 if loc.name in dungeon_events:
                     found_events.add(loc.name)
                     for d in event_doors:
                         if loc.name == d.req_event:
                             connect = d.entrance.connected_region
-                            if connect is not None and connect.type == RegionType.Dungeon and connect not in visited:
-                                visited.add(connect)
-                                queue.append(connect)
+                            if connect is not None and connect.type == RegionType.Dungeon and valid_crystal(d, crystal_barrier):
+                                cb_flag = crystal_barrier if d.crystal == CrystalBarrier.Null else d.crystal
+                                cb_flag = CrystalBarrier.Null if cb_flag == CrystalBarrier.Either else cb_flag
+                                if (connect, cb_flag) not in visited:
+                                    visited.add((connect, cb_flag))
+                                    queue.append((connect, cb_flag))
             for ext in region.exits:
                 d = ext.door
                 if d is not None:
@@ -2950,16 +3598,42 @@ def calc_door_equation(door, sector, look_for_entrance):
                         eq_list = eq.benefit[hook_from_door(d)]
                         if d not in eq_list:
                             eq_list.append(d)
+                            crystal_barrier = crystal_barrier if d.crystal == CrystalBarrier.Null else d.crystal
+                            if crystal_barrier != CrystalBarrier.Null:
+                                if d in eq.crystal_blocked.keys() and eq.crystal_blocked[d] != crystal_barrier:
+                                    del eq.crystal_blocked[d]
+                                else:
+                                    eq.crystal_blocked[d] = crystal_barrier
+                        elif d.crystal == CrystalBarrier.Null:
+                            if d in eq.crystal_blocked.keys() and eq.crystal_blocked[d] != crystal_barrier:
+                                del eq.crystal_blocked[d]
                     if d.req_event is not None and d.req_event not in found_events:
                         event_doors.add(d)
                     else:
                         connect = ext.connected_region if ext.door.controller is None else d.entrance.parent_region
-                        if connect is not None and connect.type == RegionType.Dungeon and connect not in visited:
-                            visited.add(connect)
-                            queue.append(connect)
+                        if connect is not None and connect.type == RegionType.Dungeon and valid_crystal(d, crystal_barrier):
+                            cb_flag = crystal_barrier if d.crystal == CrystalBarrier.Null else d.crystal
+                            cb_flag = CrystalBarrier.Null if cb_flag == CrystalBarrier.Either else cb_flag
+                            if (connect, cb_flag) not in visited:
+                                visited.add((connect, cb_flag))
+                                queue.append((connect, cb_flag))
     if len(eq.benefit) == 0:
         eq.required = True
     return eq, False
+
+
+def meets_crystal_requirment(current_crystal, requirement):
+    if current_crystal == CrystalBarrier.Either:
+        return True
+    return current_crystal == requirement
+
+
+def valid_crystal(door, current_crystal):
+    if door.crystal in [CrystalBarrier.Null, CrystalBarrier.Either]:
+        return True
+    if current_crystal in [CrystalBarrier.Either, CrystalBarrier.Null]:
+        return True
+    return door.crystal == current_crystal
 
 
 # common functions - todo: move to a common place
@@ -3054,6 +3728,10 @@ destination_entrances = [
     'Sanctuary', 'Hyrule Castle West Lobby', 'Hyrule Castle East Lobby', 'Sewers Rat Path', 'Desert East Lobby',
     'Desert West Lobby', 'Skull Pinball', 'Skull Pot Circle', 'Skull Left Drop', 'Skull 2 West Lobby',
     'Skull Back Drop', 'TR Big Chest Entrance', 'TR Eye Bridge', 'TR Lazy Eyes'
+]
+
+split_check_entrance_invalid = [
+    'Desert East Lobby', 'Skull 2 West Lobby'
 ]
 
 
