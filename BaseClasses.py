@@ -18,7 +18,7 @@ from EntranceShuffle import door_addresses, indirect_connections
 from Utils import int16_as_bytes
 from Tables import normal_offset_table, spiral_offset_table, multiply_lookup, divisor_lookup
 from RoomData import Room
-from typing import Union
+from typing import Union, Optional
 
 import secrets
 import random
@@ -30,7 +30,7 @@ class World(object):
     difficulty_requirements: dict
     required_medallions: dict
 
-    def __init__(self, players, shuffle, doorShuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive,
+    def __init__(self, players: int, shuffle, doorShuffle, logic, mode, swords, difficulty, difficulty_adjustments, timer, progressive,
                  goal, algorithm, accessibility, shuffle_ganon, retro, custom, customitemarray, hints):
         self.random = random.Random()  # world-local random state is saved in case of future use a
         # persistently running program with multiple worlds rolling concurrently
@@ -1478,7 +1478,9 @@ class Boss(object):
         return self.defeat_rule(state, self.player)
 
 class Location(object):
-    def __init__(self, player: int, name: str='', address=None, crystal=False, hint_text=None, parent=None, forced_item=None, player_address=None):
+    def __init__(self, player: int, name: str = '', address=None, crystal: bool = False,
+                 hint_text: Optional[str] = None, parent=None,
+                 forced_item=None, player_address=None):
         self.name = name
         self.parent_region = parent
         if forced_item is not None:
