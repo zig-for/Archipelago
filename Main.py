@@ -307,7 +307,7 @@ def main(args, seed=None, fish=None):
           "-prog_" + outfilestuffs["progressive"] if outfilestuffs["progressive"] in ['off', 'random'] else "", # B
           "-nohints" if not outfilestuffs["hints"] == "True" else "")) if not args.outputname else '' # C
         rompath = output_path(f'{outfilebase}{outfilepname}{outfilesuffix}.sfc')
-        rom.write_to_file(rompath)
+        rom.write_to_file(rompath, hide_enemizer=True)
         if args.create_diff:
             Patch.create_patch_file(rompath)
         return (player, team, bytes(rom.name).decode()), enemized
