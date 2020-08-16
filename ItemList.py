@@ -730,32 +730,74 @@ def make_custom_item_pool(world, player):
         customitemarray["triforce"] = total_items_to_place
 
     itemtotal = 0
-    # Bow to Silver Arrows Upgrade, including Generic Keys & Rupoors
-    for x in [*range(0, 66 + 1), 68, 69]:
-        key = CONST.CUSTOMITEMS[x]
-        itemtotal = itemtotal + customitemarray[key]
-    # Triforce
-    itemtotal = itemtotal + customitemarray["triforce"]
-    # Generic Keys
-    itemtotal = itemtotal + customitemarray["generickeys"]
+    for x in range(0, 66):
+        itemtotal = itemtotal + customitemarray[x]
+    itemtotal = itemtotal + customitemarray[68]
+    itemtotal = itemtotal + customitemarray[70]
 
-    customitems = [
-        "Bow", "Silver Bow", "Blue Boomerang", "Red Boomerang", "Hookshot", "Mushroom", "Magic Powder", "Fire Rod",
-        "Ice Rod", "Bombos", "Ether", "Quake", "Lamp", "Hammer", "Shovel", "Flute", "Bug Catching Net",
-        "Book of Mudora", "Cane of Somaria", "Cane of Byrna", "Cape", "Pegasus Boots", "Power Glove", "Titans Mitts",
-        "Progressive Glove", "Flippers", "Piece of Heart", "Boss Heart Container", "Sanctuary Heart Container",
-        "Master Sword", "Tempered Sword", "Golden Sword", "Blue Shield", "Red Shield", "Mirror Shield",
-        "Progressive Shield", "Blue Mail", "Red Mail", "Progressive Armor", "Magic Upgrade (1/2)",
-        "Magic Upgrade (1/4)", "Bomb Upgrade (+5)", "Bomb Upgrade (+10)", "Arrow Upgrade (+5)", "Arrow Upgrade (+10)",
-        "Single Arrow", "Arrows (10)", "Single Bomb", "Bombs (3)", "Rupee (1)", "Rupees (5)", "Rupees (20)",
-        "Rupees (50)", "Rupees (100)", "Rupees (300)", "Rupoor", "Blue Clock", "Green Clock", "Red Clock",
-        "Progressive Bow", "Bombs (10)", "Triforce Piece", "Triforce"
-    ]
-    for customitem in customitems:
-        pool.extend([customitem] * customitemarray[get_custom_array_key(customitem)])
+    pool.extend(['Bow'] * customitemarray[0])
+    pool.extend(['Silver Bow']* customitemarray[1])
+    pool.extend(['Blue Boomerang'] * customitemarray[2])
+    pool.extend(['Red Boomerang'] * customitemarray[3])
+    pool.extend(['Hookshot'] * customitemarray[4])
+    pool.extend(['Mushroom'] * customitemarray[5])
+    pool.extend(['Magic Powder'] * customitemarray[6])
+    pool.extend(['Fire Rod'] * customitemarray[7])
+    pool.extend(['Ice Rod'] * customitemarray[8])
+    pool.extend(['Bombos'] * customitemarray[9])
+    pool.extend(['Ether'] * customitemarray[10])
+    pool.extend(['Quake'] * customitemarray[11])
+    pool.extend(['Lamp'] * customitemarray[12])
+    pool.extend(['Hammer'] * customitemarray[13])
+    pool.extend(['Shovel'] * customitemarray[14])
+    pool.extend(['Flute'] * customitemarray[15])
+    pool.extend(['Bug Catching Net'] * customitemarray[16])
+    pool.extend(['Book of Mudora'] * customitemarray[17])
+    pool.extend(['Cane of Somaria'] * customitemarray[19])
+    pool.extend(['Cane of Byrna'] * customitemarray[20])
+    pool.extend(['Cape'] * customitemarray[21])
+    pool.extend(['Pegasus Boots'] * customitemarray[23])
+    pool.extend(['Power Glove'] * customitemarray[24])
+    pool.extend(['Titans Mitts'] * customitemarray[25])
+    pool.extend(['Progressive Glove'] * customitemarray[26])
+    pool.extend(['Flippers'] * customitemarray[27])
+    pool.extend(['Piece of Heart'] * customitemarray[29])
+    pool.extend(['Boss Heart Container'] * customitemarray[30])
+    pool.extend(['Sanctuary Heart Container'] * customitemarray[31])
+    pool.extend(['Master Sword'] * customitemarray[33])
+    pool.extend(['Tempered Sword'] * customitemarray[34])
+    pool.extend(['Golden Sword'] * customitemarray[35])
+    pool.extend(['Blue Shield'] * customitemarray[37])
+    pool.extend(['Red Shield'] * customitemarray[38])
+    pool.extend(['Mirror Shield'] * customitemarray[39])
+    pool.extend(['Progressive Shield'] * customitemarray[40])
+    pool.extend(['Blue Mail'] * customitemarray[41])
+    pool.extend(['Red Mail'] * customitemarray[42])
+    pool.extend(['Progressive Armor'] * customitemarray[43])
+    pool.extend(['Magic Upgrade (1/2)'] * customitemarray[44])
+    pool.extend(['Magic Upgrade (1/4)'] * customitemarray[45])
+    pool.extend(['Bomb Upgrade (+5)'] * customitemarray[46])
+    pool.extend(['Bomb Upgrade (+10)'] * customitemarray[47])
+    pool.extend(['Arrow Upgrade (+5)'] * customitemarray[48])
+    pool.extend(['Arrow Upgrade (+10)'] * customitemarray[49])
+    pool.extend(['Single Arrow'] * customitemarray[50])
+    pool.extend(['Arrows (10)'] * customitemarray[51])
+    pool.extend(['Single Bomb'] * customitemarray[52])
+    pool.extend(['Bombs (3)'] * customitemarray[53])
+    pool.extend(['Rupee (1)'] * customitemarray[54])
+    pool.extend(['Rupees (5)'] * customitemarray[55])
+    pool.extend(['Rupees (20)'] * customitemarray[56])
+    pool.extend(['Rupees (50)'] * customitemarray[57])
+    pool.extend(['Rupees (100)'] * customitemarray[58])
+    pool.extend(['Rupees (300)'] * customitemarray[59])
+    pool.extend(['Rupoor'] * customitemarray[60])
+    pool.extend(['Blue Clock'] * customitemarray[61])
+    pool.extend(['Green Clock'] * customitemarray[62])
+    pool.extend(['Red Clock'] * customitemarray[63])
+    pool.extend(['Progressive Bow'] * customitemarray[64])
+    pool.extend(['Bombs (10)'] * customitemarray[65])
 
     diff = difficulties[difficulty]
-
 
     # expert+ difficulties produce the same contents for
     # all bottles, since only one bottle is available
@@ -766,14 +808,11 @@ def make_custom_item_pool(world, player):
             thisbottle = world.random.choice(diff.bottles)
         pool.append(thisbottle)
 
-    if customitemarray["triforcepieces"] > 0 or customitemarray["triforcepiecesgoal"] > 0:
-        treasure_hunt_count = max(min(customitemarray["triforcepiecesgoal"], 99), 1) #To display, count must be between 1 and 99.
+    if world.triforce_pieces_available[player] or world.triforce_pieces_required[player]:
+        pool.extend(["Triforce Piece"] * world.triforce_pieces_available[player])
+        itemtotal += world.triforce_pieces_available[player]
+        treasure_hunt_count = world.triforce_pieces_required[player]
         treasure_hunt_icon = 'Triforce Piece'
-        # Ensure game is always possible to complete here, force sufficient pieces if the player is unwilling.
-        if (customitemarray["triforcepieces"] < treasure_hunt_count) and ('triforcehunt' in goal) and (customitemarray["triforce"] == 0):
-            extrapieces = treasure_hunt_count - customitemarray["triforcepieces"]
-            pool.extend(['Triforce Piece'] * extrapieces)
-            itemtotal = itemtotal + extrapieces
 
     if timer in ['display', 'timed', 'timed-countdown']:
         clock_mode = 'countdown' if timer == 'timed-countdown' else 'stopwatch'
