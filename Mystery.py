@@ -339,12 +339,35 @@ def roll_settings(weights):
                          'duality': 'singularity'
                          }[get_choice('boss_shuffle', weights)]
 
-    ret.shuffleenemies = {'none': 'none',
-                          'shuffled': 'shuffled',
-                          'random': 'random',
-                          'chaosthieves': 'randomthieves',
-                          'chaos': 'random'
-                          }[get_choice('enemy_shuffle', weights)]
+    ret.enemy_shuffle = {'none': False,
+                         'shuffled': 'shuffled',
+                         'random': 'chaos',
+                         'chaosthieves': 'chaosthieves',
+                         'chaos': 'chaos',
+                         True: True,
+                         False: False,
+                         None: False
+                         }[get_choice('enemy_shuffle', weights, False)]
+
+    ret.killable_thieves = get_choice('killable_thieves', weights, False)
+    ret.tile_shuffle = get_choice('tile_shuffle', weights, False)
+    ret.bush_shuffle = get_choice('bush_shuffle', weights, False)
+
+    # legacy support for enemy shuffle
+    if type(ret.enemy_shuffle) == str:
+        if ret.enemy_shuffle == 'shuffled':
+            ret.killable_thieves = True
+        elif ret.enemy_shuffle == 'chaos':
+            ret.killable_thieves = True
+            ret.bush_shuffle = True
+            ret.tile_shuffle = True
+        elif ret.enemy_shuffle == "chaosthieves":
+            ret.killable_thieves = False
+            ret.bush_shuffle = True
+            ret.tile_shuffle = True
+        ret.enemy_shuffle = True
+    logging.info(ret.enemy_shuffle)
+    # end of legacy block
 
     ret.enemy_damage = {'default': 'default',
                         'shuffled': 'shuffled',

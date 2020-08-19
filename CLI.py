@@ -98,10 +98,11 @@ def parse_cli(argv, no_defaults=False):
                          'shuffle', 'door_shuffle', 'crystals_ganon', 'crystals_gt', 'openpyramid',
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle', 'startinventory',
                          'local_items', 'retro', 'accessibility', 'hints', 'beemizer', 'experimental', 'dungeon_counters',
-                         'shufflebosses', 'shuffleenemies', 'enemy_health', 'enemy_damage', 'shufflepots',
+                         'shufflebosses', 'enemy_shuffle', 'enemy_health', 'enemy_damage', 'shufflepots',
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
                          'heartbeep',  "skip_progression_balancing", "triforce_pieces_available", "triforce_pieces_required",
-                         'remote_items', 'timer', 'progressive', "glitch_boots"]:
+                         'remote_items', 'timer', 'progressive', "glitch_boots", 'killable_thieves',
+                         'tile_shuffle', 'bush_shuffle']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
                     setattr(ret, name, {1: value})
@@ -139,7 +140,10 @@ def parse_settings():
         "shuffle": "vanilla",
 
         "shufflepots": False,
-        "shuffleenemies": "none",
+        "enemy_shuffle": False,
+        "killable_thieves": False,
+        "tile_shuffle": False,
+        "bush_shuffle": False,
         "shufflebosses": "none",
         "enemy_damage": "default",
         "enemy_health": "default",

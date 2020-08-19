@@ -313,13 +313,21 @@
       "singularity"
     ]
   },
-  "shuffleenemies": {
-    "choices": [
-      "none",
-      "shuffled",
-      "random",
-      "randomthieves"
-    ]
+  "enemy_shuffle": {
+    "action": "store_true",
+    "type": "bool"
+  },
+  "killable_thieves": {
+    "action": "store_true",
+    "type": "bool"
+  },
+  "tile_shuffle": {
+    "action": "store_true",
+    "type": "bool"
+  },
+  "bush_shuffle": {
+        "action": "store_true",
+    "type": "bool"
   },
   "enemy_health": {
     "choices": [
