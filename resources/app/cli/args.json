@@ -197,8 +197,11 @@
     "type": "bool"
   },
   "keyshuffle": {
-    "action": "store_true",
-    "type": "bool"
+    "choices": [
+      "on",
+      "universal",
+      "off"
+    ]
   },
   "bigkeyshuffle": {
     "action": "store_true",

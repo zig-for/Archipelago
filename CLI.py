@@ -87,7 +87,11 @@ def parse_cli(argv, no_defaults=False):
         ret.dungeon_counters = False
 
     if ret.keysanity:
-        ret.mapshuffle, ret.compassshuffle, ret.keyshuffle, ret.bigkeyshuffle = [True] * 4
+        ret.mapshuffle = ret.compassshuffle = ret.keyshuffle = ret.bigkeyshuffle = True
+    elif ret.keyshuffle == "on":
+        ret.keyshuffle = True
+    elif ret.keyshuffle == "off":
+        ret.keyshuffle = False
 
     if multiargs.multi:
         defaults = copy.deepcopy(ret)

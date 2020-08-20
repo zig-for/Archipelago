@@ -219,7 +219,13 @@ def fill_restrictive(world, base_state, locations, itempool, keys_in_itempool = 
                         if world.accessibility[item_to_place.player] != 'none':
                             logging.getLogger('').warning('Not all items placed. Game beatable anyway. (Could not place %s)' % item_to_place)
                         continue
-                    raise FillError(f'No more spots to place {item_to_place}, locations {locations} are invalid')
+                    placements = []
+                    for region in world.regions:
+                        for location in region.locations:
+                            if location.item and not location.event:
+                                placements.append(location)
+                    raise FillError(f'No more spots to place {item_to_place}, locations {locations} are invalid. '
+                                    f'\nAlready placed {len(placements)}: {", ".join(placements)}')
 
                 world.push_item(spot_to_fill, item_to_place, False)
                 track_outside_keys(item_to_place, spot_to_fill, world)
