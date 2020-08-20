@@ -78,19 +78,23 @@ def guiMain(args=None):
     retroVar = IntVar()
     retroCheckbutton = Checkbutton(checkBoxFrame, text="Retro mode (universal keys)", variable=retroVar)
     shuffleGanonVar = IntVar()
-    shuffleGanonVar.set(1) #set default
-    shuffleGanonCheckbutton = Checkbutton(checkBoxFrame, text="Include Ganon's Tower and Pyramid Hole in shuffle pool", variable=shuffleGanonVar)
+    shuffleGanonVar.set(1)  # set default
+    shuffleGanonCheckbutton = Checkbutton(checkBoxFrame, text="Include Ganon's Tower and Pyramid Hole in shuffle pool",
+                                          variable=shuffleGanonVar)
     hintsVar = IntVar()
-    hintsVar.set(1) #set default
+    hintsVar.set(1)  # set default
     hintsCheckbutton = Checkbutton(checkBoxFrame, text="Include Helpful Hints", variable=hintsVar)
     customVar = IntVar()
     customCheckbutton = Checkbutton(checkBoxFrame, text="Use custom item pool", variable=customVar)
     balancingVar = IntVar()
-    balancingVar.set(1) #set default
+    balancingVar.set(1)  # set default
     balancingCheckbutton = Checkbutton(checkBoxFrame, text="Multiworld Progression Balancing", variable=balancingVar)
     doorexperimentalVar = IntVar()
     doorexperimentalVar.set(0)
     doorexperimentalCheckbutton = Checkbutton(checkBoxFrame, text="Experimental Door Features", variable=doorexperimentalVar)
+    patchesVar = IntVar()
+    patchesVar.set(1)  # set default
+    patchesCheckbutton = Checkbutton(checkBoxFrame, text="Create Delta Patches", variable=patchesVar)
     createSpoilerCheckbutton.pack(expand=True, anchor=W)
     suppressRomCheckbutton.pack(expand=True, anchor=W)
     openpyramidCheckbutton.pack(expand=True, anchor=W)
@@ -106,6 +110,7 @@ def guiMain(args=None):
     customCheckbutton.pack(expand=True, anchor=W)
     balancingCheckbutton.pack(expand=True, anchor=W)
     doorexperimentalCheckbutton.pack(expand=True, anchor=W)
+    patchesCheckbutton.pack(expand=True, anchor=W)
 
     romOptionsFrame = LabelFrame(rightHalfFrame, text="Rom options")
     romOptionsFrame.columnconfigure(0, weight=1)
@@ -533,6 +538,7 @@ def guiMain(args=None):
                                    int(bomb10Var.get()), int(triforceVar.get()),
                                    int(rupoorcostVar.get()), int(universalkeyVar.get())]
         guiargs.rom = romVar.get()
+        guiargs.create_diff = patchesVar.get()
         guiargs.sprite = sprite
         # get default values for missing parameters
         for k,v in vars(parse_arguments(['--multi', str(guiargs.multi)])).items():
