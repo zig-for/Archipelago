@@ -7,6 +7,7 @@ import os
 import random
 import time
 import zlib
+import concurrent.futures
 
 from BaseClasses import World, CollectionState, Item, Region, Location, Shop, Entrance
 from Items import ItemFactory
@@ -226,14 +227,17 @@ def main(args, seed=None, fish=None):
 
     rom_names = []
 
-    enemized = False
-    def _gen_rom(team: int, player: int):
-        enemized = False
+    def _get_enemizer(player: int):
         sprite_random_on_hit = type(args.sprite[player]) is str and args.sprite[player].lower() == 'randomonhit'
         use_enemizer = (world.boss_shuffle[player] != 'none' or world.enemy_shuffle[player]
                         or world.enemy_health[player] != 'default' or world.enemy_damage[player] != 'default'
                         or world.shufflepots[player] or sprite_random_on_hit or world.bush_shuffle[player]
                         or world.killable_thieves[player] or world.tile_shuffle[player])
+        return sprite_random_on_hit, use_enemizer
+
+    def _gen_rom(team: int, player: int):
+        enemized = False
+        sprite_random_on_hit, use_enemizer = _get_enemizer(player)
 
         rom = LocalRom(args.rom)
 
@@ -319,18 +323,15 @@ def main(args, seed=None, fish=None):
             Patch.create_patch_file(rompath)
         return (player, team, bytes(rom.name).decode()), enemized
 
+    pool = concurrent.futures.ThreadPoolExecutor()
+
     if not args.suppress_rom:
         logger.info(world.fish.translate("cli", "cli", "patching.rom"))
-        import concurrent.futures
-        futures = []
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            for team in range(world.teams):
-                for player in range(1, world.players + 1):
-                    futures.append(pool.submit(_gen_rom, team, player))
-        for future in futures:
-            rom_name, enemized_check = future.result()
-            rom_names.append(rom_name)
-            enemized |= enemized_check
+        rom_futures = []
+
+        for team in range(world.teams):
+            for player in range(1, world.players + 1):
+                rom_futures.append(pool.submit(_gen_rom, team, player))
 
         er_cache = {player: {} for player in range(1, world.players + 1)}
         def get_entrance_to_region(region: Region, regions_visited):
@@ -363,31 +364,52 @@ def main(args, seed=None, fish=None):
         precollected_items = [[] for player in range(world.players)]
         for item in world.precollected_items:
             precollected_items[item.player - 1].append(item.code)
-        multidata = zlib.compress(json.dumps({"names": parsed_names,
-                                              # backwards compat for < 2.4.1
-                                              "roms": [(slot, team, list(name.encode()))
-                                                       for (slot, team, name) in rom_names],
-                                              "rom_strings": rom_names,
-                                              "remote_items": [player for player in range(1, world.players + 1) if
-                                                               world.remote_items[player]],
-                                              "locations": [((location.address, location.player),
-                                                             (location.item.code, location.item.player))
-                                                            for location in world.get_filled_locations() if
-                                                            type(location.address) is int],
-                                              "server_options": get_options()["server_options"],
-                                              "er_hint_data": er_hint_data,
-                                              "precollected_items": precollected_items,
-                                              "version": _version_tuple,
-                                              "tags": ["ER", "DR"]
-                                              }).encode("utf-8"), 9)
 
-        with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
-            f.write(multidata)
+        def write_multidata(roms):
+            enemized = False
+            for future in roms:
+                rom_name, enemized_check = future.result()
+                rom_names.append(rom_name)
+                enemized |= enemized_check
+            multidata = zlib.compress(json.dumps({"names": parsed_names,
+                                                  # backwards compat for < 2.4.1
+                                                  "roms": [(slot, team, list(name.encode()))
+                                                           for (slot, team, name) in rom_names],
+                                                  "rom_strings": rom_names,
+                                                  "remote_items": [player for player in range(1, world.players + 1) if
+                                                                   world.remote_items[player]],
+                                                  "locations": [((location.address, location.player),
+                                                                 (location.item.code, location.item.player))
+                                                                for location in world.get_filled_locations() if
+                                                                type(location.address) is int],
+                                                  "server_options": get_options()["server_options"],
+                                                  "er_hint_data": er_hint_data,
+                                                  "precollected_items": precollected_items,
+                                                  "version": _version_tuple,
+                                                  "tags": ["ER", "DR"]
+                                                  }).encode("utf-8"), 9)
+
+            with open(output_path('%s.multidata' % outfilebase), 'wb') as f:
+                f.write(multidata)
+
+            return enemized
+
+        multidata_future = pool.submit(write_multidata, rom_futures)
+    else:
+        def get_enemizer_results():
+            enemizer_result = False
+            for player in range(1, world.players + 1):
+                enemizer_used = _get_enemizer(player)
+                enemizer_result |= enemizer_used[1]
+            return enemizer_result
+
+        multidata_future = pool.submit(get_enemizer_results)
 
     if not args.skip_playthrough:
         logger.info(world.fish.translate("cli","cli","calc.playthrough"))
         create_playthrough(world)
-
+    enemized = multidata_future.result()
+    pool.shutdown()
     if args.create_spoiler:
         logger.info(world.fish.translate("cli","cli","patching.spoiler"))
         world.spoiler.to_file(output_path('%s_Spoiler.txt' % outfilebase))
