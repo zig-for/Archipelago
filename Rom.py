@@ -1225,7 +1225,7 @@ def patch_rom(world, rom, player, team, enemized):
     # block HC upstairs doors in rain state in standard mode
     rom.write_byte(0x18008A, 0x01 if world.mode[player] == "standard" and world.shuffle[player] != 'vanilla' else 0x00)
 
-    rom.write_byte(0x18016A, 0x10 | ((0x01 if world.keyshuffle[player] else 0x00)
+    rom.write_byte(0x18016A, 0x10 | ((0x01 if world.keyshuffle[player] is True else 0x00)
                                      | (0x02 if world.compassshuffle[player] else 0x00)
                                      | (0x04 if world.mapshuffle[player] else 0x00)
                                      | (0x08 if world.bigkeyshuffle[player] else 0x00)))  # free roaming item text boxes
@@ -1250,7 +1250,7 @@ def patch_rom(world, rom, player, team, enemized):
      # b - Big Key
      # a - Small Key
      #
-    rom.write_byte(0x180045, ((0x01 if world.keyshuffle[player] else 0x00)
+    rom.write_byte(0x180045, ((0x01 if world.keyshuffle[player] is True else 0x00)
                               | (0x02 if world.bigkeyshuffle[player] else 0x00)
                               | (0x04 if world.mapshuffle[player] else 0x00)
                               | (0x08 if world.compassshuffle[player] else 0x00)))  # free roaming items in menu
