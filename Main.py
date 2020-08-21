@@ -27,7 +27,7 @@ from Utils import output_path, parse_player_names, get_options, __version__, _ve
 from source.classes.BabelFish import BabelFish
 import Patch
 
-__dr_version__ = '0.1.0.13-u'
+__dr_version__ = '0.1.0.14-u'
 seeddigits = 20
 
 
