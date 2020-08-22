@@ -241,6 +241,12 @@ if __name__ == "__main__":
                             tqdm.write(error.getvalue())
                             break
 
+                        if "Duplicate Player names is not supported." in error.getvalue():
+                            cancel_remaining()
+                            tqdm.write("Duplicate Player names is not supported.")
+                            tqdm.write(error.getvalue())
+                            break
+
                         done = check_if_done()
                         if done and not keep_all_seeds:
                             break
