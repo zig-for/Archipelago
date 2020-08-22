@@ -529,9 +529,14 @@ def set_up_shops(world, player: int):
         rss.locked = True
 
     if world.keyshuffle[player] == "universal":
-        for shop in world.random.sample([s for s in world.shops if
-                                         s.custom and not s.locked and s.type == ShopType.Shop and s.region.player == player],
-                                        5):
+        shops = [s for s in world.shops if not s.custom and not
+                 s.locked and s.type == ShopType.Shop and s.region.player == player]
+        shopsamplesize = min(len(shops), 5)
+        if shopsamplesize == 0:
+            raise ValueError("Unable to place any key shops for player %d", player)
+        if shopsamplesize < 5:
+            logging.info('Could not place at least 5 key shops, placing %d key shops instead.', shopsamplesize)
+        for shop in world.random.sample(shops, shopsamplesize):
             shop.locked = True
             if world.retro[player]:
                 shop.add_inventory(0, 'Single Arrow', 80)
