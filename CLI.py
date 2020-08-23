@@ -106,7 +106,7 @@ def parse_cli(argv, no_defaults=False):
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
                          'heartbeep',  "skip_progression_balancing", "triforce_pieces_available", "triforce_pieces_required",
                          'remote_items', 'timer', 'progressive', "glitch_boots", 'killable_thieves',
-                         'tile_shuffle', 'bush_shuffle']:
+                         'tile_shuffle', 'bush_shuffle', 'shop_shuffle']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
                     setattr(ret, name, {1: value})
@@ -161,6 +161,7 @@ def parse_settings():
         "door_shuffle": "basic",
         "experimental": False,
         "dungeon_counters": "default",
+        "shop_shuffle": "",
 
         "multi": 1,
         "names": "",

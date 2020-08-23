@@ -284,6 +284,12 @@
     ],
     "create_rom": [ "Create an output rom file. (default: %(default)s)" ],
     "gui": [ "Launch the GUI. (default: %(default)s)" ],
-    "create_diff": ["create a binary patch file from which the randomized rom can be recreated using MultiClient."]
+    "create_diff": ["create a binary patch file from which the randomized rom can be recreated using MultiClient."],
+    "shop_shuffle": [
+      "combine letters for options:",
+      "i: shuffle the inventories of the shops around",
+      "p: randomize the prices of the items in tshop inventories",
+      "u: shuffle capacity upgrades into the item pool"
+    ]
   }
 }

@@ -377,5 +377,6 @@
   "create_diff": {
     "action": "store_true",
     "type": "bool"
-  }
+  },
+  "shop_shuffle": {}
 }

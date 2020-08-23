@@ -16,7 +16,7 @@ except ImportError:
 from source.classes.BabelFish import BabelFish
 from Tables import normal_offset_table, spiral_offset_table, multiply_lookup, divisor_lookup
 from RoomData import Room
-from typing import Union, Optional
+from typing import Union, Optional, List
 import secrets
 import random
 
@@ -593,6 +593,10 @@ class CollectionState(object):
         return any(shop.region.player == player and shop.has_unlimited(item) and shop.region.can_reach(self) for
                    shop in self.world.shops)
 
+    def can_buy(self, item: str, player: int) -> bool:
+        return any(shop.region.player == player and shop.has(item) and shop.region.can_reach(self) for
+                   shop in self.world.shops)
+
     def item_count(self, item, player: int) -> int:
         return self.prog_items[item, player]
 
@@ -670,7 +674,7 @@ class CollectionState(object):
     def can_shoot_arrows(self, player: int) -> bool:
         if self.world.retro[player]:
             # TODO: Progressive and Non-Progressive silvers work differently (progressive is not usable until the shop arrow is bought)
-            return (self.has('Bow', player) or self.has('Silver Bow', player)) and self.can_buy_unlimited('Single Arrow', player)
+            return (self.has('Bow', player) or self.has('Silver Bow', player)) and self.can_buy('Single Arrow', player)
         return self.has('Bow', player) or self.has('Silver Bow', player)
 
     def can_get_good_bee(self, player: int) -> bool:
@@ -1585,11 +1589,12 @@ class ShopType(Enum):
 
 class Shop(object):
     slots = 3
-    def __init__(self, region, room_id, type, shopkeeper_config, custom, locked):
+
+    def __init__(self, region, room_id, type, shopkeeper_config, custom, locked: bool):
         self.region = region
         self.room_id = room_id
         self.type = type
-        self.inventory = [None, None, None]
+        self.inventory: List[Union[None, dict]] = [None, None, None]
         self.shopkeeper_config = shopkeeper_config
         self.custom = custom
         self.locked = locked
@@ -1616,20 +1621,31 @@ class Shop(object):
             config |= 0x10 # Alt. VRAM
         return [0x00]+int16_as_bytes(self.room_id)+[door_id, 0x00, config, self.shopkeeper_config, 0x00]
 
-    def has_unlimited(self, item):
+    def has_unlimited(self, item: str) -> bool:
         for inv in self.inventory:
             if inv is None:
                 continue
+            if inv['item'] == item:
+                return True
             if inv['max'] != 0 and inv['replacement'] is not None and inv['replacement'] == item:
                 return True
-            elif inv['item'] is not None and inv['item'] == item:
+        return False
+
+    def has(self, item: str) -> bool:
+        for inv in self.inventory:
+            if inv is None:
+                continue
+            if inv['item'] == item:
+                return True
+            if inv['max'] != 0 and inv['replacement'] == item:
                 return True
         return False
 
     def clear_inventory(self):
         self.inventory = [None, None, None]
 
-    def add_inventory(self, slot, item, price, max=0, replacement=None, replacement_price=0, create_location=False):
+    def add_inventory(self, slot: int, item: str, price: int, max: int = 0,
+                      replacement: Optional[str] = None, replacement_price: int = 0, create_location: bool = False):
         self.inventory[slot] = {
             'item': item,
             'price': price,
@@ -1639,6 +1655,18 @@ class Shop(object):
             'create_location': create_location
         }
 
+    def push_inventory(self, slot: int, item: str, price: int, max: int = 1):
+        if not self.inventory[slot]:
+            raise ValueError("Inventory can't be pushed back if it doesn't exist")
+
+        self.inventory[slot] = {
+            'item': item,
+            'price': price,
+            'max': max,
+            'replacement': self.inventory[slot]["item"],
+            'replacement_price': self.inventory[slot]["price"],
+            'create_location': self.inventory[slot]["create_location"]
+        }
 
 class Spoiler(object):
     world: World
@@ -1784,6 +1812,7 @@ class Spoiler(object):
                          'progression_balancing': self.world.progression_balancing,
                          'triforce_pieces_available': self.world.triforce_pieces_available,
                          'triforce_pieces_required': self.world.triforce_pieces_required,
+                         'shop_shuffle': self.world.shop_shuffle
                          'experimental' : self.world.experimental
                          }
 
@@ -1835,15 +1864,15 @@ class Spoiler(object):
                     outfile.write('Progression Balanced:            %s\n' % (
                         'Yes' if self.metadata['progression_balancing'][player] else 'No'))
                 outfile.write('Mode:                            %s\n' % self.metadata['mode'][player])
-                outfile.write(
-                    'Retro:                           %s\n' % ('Yes' if self.metadata['retro'][player] else 'No'))
+                outfile.write('Retro:                           %s\n' %
+                              ('Yes' if self.metadata['retro'][player] else 'No'))
                 outfile.write('Swords:                          %s\n' % self.metadata['weapons'][player])
                 outfile.write('Goal:                            %s\n' % self.metadata['goal'][player])
                 if "triforce" in self.metadata["goal"][player]:  # triforce hunt
-                    outfile.write(
-                        "Pieces available for Triforce:   %s\n" % self.metadata['triforce_pieces_available'][player])
-                    outfile.write(
-                        "Pieces required for Triforce:    %s\n" % self.metadata["triforce_pieces_required"][player])
+                    outfile.write("Pieces available for Triforce:   %s\n" %
+                                  self.metadata['triforce_pieces_available'][player])
+                    outfile.write("Pieces required for Triforce:    %s\n" %
+                                  self.metadata["triforce_pieces_required"][player])
                 outfile.write('Difficulty:                      %s\n' % self.metadata['item_pool'][player])
                 outfile.write('Item Functionality:              %s\n' % self.metadata['item_functionality'][player])
                 outfile.write('Item Progression:                %s\n' % self.metadata['progressive'][player])
@@ -1854,14 +1883,20 @@ class Spoiler(object):
                 outfile.write('Pyramid hole pre-opened:         %s\n' % (
                     'Yes' if self.metadata['open_pyramid'][player] else 'No'))
                 outfile.write('Accessibility:                   %s\n' % self.metadata['accessibility'][player])
-                outfile.write(
-                    'Map shuffle:                     %s\n' % ('Yes' if self.metadata['mapshuffle'][player] else 'No'))
-                outfile.write('Compass shuffle:                 %s\n' % (
-                    'Yes' if self.metadata['compassshuffle'][player] else 'No'))
+                outfile.write('Map shuffle:                     %s\n' %
+                              ('Yes' if self.metadata['mapshuffle'][player] else 'No'))
+                outfile.write('Compass shuffle:                 %s\n' %
+                              ('Yes' if self.metadata['compassshuffle'][player] else 'No'))
                 outfile.write(
                     'Small Key shuffle:               %s\n' % (bool_to_text(self.metadata['keyshuffle'][player])))
                 outfile.write('Big Key shuffle:                 %s\n' % (
                     'Yes' if self.metadata['bigkeyshuffle'][player] else 'No'))
+                outfile.write('Shop inventory shuffle:          %s\n' %
+                              bool_to_text("i" in self.metadata["shop_shuffle"][player]))
+                outfile.write('Shop price shuffle:              %s\n' %
+                              bool_to_text("p" in self.metadata["shop_shuffle"][player]))
+                outfile.write('Shop upgrade shuffle:            %s\n' %
+                              bool_to_text("u" in self.metadata["shop_shuffle"][player]))
                 outfile.write('Boss shuffle:                    %s\n' % self.metadata['boss_shuffle'][player])
                 outfile.write(
                     'Enemy shuffle:                   %s\n' % bool_to_text(self.metadata['enemy_shuffle'][player]))
@@ -1892,7 +1927,11 @@ class Spoiler(object):
             if self.entrances:
                 # entrances: To/From overworld; Checking w/ & w/out "Exit" and translating accordingly
                 outfile.write('\n\nEntrances:\n\n')
-                outfile.write('\n'.join(['%s%s %s %s' % (f'{self.world.get_player_names(entry["player"])}: ' if self.world.players > 1 else '', self.world.fish.translate("meta","entrances",entry['entrance']), '<=>' if entry['direction'] == 'both' else '<=' if entry['direction'] == 'exit' else '=>', self.world.fish.translate("meta","entrances",entry['exit'])) for entry in self.entrances.values()]))
+                outfile.write('\n'.join(['%s%s %s %s' % (f'{self.world.get_player_names(entry["player"])}: '
+                                                         if self.world.players > 1 else '', self.world.fish.translate("meta","entrances",entry['entrance']),
+                                                         '<=>' if entry['direction'] == 'both' else
+                                                         '<=' if entry['direction'] == 'exit' else '=>',
+                                                         self.world.fish.translate("meta","entrances",entry['exit'])) for entry in self.entrances.values()]))
             outfile.write('\n\nMedallions:\n')
             for dungeon, medallion in self.medallions.items():
                 outfile.write(f'\n{dungeon}: {medallion} Medallion')
