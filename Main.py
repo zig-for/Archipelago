@@ -324,7 +324,7 @@ def main(args, seed=None, fish=None):
         return (player, team, bytes(rom.name).decode()), enemized
 
     pool = concurrent.futures.ThreadPoolExecutor()
-
+    multidata_task = None
     if not args.suppress_rom:
         logger.info(world.fish.translate("cli", "cli", "patching.rom"))
         rom_futures = []
