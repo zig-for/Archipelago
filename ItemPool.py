@@ -224,6 +224,18 @@ def get_custom_array_key(item):
   return key
 
 
+def toss_junk_item(pool):
+    items = ['Rupees (20)', 'Bombs (3)', 'Arrows (10)', 'Rupees (5)', 'Rupee (1)', 'Bombs (10)',
+             'Single Arrow', 'Rupees (50)', 'Rupees (100)', 'Single Bomb', 'Bee', 'Bee Trap',
+             'Rupees (300)']
+    for item in items:
+        big20 = next((i for i in pool if i == item), None)
+        if big20:
+            pool.remove(big20)
+            return
+    raise Exception("Unable to find a junk item to discard")
+
+
 def generate_itempool(world, player: int):
     if world.difficulty[player] not in difficulties:
         raise NotImplementedError(f"Diffulty {world.difficulty[player]}")
@@ -318,7 +330,7 @@ def generate_itempool(world, player: int):
         amt = world.pool_adjustment[player]
         if amt < 0:
             for _ in range(amt, 0):
-                pool.remove('Rupees (20)')
+                toss_junk_item(pool)
         elif amt > 0:
             for _ in range(0, amt):
                 pool.append('Rupees (20)')
@@ -522,27 +534,29 @@ def fill_prizes(world, attempts=15):
 def set_up_shops(world, player: int):
     # TODO: move hard+ mode changes for shields here, utilizing the new shops
 
-    if world.retro[player]:
-        rss = world.get_region('Red Shield Shop', player).shop
-        if not rss.locked:
-            rss.add_inventory(2, 'Single Arrow', 80)
+    rss = world.get_region('Red Shield Shop', player).shop
+    if world.retro[player] and not rss.locked:
+        rss.add_inventory(2, 'Single Arrow', 80)
+        rss.custom = True
         rss.locked = True
 
-    if world.keyshuffle[player] == "universal":
+    if world.keyshuffle[player] == "universal" or world.retro[player]:
         shops = [s for s in world.shops if not s.custom and not
                  s.locked and s.type == ShopType.Shop and s.region.player == player]
         shopsamplesize = min(len(shops), 5)
-        if shopsamplesize == 0:
+        if shopsamplesize == 0 and (world.keyshuffle[player] == "universal" or not rss.custom):
             raise ValueError("Unable to place any key shops for player %d", player)
-        if shopsamplesize < 5:
-            logging.info('Could not place at least 5 key shops, placing %d key shops instead.', shopsamplesize)
         for shop in world.random.sample(shops, shopsamplesize):
             shop.locked = True
+            shop.custom = True
             if world.retro[player]:
                 shop.add_inventory(0, 'Single Arrow', 80)
             else:
                 shop.add_inventory(0, "Red Potion", 150)
-            shop.add_inventory(1, 'Small Key (Universal)', 100)
+            if world.keyshuffle[player] == "universal":
+                shop.add_inventory(1, 'Small Key (Universal)', 100)
+            else:
+                shop.add_inventory(1, 'Small Heart', 10)
             shop.add_inventory(2, 'Bombs (10)', 50)
 
 

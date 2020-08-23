@@ -178,7 +178,7 @@ def vanilla_key_logic(world, player):
             world.key_logic[player][builder.name] = key_layout.key_logic
             log_key_logic(builder.name, key_layout.key_logic)
             last_key = None
-    if world.shuffle[player] == 'vanilla' and world.accessibility[player] == 'items' and not world.retro[player]:
+    if world.shuffle[player] == 'vanilla' and world.accessibility[player] == 'items' and world.keyshuffle[player] not in ['universal']:
         validate_vanilla_key_logic(world, player)
 
 
@@ -543,7 +543,7 @@ def cross_dungeon(world, player):
 
     assign_cross_keys(dungeon_builders, world, player)
     all_dungeon_items = [y for x in world.dungeons if x.player == player for y in x.all_items]
-    target_items = 34 if world.retro[player] else 63
+    target_items = 34 if world.keyshuffle[player] in ['universal'] else 63
     d_items = target_items - len(all_dungeon_items)
     world.pool_adjustment[player] = d_items
     smooth_door_pairs(world, player)
@@ -631,7 +631,7 @@ def assign_cross_keys(dungeon_builders, world, player):
     logger.debug('Cross Dungeon: Keys unable to assign in pool %s', remaining)
 
     # Last Step: Adjust Small Key Dungeon Pool
-    if not world.retro[player]:
+    if world.keyshuffle[player] not in ['universal']:
         for name, builder in dungeon_builders.items():
             reassign_key_doors(builder, world, player)
             log_key_logic(builder.name, world.key_logic[player][builder.name])
@@ -843,7 +843,7 @@ def find_valid_combination(builder, start_regions, world, player, drop_keys=True
     # make changes
     if player not in world.key_logic.keys():
         world.key_logic[player] = {}
-    analyze_dungeon(key_layout, world, player)
+    analyze_dungeon(builder, key_layout, world, player)
     builder.key_door_proposal = proposal
     world.key_logic[player][builder.name] = key_layout.key_logic
     world.key_layout[player][builder.name] = key_layout

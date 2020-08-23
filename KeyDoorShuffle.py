@@ -218,14 +218,14 @@ def calc_max_chests(builder, key_layout, world, player):
     return max(0, builder.key_doors_num - key_layout.max_drops)
 
 
-def analyze_dungeon(key_layout, world, player):
+def analyze_dungeon(builder, key_layout, world, player):
     key_layout.key_counters = create_key_counters(key_layout, world, player)
     key_logic = key_layout.key_logic
 
     find_bk_locked_sections(key_layout, world, player)
     key_logic.bk_chests.update(find_big_chest_locations(key_layout.all_chest_locations))
     key_logic.bk_chests.update(find_big_key_locked_locations(key_layout.all_chest_locations))
-    if world.retro[player] and world.mode[player] != 'standard':
+    if world.keyshuffle[player] in ['universal'] and (world.mode[player] != 'standard' or builder.name != 'Hyrule Castle'):
         return
 
     original_key_counter = find_counter({}, False, key_layout)
@@ -811,7 +811,7 @@ def self_lock_possible(counter):
 
 
 def available_chest_small_keys(key_counter, world, player):
-    if not world.keyshuffle[player] and not world.retro[player]:
+    if world.keyshuffle[player] not in [True, 'universal']:
         cnt = 0
         for loc in key_counter.free_locations:
             if key_counter.big_key_opened or '- Big Chest' not in loc.name:
@@ -822,7 +822,7 @@ def available_chest_small_keys(key_counter, world, player):
 
 
 def available_chest_small_keys_logic(key_counter, world, player, sm_restricted):
-    if not world.keyshuffle[player] and not world.retro[player]:
+    if world.keyshuffle[player] not in [True, 'universal']:
         cnt = 0
         for loc in key_counter.free_locations:
             if loc not in sm_restricted and (key_counter.big_key_opened or '- Big Chest' not in loc.name):
@@ -1231,8 +1231,8 @@ def set_paired_rules(key_logic, world, player):
 
 # Soft lock stuff
 def validate_key_layout(key_layout, world, player):
-    # retro is all good - except for hyrule castle in standard mode
-    if (world.retro[player] and (world.mode[player] != 'standard' or key_layout.sector.name != 'Hyrule Castle')) or world.logic[player] == 'nologic':
+    # universal keys is all good - except for hyrule castle in standard mode
+    if (world.keyshuffle[player] in ['universal'] and (world.mode[player] != 'standard' or key_layout.sector.name != 'Hyrule Castle')) or world.logic[player] == 'nologic':
         return True
     flat_proposal = key_layout.flat_prop
     state = ExplorationState(dungeon=key_layout.sector.name)
@@ -1326,7 +1326,7 @@ def enough_small_locations(state, avail_small_loc):
 
 
 def cnt_avail_small_locations(free_locations, key_only, state, world, player):
-    if not world.keyshuffle[player] and not world.retro[player]:
+    if world.keyshuffle[player] not in [True, 'universal']:
         bk_adj = 1 if state.big_key_opened and not state.big_key_special else 0
         avail_chest_keys = min(free_locations - bk_adj, state.key_locations - key_only)
         return max(0, avail_chest_keys + key_only - state.used_smalls)
@@ -1674,8 +1674,8 @@ def val_rule(rule, skn, allow=False, loc=None, askn=None, setCheck=None):
 
 # Soft lock stuff
 def validate_key_placement(key_layout, world, player):
-    if world.retro[player] or world.accessibility[player] == 'none':
-        return True  # Can't keylock in retro.  Expected if beatable only.
+    if world.keyshuffle[player] in ['universal'] or world.accessibility[player] == 'none':
+        return True  # Can't keylock in universal small keys.  Expected if beatable only.
     max_counter = find_max_counter(key_layout)
     keys_outside = 0
     big_key_outside = False
