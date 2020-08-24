@@ -75,7 +75,7 @@ class World(object):
         self.fix_gtower_exit = self.shuffle_ganon
         self.retro = retro.copy()
         self.custom = custom
-        self.customitemarray = customitemarray
+        self.customitemarray: List[int] = customitemarray
         self.hints = hints.copy()
         self.dynamic_regions = []
         self.dynamic_locations = []
@@ -1812,7 +1812,7 @@ class Spoiler(object):
                          'progression_balancing': self.world.progression_balancing,
                          'triforce_pieces_available': self.world.triforce_pieces_available,
                          'triforce_pieces_required': self.world.triforce_pieces_required,
-                         'shop_shuffle': self.world.shop_shuffle
+                         'shop_shuffle': self.world.shop_shuffle,
                          'experimental' : self.world.experimental
                          }
 

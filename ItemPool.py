@@ -50,7 +50,7 @@ Difficulty = namedtuple('Difficulty',
                          'progressive_armor_limit', 'progressive_bottle_limit',
                          'progressive_bow_limit', 'heart_piece_limit', 'boss_heart_container_limit'])
 
-total_items_to_place = 153
+total_items_to_place = 156
 
 difficulties = {
     'easy': Difficulty(
@@ -778,7 +778,7 @@ def make_custom_item_pool(world, player):
     timer = world.timer[player]
     goal = world.goal[player]
     mode = world.mode[player]
-    customitemarray = world.customitemarray[player]
+    customitemarray = world.customitemarray
 
     pool = []
     placed_items = {}
@@ -792,24 +792,21 @@ def make_custom_item_pool(world, player):
         placed_items[loc] = item
 
     # Correct for insanely oversized item counts and take initial steps to handle undersized pools.
-    # Bow to Silver Arrows Upgrade, including Generic Keys & Rupoors
-    for x in [*range(0, 66 + 1), 68, 69]:
-        key = CONST.CUSTOMITEMS[x]
-        if customitemarray[key] > total_items_to_place:
-            customitemarray[key] = total_items_to_place
-
-    # Triforce
-    if customitemarray["triforce"] > total_items_to_place:
-        customitemarray["triforce"] = total_items_to_place
-
+    for x in range(0, 64):
+        itemname = CONST.CUSTOMITEMS[x]
+        if customitemarray[itemname] > total_items_to_place:
+            customitemarray[itemname] = total_items_to_place
+    if customitemarray[66] > total_items_to_place:
+        customitemarray[66] = total_items_to_place
     itemtotal = 0
-    for x in range(0, 66):
-        itemtotal = itemtotal + customitemarray[x]
+    for x in range(0, 64):
+        itemname = CONST.CUSTOMITEMS[x]
+        itemtotal = itemtotal + customitemarray[itemname]
+    itemtotal = itemtotal + customitemarray[66]
     itemtotal = itemtotal + customitemarray[68]
-    itemtotal = itemtotal + customitemarray[70]
 
     pool.extend(['Bow'] * customitemarray[0])
-    pool.extend(['Silver Bow']* customitemarray[1])
+    pool.extend(['Silver Bow'] * customitemarray[1])
     pool.extend(['Blue Boomerang'] * customitemarray[2])
     pool.extend(['Red Boomerang'] * customitemarray[3])
     pool.extend(['Hookshot'] * customitemarray[4])
@@ -881,7 +878,7 @@ def make_custom_item_pool(world, player):
             thisbottle = world.random.choice(diff.bottles)
         pool.append(thisbottle)
 
-    if world.triforce_pieces_available[player] or world.triforce_pieces_required[player]:
+    if "triforce" in world.goal[player]:
         pool.extend(["Triforce Piece"] * world.triforce_pieces_available[player])
         itemtotal += world.triforce_pieces_available[player]
         treasure_hunt_count = world.triforce_pieces_required[player]
@@ -904,11 +901,11 @@ def make_custom_item_pool(world, player):
                 ['Secret Passage', 'Hyrule Castle - Boomerang Chest', 'Hyrule Castle - Map Chest',
                  'Hyrule Castle - Zelda\'s Chest', 'Sewers - Dark Cross'])
             place_item(key_location, 'Small Key (Universal)')
-            pool.extend(['Small Key (Universal)'] * max((customitemarray["generickeys"] - 1), 0))
+            pool.extend(['Small Key (Universal)'] * max((customitemarray[66] - 1), 0))
         else:
-            pool.extend(['Small Key (Universal)'] * customitemarray["generickeys"])
+            pool.extend(['Small Key (Universal)'] * customitemarray[66])
     else:
-        pool.extend(['Small Key (Universal)'] * customitemarray["generickeys"])
+        pool.extend(['Small Key (Universal)'] * customitemarray[66])
 
     pool.extend(['Fighter Sword'] * customitemarray["sword1"])
     pool.extend(['Progressive Sword'] * customitemarray["progressivesword"])

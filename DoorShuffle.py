@@ -174,7 +174,7 @@ def vanilla_key_logic(world, player):
             builder.key_door_proposal = doors
             if player not in world.key_logic.keys():
                 world.key_logic[player] = {}
-            analyze_dungeon(key_layout, world, player)
+            analyze_dungeon(builder, key_layout, world, player)
             world.key_logic[player][builder.name] = key_layout.key_logic
             log_key_logic(builder.name, key_layout.key_logic)
             last_key = None

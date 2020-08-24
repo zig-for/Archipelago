@@ -1,6 +1,6 @@
 # Ordered list of items in Custom Item Pool page and Starting Inventory page
 CUSTOMITEMS = [
-  "bow",                "progressivebow",   "boomerang",          "redmerang",        "hookshot",
+  "bow",                "silversupgrade",   "boomerang",          "redmerang",        "hookshot",
   "mushroom",           "powder",           "firerod",            "icerod",           "bombos",
   "ether",              "quake",            "lamp",               "hammer",           "shovel",
 
@@ -13,12 +13,11 @@ CUSTOMITEMS = [
   "progressiveshield",  "mail2",            "mail3",              "progressivemail",  "halfmagic",
 
   "quartermagic",       "bombsplus5",       "bombsplus10",        "arrowsplus5",      "arrowsplus10",
-  "arrow1",             "arrow10",          "bomb1",              "bomb3",            "bomb10",
-  "rupee1",             "rupee5",           "rupee20",            "rupee50",          "rupee100",
+  "arrow1",             "arrow10",          "bomb1",              "bomb3",            "rupee1",
+  "rupee5",             "rupee20",          "rupee50",            "rupee100",         "rupee300",
 
-  "rupee300",           "blueclock",        "greenclock",         "redclock",         "silversupgrade",
-  "generickeys",        "triforcepieces",   "triforcepiecesgoal", "triforce",         "rupoor",
-  "rupoorcost"
+  "rupoor",             "blueclock",        "greenclock",         "redclock",         "progressivebow",
+  "bomb10",             "triforce",         "rupoorcost",         "generickeys"
 ]
 
 # These can't be in the Starting Inventory page
