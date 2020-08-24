@@ -321,7 +321,7 @@ def generate_itempool(world, player: int):
     if world.custom:
         (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count,
          treasure_hunt_icon) = make_custom_item_pool(world, player)
-        world.rupoor_cost = min(world.customitemarray["rupoorcost"], 9999)
+        world.rupoor_cost = min(world.customitemarray[player][67], 9999)
     else:
         (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon) = get_pool_core(
             world, player)
@@ -388,9 +388,9 @@ def generate_itempool(world, player: int):
     # logic has some branches where having 4 hearts is one possible requirement (of several alternatives)
     # rather than making all hearts/heart pieces progression items (which slows down generation considerably)
     # We mark one random heart container as an advancement item (or 4 heart pieces in expert mode)
-    if world.difficulty[player] in ['normal', 'hard'] and not (world.custom and world.customitemarray[player]["heartcontainer"] == 0):
+    if world.difficulty[player] in ['easy', 'normal', 'hard'] and not (world.custom and world.customitemarray[player][30] == 0):
         [item for item in items if item.name == 'Boss Heart Container'][0].advancement = True
-    elif world.difficulty[player] in ['expert'] and not (world.custom and world.customitemarray[player]["heartpiece"] < 4):
+    elif world.difficulty[player] in ['expert'] and not (world.custom and world.customitemarray[player][29] < 4):
         adv_heart_pieces = [item for item in items if item.name == 'Piece of Heart'][0:4]
         for hp in adv_heart_pieces:
             hp.advancement = True
@@ -778,7 +778,8 @@ def make_custom_item_pool(world, player):
     timer = world.timer[player]
     goal = world.goal[player]
     mode = world.mode[player]
-    customitemarray = world.customitemarray
+    customitemarray = world.customitemarray[player]
+    logging.info('%s', customitemarray)
 
     pool = []
     placed_items = {}
@@ -793,15 +794,13 @@ def make_custom_item_pool(world, player):
 
     # Correct for insanely oversized item counts and take initial steps to handle undersized pools.
     for x in range(0, 64):
-        itemname = CONST.CUSTOMITEMS[x]
-        if customitemarray[itemname] > total_items_to_place:
-            customitemarray[itemname] = total_items_to_place
+        if customitemarray[x] > total_items_to_place:
+            customitemarray[x] = total_items_to_place
     if customitemarray[66] > total_items_to_place:
         customitemarray[66] = total_items_to_place
     itemtotal = 0
     for x in range(0, 64):
-        itemname = CONST.CUSTOMITEMS[x]
-        itemtotal = itemtotal + customitemarray[itemname]
+        itemtotal = itemtotal + customitemarray[x]
     itemtotal = itemtotal + customitemarray[66]
     itemtotal = itemtotal + customitemarray[68]
 
@@ -873,7 +872,7 @@ def make_custom_item_pool(world, player):
     # all bottles, since only one bottle is available
     if diff.same_bottle:
         thisbottle = world.random.choice(diff.bottles)
-    for _ in range(customitemarray["bottle"]):
+    for _ in range(customitemarray[18]):
         if not diff.same_bottle:
             thisbottle = world.random.choice(diff.bottles)
         pool.append(thisbottle)
@@ -907,17 +906,17 @@ def make_custom_item_pool(world, player):
     else:
         pool.extend(['Small Key (Universal)'] * customitemarray[66])
 
-    pool.extend(['Fighter Sword'] * customitemarray["sword1"])
-    pool.extend(['Progressive Sword'] * customitemarray["progressivesword"])
+    pool.extend(['Fighter Sword'] * customitemarray[32])
+    pool.extend(['Progressive Sword'] * customitemarray[36])
 
     if shuffle == 'insanity_legacy':
         place_item('Link\'s House', 'Magic Mirror')
         place_item('Sanctuary', 'Moon Pearl')
-        pool.extend(['Magic Mirror'] * max((customitemarray["mirror"] -1 ), 0))
-        pool.extend(['Moon Pearl'] * max((customitemarray["pearl"] - 1), 0))
+        pool.extend(['Magic Mirror'] * max((customitemarray[22] -1 ), 0))
+        pool.extend(['Moon Pearl'] * max((customitemarray[28] - 1), 0))
     else:
-        pool.extend(['Magic Mirror'] * customitemarray["mirror"])
-        pool.extend(['Moon Pearl'] * customitemarray["pearl"])
+        pool.extend(['Magic Mirror'] * customitemarray[22])
+        pool.extend(['Moon Pearl'] * customitemarray[28])
 
     if world.keyshuffle == "universal":
         itemtotal = itemtotal - 28  # Corrects for small keys not being in item pool in Retro Mode
