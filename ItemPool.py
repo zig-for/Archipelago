@@ -460,6 +460,7 @@ def shuffle_shops(world, items, player: int):
             if shop.type == ShopType.Shop and shop.region.player == player:
                 shops.append(shop)
                 total_inventory.extend(shop.inventory)
+                shop.custom = True
 
         if 'p' in option:
             def price_adjust(price: int) -> int:
@@ -472,6 +473,7 @@ def shuffle_shops(world, items, player: int):
                     item['replacement_price'] = price_adjust(item["price"])
             for shop in world.shops:
                 if shop.type == ShopType.UpgradeShop and shop.region.player == player:
+                    shop.custom = True
                     for item in shop.inventory:
                         if item:
                             item['price'] = price_adjust(item["price"])
@@ -593,6 +595,7 @@ def set_up_shops(world, player: int):
         rss = world.get_region('Red Shield Shop', player).shop
         rss.push_inventory(2, 'Single Arrow', 80)
         rss.locked = True
+        rss.custom = True
 
     if world.keyshuffle[player] == "universal" or world.retro[player]:
         for shop in world.random.sample([s for s in world.shops if
