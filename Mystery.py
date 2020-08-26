@@ -33,6 +33,7 @@ def mystery_argparse():
     parser.add_argument('--multi', default=1, type=lambda value: min(max(int(value), 1), 255))
     parser.add_argument('--teams', default=1, type=lambda value: max(int(value), 1))
     parser.add_argument('--create_spoiler', action='store_true')
+    parser.add_argument('--skip_playthrough', action='store_true')
     parser.add_argument('--rom')
     parser.add_argument('--enemizercli')
     parser.add_argument('--outputpath')
@@ -40,6 +41,7 @@ def mystery_argparse():
     parser.add_argument('--meta', default=None)
     parser.add_argument('--log_output_path', help='Path to store output log')
     parser.add_argument('--loglevel', default='info', help='Sets log level')
+    parser.add_argument('--create_diff', action="store_true")
     parser.add_argument('--yaml_output', default=0, type=lambda value: min(max(int(value), 0), 255),
                         help='Output rolled mystery results to yaml up to specified number (made for async multiworld)')
 
@@ -93,6 +95,8 @@ def main(args=None, callback = DRMain):
     erargs.seed = seed
     erargs.name = {x: "" for x in range(1, args.multi + 1)}  # only so it can be overwrittin in mystery
     erargs.create_spoiler = args.create_spoiler
+    erargs.skip_playthrough = args.skip_playthrough
+    erargs.create_diff = args.create_diff
     erargs.race = args.race
     erargs.outputname = seedname
     erargs.outputpath = args.outputpath
