@@ -263,15 +263,15 @@ def main(args, seed=None, fish=None):
         if all([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
             mcsb_name = '-keysanity'
         elif [world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]].count(True) == 1:
-            mcsb_name = '-mapshuffle' if world.mapshuffle[player] else '-compassshuffle' if world.compassshuffle[player] else '-keyshuffle' if world.keyshuffle[player] else '-bigkeyshuffle'
+            mcsb_name = '-mapshuffle' if world.mapshuffle[player] else '-compassshuffle' if world.compassshuffle[player] else '-universal_keys' if world.keyshuffle[player] == "universal" else '-keyshuffle' if world.keyshuffle[player] else '-bigkeyshuffle'
         elif any([world.mapshuffle[player], world.compassshuffle[player], world.keyshuffle[player], world.bigkeyshuffle[player]]):
             mcsb_name = '-%s%s%s%sshuffle' % (
             'M' if world.mapshuffle[player] else '', 'C' if world.compassshuffle[player] else '',
-            'S' if world.keyshuffle[player] else '', 'B' if world.bigkeyshuffle[player] else '')
+            'U' if world.keyshuffle[player] == "universal" else 'S' if world.keyshuffle[player] else '', 'B' if world.bigkeyshuffle[player] else '')
 
         outfilepname = f'_T{team+1}' if world.teams > 1 else ''
         outfilepname += f'_P{player}'
-        outfilepname += f"_{world.player_names[player][team].replace(' ', '_')}" if world.player_names[player][team] != 'Player %d' % player else ''
+        outfilepname += f"_{world.player_names[player][team].replace(' ', '_')}" if world.player_names[player][team] != 'Player%d' % player else ''
         outfilestuffs = {
           "logic": world.logic[player],                                   # 0
           "difficulty": world.difficulty[player],                         # 1
