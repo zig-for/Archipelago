@@ -63,11 +63,13 @@ def fill_restrictive(world, base_state: CollectionState, locations, itempool, ke
                             logging.getLogger('').warning('Not all items placed. Game beatable anyway. (Could not place %s)' % item_to_place)
                         continue
                     placements = []
-                    for region in world.regions:
-                        for location in region.locations:
-                            if location.item and not location.event:
-                                placements.append(location)
-                    raise FillError(f'No more spots to place {item_to_place}, locations {locations} are invalid. '
+                    failed_placements = []
+                    for placed in locations:
+                        if not placed.item:
+                            failed_placements.append(placed.name)
+                        else:
+                            placements.append(placed.name)
+                    raise FillError(f'No more spots to place {item_to_place}, locations {failed_placements} are invalid. '
                                     f'Already placed {len(placements)}: {", ".join(placements)}')
 
                 world.push_item(spot_to_fill, item_to_place, False)
@@ -196,7 +198,7 @@ def distribute_items_restrictive(world, gftower_trash=False, fill_locations=None
     prioitempool, fill_locations = fast_fill(world, prioitempool, fill_locations)
 
     restitempool, fill_locations = fast_fill(world, restitempool, fill_locations)
-    unplaced = [item for item in progitempool + prioitempool + restitempool]
+    unplaced = [str(item) for item in progitempool + prioitempool + restitempool]
     unfilled = [location.name for location in fill_locations]
 
     if unplaced or unfilled:
