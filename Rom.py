@@ -1322,6 +1322,7 @@ def patch_rom(world, rom, player, team, enemized):
         player] else 0x0000)  # Bomb Shop Reveal
 
     rom.write_byte(0x180172, 0x01 if world.keyshuffle[player] == "universal" else 0x00)  # universal keys
+    rom.write_byte(0x18637E, 0x01 if world.retro[player] else 0x00)  # Skip quiver in item shops once bought
     rom.write_byte(0x180175, 0x01 if world.retro[player] else 0x00)  # rupee bow
     rom.write_byte(0x180176, 0x0A if world.retro[player] else 0x00)  # wood arrow cost
     rom.write_byte(0x180178, 0x32 if world.retro[player] else 0x00)  # silver arrow cost
