@@ -197,7 +197,6 @@ def check_enemizer(enemizercli):
 
 
 def patch_enemizer(world, player: int, rom: LocalRom, enemizercli, random_sprite_on_hit: bool):
-    check_enemizer(enemizercli)
     randopatch_path = os.path.abspath(output_path(f'enemizer_randopatch_{player}.sfc'))
     options_path = os.path.abspath(output_path(f'enemizer_options_{player}.json'))
     enemizer_output_path = os.path.abspath(output_path(f'enemizer_output_{player}.sfc'))

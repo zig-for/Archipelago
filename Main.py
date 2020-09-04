@@ -15,7 +15,7 @@ from KeyDoorShuffle import validate_key_placement
 from Regions import create_regions, create_shops, mark_light_world_regions, lookup_vanilla_location_to_entrance, create_dungeon_regions
 from InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from EntranceShuffle import link_entrances, link_inverted_entrances
-from Rom import patch_rom, patch_race_rom, patch_enemizer, apply_rom_settings, LocalRom, get_hash_string
+from Rom import patch_rom, patch_race_rom, patch_enemizer, apply_rom_settings, LocalRom, get_hash_string, check_enemizer
 from Doors import create_doors
 from DoorShuffle import link_doors
 from RoomData import create_rooms
@@ -237,18 +237,19 @@ def main(args, seed=None, fish=None):
         patch_rom(world, rom, player, team, use_enemizer)
 
         if use_enemizer:
-            if args.rom and not(os.path.isfile(args.rom)):
+            if args.rom and not (os.path.isfile(args.rom)):
                 raise RuntimeError("Could not find valid base rom for enemizing at expected path %s." % args.rom)
-            if os.path.exists(args.enemizercli):
+            try:
+                check_enemizer(args.enemizercli)
+            except:
+                enemizerMsg = world.fish.translate("cli", "cli", "enemizer.not.found") + ': ' + args.enemizercli + "\n"
+                enemizerMsg += world.fish.translate("cli", "cli", "enemizer.nothing.applied")
+                logging.warning(enemizerMsg)
+                raise EnemizerError(enemizerMsg)
+            else:
                 patch_enemizer(world, player, rom, args.enemizercli,
                                sprite_random_on_hit)
                 enemized = True
-            else:
-                enemizerMsg  = world.fish.translate("cli","cli","enemizer.not.found") + ': ' + args.enemizercli + "\n"
-                enemizerMsg += world.fish.translate("cli","cli","enemizer.nothing.applied")
-                logging.warning(enemizerMsg)
-                raise EnemizerError(enemizerMsg)
-
 
         if args.race:
             patch_race_rom(rom)
