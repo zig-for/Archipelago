@@ -161,7 +161,7 @@ def guiMain(args=None):
     spriteEntry.pack(side=LEFT)
     spriteSelectButton.pack(side=LEFT)
 
-    quickSwapVar = IntVar()
+    quickSwapVar = IntVar(value=1)
     quickSwapCheckbutton = Checkbutton(romOptionsFrame, text="L/R Quickswapping", variable=quickSwapVar)
     quickSwapCheckbutton.grid(row=1, column=0, sticky=E)
 
