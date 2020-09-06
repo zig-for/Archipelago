@@ -1123,7 +1123,7 @@ def patch_rom(world, rom, player, team, enemized):
                          'Titans Mitts', 'Power Glove', 'Progressive Glove',
                          'Golden Sword', 'Tempered Sword', 'Master Sword', 'Fighter Sword', 'Progressive Sword',
                          'Mirror Shield', 'Red Shield', 'Blue Shield', 'Progressive Shield',
-                         'Red Mail', 'Blue Mail', 'Progressive Armor',
+                         'Red Mail', 'Blue Mail', 'Progressive Mail',
                          'Magic Upgrade (1/4)', 'Magic Upgrade (1/2)'}:
             continue
 
@@ -2547,7 +2547,7 @@ RelevantItems = ['Bow',
                  'Single Arrow',
                  'Blue Mail',
                  'Red Mail',
-                 'Progressive Armor',
+                 'Progressive Mail',
                  'Blue Boomerang',
                  'Red Boomerang',
                  'Blue Shield',
