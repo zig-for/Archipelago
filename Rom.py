@@ -662,6 +662,7 @@ def patch_rom(world, rom, player, team, enemized):
     dr_flags = DROptions.Eternal_Mini_Bosses if world.doorShuffle[player] == 'vanilla' else DROptions.Town_Portal
     if world.experimental[player]:
         dr_flags |= DROptions.Map_Info
+    if world.debug[player]:
         dr_flags |= DROptions.Debug
 
     # patch doors

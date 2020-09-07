@@ -203,6 +203,7 @@
       "                base game."
     ],
     "experimental": [ "Enable experimental features. (default: %(default)s)" ],
+    "debug": ["Enable door debugging features. (default: %(default)s)" ],
     "dungeon_counters": [ "Enable dungeon chest counters. (default: %(default)s)" ],
     "crystals_ganon": [
       "How many crystals are needed to defeat ganon. Any other",

@@ -85,6 +85,7 @@ def main(args, seed=None, fish=None):
     world.progressive = args.progressive.copy()
     world.dungeon_counters = args.dungeon_counters.copy()
     world.experimental = args.experimental.copy()
+    world.debug = args.debug.copy()
     world.fish = fish if fish else BabelFish(lang="en")
     world.glitch_boots = args.glitch_boots.copy()
     world.triforce_pieces_available = args.triforce_pieces_available.copy()

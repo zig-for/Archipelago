@@ -103,7 +103,10 @@ def guiMain(args=None):
     balancingCheckbutton = Checkbutton(checkBoxFrame, text="Multiworld Progression Balancing", variable=balancingVar)
     doorexperimentalVar = IntVar()
     doorexperimentalVar.set(0)
+    doordebugVar = IntVar()
+    doordebugVar.set(0)
     doorexperimentalCheckbutton = Checkbutton(checkBoxFrame, text="Experimental Door Features", variable=doorexperimentalVar)
+    doordebugCheckbutton = Checkbutton(checkBoxFrame, text="Door Debug Mode", variable=doordebugVar)
     patchesVar = IntVar()
     patchesVar.set(1)  # set default
     patchesCheckbutton = Checkbutton(checkBoxFrame, text="Create Delta Patches", variable=patchesVar)
@@ -122,6 +125,7 @@ def guiMain(args=None):
     customCheckbutton.pack(expand=True, anchor=W)
     balancingCheckbutton.pack(expand=True, anchor=W)
     doorexperimentalCheckbutton.pack(expand=True, anchor=W)
+    doordebugCheckbutton.pack(expand=True, anchor=W)
     patchesCheckbutton.pack(expand=True, anchor=W)
 
     romOptionsFrame = LabelFrame(rightHalfFrame, text="Rom options")
@@ -498,6 +502,7 @@ def guiMain(args=None):
         guiargs.timer = timerVar.get()
         guiargs.skip_progression_balancing = not balancingVar.get()
         guiargs.experimental = doorexperimentalVar.get()
+        guiargs.debug = doordebugVar.get()
         if guiargs.timer == "none":
             guiargs.timer = False
         guiargs.dungeon_counters = dungeonCounterVar.get()

@@ -136,6 +136,10 @@
     "action": "store_true",
     "type": "bool"
   },
+  "debug": {
+    "action": "store_true",
+    "type": "bool"
+  },
   "dungeon_counters": {
     "choices": [
       "default",

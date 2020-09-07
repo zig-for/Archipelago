@@ -1829,7 +1829,8 @@ class Spoiler(object):
                          'triforce_pieces_available': self.world.triforce_pieces_available,
                          'triforce_pieces_required': self.world.triforce_pieces_required,
                          'shop_shuffle': self.world.shop_shuffle,
-                         'experimental' : self.world.experimental
+                         'experimental' : self.world.experimental,
+                         'debug' : self.world.debug
                          }
 
     def to_json(self):
@@ -1926,6 +1927,7 @@ class Spoiler(object):
                 outfile.write('Beemizer:                        %s\n' % self.metadata['beemizer'][player])
                 outfile.write('Pot shuffle                      %s\n' % ('Yes' if self.metadata['shufflepots'][player] else 'No'))
                 outfile.write('Experimental Doors:              %s\n' % ('Yes' if self.metadata['experimental'][player] else 'No'))
+                outfile.write('Debug Mode:                      %s\n' % ('Yes' if self.metadata['debug'][player] else 'No'))
             if self.doors:
                 outfile.write('\n\nDoors:\n\n')
                 outfile.write('\n'.join(
