@@ -219,7 +219,7 @@
       "Random: Picks a random value between 0 and 7 (inclusive).",
       "0-7:    Number of crystals needed"
     ],
-    "openpyramid": [ "Pre-opens the pyramid hole, this removes the Agahnim 2 requirement for it. (default: %(default)s)" ],
+    "open_pyramid": [ "Pre-opens the pyramid hole, this removes the Agahnim 2 requirement for it. (default: %(default)s)" ],
     "rom": [
       "Path to an ALttP JP (1.0) rom to use as a base." ,
       "(default: %(default)s)"
