@@ -51,7 +51,7 @@ def mystery_argparse():
     return args
 
 
-def main(args=None, callback = DRMain):
+def main(args=None, callback=DRMain):
     if not args:
         args = mystery_argparse()
 
@@ -70,7 +70,8 @@ def main(args=None, callback = DRMain):
             weights_cache[args.weights] = get_weights(args.weights)
         except Exception as e:
             raise ValueError(f"File {args.weights} is destroyed. Please fix your yaml.") from e
-        print(f"Weights: {args.weights} >> {get_choice('description', weights_cache[args.weights], 'No description specified')}")
+        print(f"Weights: {args.weights} >> "
+              f"{get_choice('description', weights_cache[args.weights], 'No description specified')}")
     if args.meta:
         try:
             weights_cache[args.meta] = get_weights(args.meta)
@@ -87,7 +88,8 @@ def main(args=None, callback = DRMain):
             try:
                 if path not in weights_cache:
                     weights_cache[path] = get_weights(path)
-                print(f"P{player} Weights: {path} >> {get_choice('description', weights_cache[path], 'No description specified')}")
+                print(f"P{player} Weights: {path} >> "
+                      f"{get_choice('description', weights_cache[path], 'No description specified')}")
 
             except Exception as e:
                 raise ValueError(f"File {path} is destroyed. Please fix your yaml.") from e
@@ -127,11 +129,13 @@ def main(args=None, callback = DRMain):
                 if self._msg != '':
                     self._writer(self._msg)
                     self._msg = ''
+
         log = logging.getLogger("stderr")
         log.addHandler(logging.StreamHandler())
         sys.stderr = LoggerWriter(log.error)
         os.makedirs(args.log_output_path, exist_ok=True)
-        logging.basicConfig(format='%(message)s', level=loglevel, filename=os.path.join(args.log_output_path, f"{seed}.log"))
+        logging.basicConfig(format='%(message)s', level=loglevel,
+                            filename=os.path.join(args.log_output_path, f"{seed}.log"))
     else:
         logging.basicConfig(format='%(message)s', level=loglevel)
     if args.rom:
@@ -259,7 +263,8 @@ def roll_settings(weights):
                 if random.random() < (option_set["percentage"] / 100):
                     weights.update(option_set["options"])
             except Exception as e:
-                raise ValueError(f"Linked option {option_set['name']} is destroyed. Please fix your linked option.") from e
+                raise ValueError(f"Linked option {option_set['name']} is destroyed. "
+                                 f"Please fix your linked option.") from e
 
     ret.name = get_choice('name', weights)
     if ret.name:
@@ -312,8 +317,7 @@ def roll_settings(weights):
                 'local_ganon_triforce_hunt': 'localganontriforcehunt'
                 }[goal]
 
-
-    #TODO consider moving open_pyramid to an automatic variable in the core roller, set to True when
+    # TODO consider moving open_pyramid to an automatic variable in the core roller, set to True when
     # fast ganon + ganon at hole
     ret.open_pyramid = goal in {'fast_ganon', 'ganon_triforce_hunt', 'local_ganon_triforce_hunt'}
 
@@ -462,6 +466,7 @@ def roll_settings(weights):
     else:
         ret.quickswap = True
     return ret
+
 
 if __name__ == '__main__':
     main()
