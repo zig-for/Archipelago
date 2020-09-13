@@ -208,7 +208,7 @@ class World(object):
         for dungeon in self.dungeons:
             if dungeon.name == dungeonname and dungeon.player == player:
                 return dungeon
-        raise RuntimeError('No such dungeon %s for player %d' % (dungeonname, player))
+        raise KeyError('No such dungeon %s for player %d' % (dungeonname, player))
 
     def get_door(self, doorname, player):
         if isinstance(doorname, Door):
@@ -220,7 +220,7 @@ class World(object):
                 if door.name == doorname and door.player == player:
                     self._door_cache[(doorname, player)] = door
                     return door
-            raise RuntimeError('No such door %s for player %d' % (doorname, player))
+            raise KeyError('No such door %s for player %d' % (doorname, player))
 
     def check_for_door(self, doorname, player):
         if isinstance(doorname, Door):
@@ -257,7 +257,7 @@ class World(object):
                 if room.index == room_idx and room.player == player:
                     self._room_cache[(room_idx, player)] = room
                     return room
-            raise RuntimeError('No such room %s for player %d' % (room_idx, player))
+            raise KeyError('No such room %s for player %d' % (room_idx, player))
 
     def get_all_state(self, keys=False) -> CollectionState:
         ret = CollectionState(self)
