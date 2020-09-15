@@ -211,7 +211,7 @@ class World(object):
         for dungeon in self.dungeons:
             if dungeon.name == dungeonname and dungeon.player == player:
                 return dungeon
-        raise RuntimeError('No such dungeon %s for player %d' % (dungeonname, player))
+        raise KeyError('No such dungeon %s for player %d' % (dungeonname, player))
 
     def get_door(self, doorname, player):
         if isinstance(doorname, Door):
@@ -223,7 +223,7 @@ class World(object):
                 if door.name == doorname and door.player == player:
                     self._door_cache[(doorname, player)] = door
                     return door
-            raise RuntimeError('No such door %s for player %d' % (doorname, player))
+            raise KeyError('No such door %s for player %d' % (doorname, player))
 
     def get_portal(self, portal_name, player):
         if isinstance(portal_name, Portal):
@@ -272,7 +272,7 @@ class World(object):
                 if room.index == room_idx and room.player == player:
                     self._room_cache[(room_idx, player)] = room
                     return room
-            raise RuntimeError('No such room %s for player %d' % (room_idx, player))
+            raise KeyError('No such room %s for player %d' % (room_idx, player))
 
     def get_all_state(self, keys=False) -> CollectionState:
         ret = CollectionState(self)
@@ -2059,9 +2059,9 @@ class Spoiler(object):
                     'Enemy shuffle:                   %s\n' % bool_to_text(self.metadata['enemy_shuffle'][player]))
                 outfile.write('Enemy health:                    %s\n' % self.metadata['enemy_health'][player])
                 outfile.write('Enemy damage:                    %s\n' % self.metadata['enemy_damage'][player])
-                outfile.write(f'Killable thieves:                {bool_to_text(self.metadata["killable_thieves"])}\n')
-                outfile.write(f'Shuffled tiles:                  {bool_to_text(self.metadata["tile_shuffle"])}\n')
-                outfile.write(f'Shuffled bushes:                 {bool_to_text(self.metadata["bush_shuffle"])}\n')
+                outfile.write(f'Killable thieves:                {bool_to_text(self.metadata["killable_thieves"][player])}\n')
+                outfile.write(f'Shuffled tiles:                  {bool_to_text(self.metadata["tile_shuffle"][player])}\n')
+                outfile.write(f'Shuffled bushes:                 {bool_to_text(self.metadata["bush_shuffle"][player])}\n')
                 outfile.write(
                     'Hints:                           %s\n' % ('Yes' if self.metadata['hints'][player] else 'No'))
                 outfile.write('Beemizer:                        %s\n' % self.metadata['beemizer'][player])

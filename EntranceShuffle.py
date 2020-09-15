@@ -652,7 +652,7 @@ def link_entrances(world, player):
                     candidate = cave
                     break
             if candidate is None:
-                raise RuntimeError('No suitable cave.')
+                raise KeyError('No suitable cave.')
             cavelist.remove(candidate)
             return candidate
 
@@ -667,7 +667,7 @@ def link_entrances(world, player):
 
             try:
                 cave = extract_reachable_exit(primary)
-            except RuntimeError:
+            except KeyError:
                 cave = extract_reachable_exit(secondary)
 
             exit = cave[-1]
@@ -871,7 +871,7 @@ def link_entrances(world, player):
                     candidate = cave
                     break
             if candidate is None:
-                raise RuntimeError('No suitable cave.')
+                raise KeyError('No suitable cave.')
             cavelist.remove(candidate)
             return candidate
 
@@ -1006,7 +1006,7 @@ def link_entrances(world, player):
                     candidate = cave
                     break
             if candidate is None:
-                raise RuntimeError('No suitable cave.')
+                raise KeyError('No suitable cave.')
             cavelist.remove(candidate)
             return candidate
 
@@ -1726,7 +1726,7 @@ def link_inverted_entrances(world, player):
                     candidate = cave
                     break
             if candidate is None:
-                raise RuntimeError('No suitable cave.')
+                raise KeyError('No suitable cave.')
             cavelist.remove(candidate)
             return candidate
 
@@ -1809,7 +1809,7 @@ def connect_entrance(world, entrancename: str, exitname: str, player: int):
     try:
         region = world.get_region(exitname, player)
         exit = None
-    except RuntimeError:
+    except KeyError:
         exit = world.get_entrance(exitname, player)
         region = exit.parent_region
 
@@ -1963,7 +1963,7 @@ def connect_mandatory_exits(world, entrances, caves, must_be_exits, player, dp_m
                 break
 
         if cave is None:
-            raise RuntimeError('No more caves left. Should not happen!')
+            raise KeyError('No more caves left. Should not happen!')
 
         # all caves are sorted so that the last exit is always reachable
         connect_two_way(world, exit, cave[-1], player)
