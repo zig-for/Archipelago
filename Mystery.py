@@ -355,16 +355,7 @@ def roll_settings(weights):
 
     ret.item_functionality = get_choice('item_functionality', weights)
 
-    ret.shufflebosses = {'none': 'none',
-                         'simple': 'simple',
-                         'full': 'full',
-                         'random': 'random',
-                         'basic': 'simple',
-                         'normal': 'full',
-                         'chaos': 'random',
-                         'singularity': 'singularity',
-                         'duality': 'singularity'
-                         }[get_choice('boss_shuffle', weights)]
+    ret.shufflebosses = get_choice('boss_shuffle', weights)
 
     ret.enemy_shuffle = {'none': False,
                          'shuffled': 'shuffled',

@@ -187,6 +187,20 @@ def place_bosses(world, player: int):
         ['Ganons Tower', 'bottom'],
     ]
 
+    try:
+        world.boss_shuffle[player] = {'none': 'none',
+                                      'simple': 'simple',
+                                      'full': 'full',
+                                      'random': 'random',
+                                      'basic': 'simple',
+                                      'normal': 'full',
+                                      'chaos': 'random',
+                                      'singularity': 'singularity',
+                                      'duality': 'singularity'
+                                      }[world.boss_shuffle[player]]
+    except KeyError:
+        raise FillError(f"Could not find boss shuffle mode {world.boss_shuffle[player]}")
+
     all_bosses = sorted(boss_table.keys())  # sorted to be deterministic on older pythons
     placeable_bosses = [boss for boss in all_bosses if boss not in ['Agahnim', 'Agahnim2', 'Ganon']]
     anywhere_bosses = [boss for boss in placeable_bosses if all(
@@ -198,7 +212,7 @@ def place_bosses(world, player: int):
             boss_locations.remove(['Ice Palace', None])
             placeable_bosses.remove('Kholdstare')
 
-        if world.boss_shuffle[player] == "basic":  # vanilla bosses shuffled
+        if world.boss_shuffle[player] == "simple":  # vanilla bosses shuffled
             bosses = placeable_bosses + ['Armos Knights', 'Lanmolas', 'Moldorm']
         else:  # all bosses present, the three duplicates chosen at random
             bosses = all_bosses + [world.random.choice(placeable_bosses) for _ in range(3)]
@@ -214,7 +228,7 @@ def place_bosses(world, player: int):
             bosses.remove(boss)
             place_boss(world, player, boss, loc, level)
 
-    elif world.boss_shuffle[player] == "random": #all bosses chosen at random
+    elif world.boss_shuffle[player] == "random":  # all bosses chosen at random
         for [loc, level] in boss_locations:
             try:
                 boss = world.random.choice(
