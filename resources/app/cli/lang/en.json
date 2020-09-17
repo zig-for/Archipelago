@@ -122,6 +122,7 @@
     ],
     "item_functionality": [
       "Select limits on item functionality to increase difficulty. (default: %(default)s)",
+      "Easy:           Increased functionality",
       "Normal:         Normal functionality.",
       "Hard:           Reduced functionality.",
       "Expert:         Greatly reduced functionality."

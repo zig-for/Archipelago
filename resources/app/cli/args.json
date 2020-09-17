@@ -79,6 +79,7 @@
   },
   "item_functionality": {
     "choices": [
+      "easy",
       "normal",
       "hard",
       "expert"
