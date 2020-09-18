@@ -369,6 +369,14 @@ def guiMain(args=None):
     doorshuffleLabel = Label(doorshuffleFrame, text='Door Shuffle')
     doorshuffleLabel.pack(side=LEFT)
 
+    doorintensityFrame = Frame(drowDownFrame)
+    doorintensityVar = StringVar()
+    doorintensityVar.set('1')
+    doorintensityOptionMenu = OptionMenu(doorintensityFrame, doorintensityVar, '1', '2', '3', 'random')
+    doorintensityOptionMenu.pack(side=RIGHT)
+    doorintensityLabel = Label(doorintensityFrame, text='Door Intensity Level')
+    doorintensityLabel.pack(side=LEFT)
+
     modeFrame.pack(expand=True, anchor=E)
     logicFrame.pack(expand=True, anchor=E)
     goalFrame.pack(expand=True, anchor=E)
@@ -384,6 +392,7 @@ def guiMain(args=None):
     algorithmFrame.pack(expand=True, anchor=E)
     shuffleFrame.pack(expand=True, anchor=E)
     doorshuffleFrame.pack(expand=True, anchor=E)
+    doorintensityFrame.pack(expand=True, anchor=E)
 
     enemizerFrame = LabelFrame(randomizerWindow, text="Enemizer", padx=5, pady=2)
 
@@ -517,6 +526,7 @@ def guiMain(args=None):
         guiargs.algorithm = algorithmVar.get()
         guiargs.shuffle = shuffleVar.get()
         guiargs.door_shuffle = doorshuffleVar.get()
+        guiargs.intensity = doorintensityVar.get()
         guiargs.heartbeep = heartbeepVar.get()
         guiargs.heartcolor = heartcolorVar.get()
         guiargs.fastmenu = fastMenuVar.get()
