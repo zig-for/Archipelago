@@ -64,6 +64,8 @@ def set_rules(world, player):
     else:
         set_inverted_bunny_rules(world, player)
 
+    raise Exception(f"Could not find mirrorless path to castle coutyard for Player {player}")
+
 def set_rule(spot, rule):
     spot.access_rule = rule
 
