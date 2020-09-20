@@ -357,8 +357,16 @@ def guiMain(args=None):
                                    'insanity', 'restricted_legacy', 'full_legacy', 'madness_legacy', 'insanity_legacy',
                                    'dungeonsfull', 'dungeonssimple')
     shuffleOptionMenu.pack(side=RIGHT)
-    shuffleLabel = Label(shuffleFrame, text='Entrance shuffle algorithm')
+    shuffleLabel = Label(shuffleFrame, text='Entrance shuffle')
     shuffleLabel.pack(side=LEFT)
+
+    prizeFrame = Frame(drowDownFrame)
+    prizeVar = StringVar()
+    prizeVar.set('general')
+    prizeOptionMenu = OptionMenu(prizeFrame, prizeVar, 'none', 'general', 'bonk', 'both')
+    prizeOptionMenu.pack(side=RIGHT)
+    prizeLabel = Label(prizeFrame, text='Shuffle Prices/Drops')
+    prizeLabel.pack(side=LEFT)
 
 
     doorshuffleFrame = Frame(drowDownFrame)
@@ -391,6 +399,7 @@ def guiMain(args=None):
     accessibilityFrame.pack(expand=True, anchor=E)
     algorithmFrame.pack(expand=True, anchor=E)
     shuffleFrame.pack(expand=True, anchor=E)
+    prizeFrame.pack(expand=True, anchor=E)
     doorshuffleFrame.pack(expand=True, anchor=E)
     doorintensityFrame.pack(expand=True, anchor=E)
 
@@ -564,6 +573,10 @@ def guiMain(args=None):
             guiargs.shop_shuffle += "p"
         if shopUpgradeShuffleVar.get():
             guiargs.shop_shuffle += "u"
+        guiargs.shuffle_prizes = {"none": "",
+                                  "bonk": "b",
+                                  "general": "g",
+                                  "both": "bg"}[prizeVar.get()]
         guiargs.customitemarray = [int(bowVar.get()), int(silverarrowVar.get()), int(boomerangVar.get()),
                                    int(magicboomerangVar.get()), int(hookshotVar.get()), int(mushroomVar.get()),
                                    int(magicpowderVar.get()), int(firerodVar.get()),

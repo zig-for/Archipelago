@@ -61,7 +61,6 @@ class World(object):
         self._entrance_cache = {}
         self._location_cache = {}
         self.required_locations = []
-        self.shuffle_bonk_prizes = False
         self.light_world_light_cone = False
         self.dark_world_light_cone = False
         self.rupoor_cost = 10
@@ -145,6 +144,7 @@ class World(object):
             set_player_attr('triforce_pieces_available', 30)
             set_player_attr('triforce_pieces_required', 20)
             set_player_attr('shop_shuffle', 'off')
+            set_player_attr('shuffle_prizes', "g")
 
     def secure(self):
         self.random = secrets.SystemRandom()
@@ -1831,6 +1831,7 @@ class Spoiler(object):
                          'triforce_pieces_available': self.world.triforce_pieces_available,
                          'triforce_pieces_required': self.world.triforce_pieces_required,
                          'shop_shuffle': self.world.shop_shuffle,
+                         'shuffle_prizes': self.world.shuffle_prizes
                          'experimental' : self.world.experimental,
                          'debug' : self.world.debug
                          }
@@ -1929,6 +1930,7 @@ class Spoiler(object):
                     'Hints:                           %s\n' % ('Yes' if self.metadata['hints'][player] else 'No'))
                 outfile.write('Beemizer:                        %s\n' % self.metadata['beemizer'][player])
                 outfile.write('Pot shuffle                      %s\n' % ('Yes' if self.metadata['shufflepots'][player] else 'No'))
+                outfile.write('Prize shuffle                      %s\n' % self.metadata['shuffle_prizes'][player])
                 outfile.write('Experimental Doors:              %s\n' % ('Yes' if self.metadata['experimental'][player] else 'No'))
                 outfile.write('Debug Mode:                      %s\n' % ('Yes' if self.metadata['debug'][player] else 'No'))
             if self.doors:

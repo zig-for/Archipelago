@@ -339,6 +339,15 @@
         "action": "store_true",
     "type": "bool"
   },
+  "shuffle_prizes": {
+    "choices": [
+      "",
+      "g",
+      "b",
+      "gb",
+      "bg"
+    ]
+  },
   "enemy_health": {
     "choices": [
       "default",
