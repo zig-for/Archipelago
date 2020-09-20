@@ -270,7 +270,7 @@ def roll_settings(weights):
         ret.name = handle_name(ret.name)
 
     glitches_required = get_choice('glitches_required', weights)
-    if glitches_required not in ['none', 'no_logic']:
+    if glitches_required not in [None, 'none', 'no_logic', 'minor_glitches']:
         logging.warning("Only NMG and No Logic supported")
         glitches_required = 'none'
     ret.logic = {None: 'noglitches', 'none': 'noglitches', 'no_logic': 'nologic'}[glitches_required]
@@ -304,7 +304,7 @@ def roll_settings(weights):
     ret.experimental = get_choice('experimental', weights, False)
     ret.debug = get_choice('debug', weights, False)
 
-    goal = get_choice('goals', weights)
+    goal = get_choice('goals', weights, 'ganon')
     ret.goal = {'ganon': 'ganon',
                 'fast_ganon': 'crystals',
                 'dungeons': 'dungeons',
@@ -348,13 +348,13 @@ def roll_settings(weights):
                   'assured': 'assured',
                   'vanilla': 'vanilla',
                   'swordless': 'swordless'
-                  }[get_choice('weapons', weights)]
+                  }[get_choice('weapons', weights, 'assured')]
 
     ret.difficulty = get_choice('item_pool', weights)
 
     ret.item_functionality = get_choice('item_functionality', weights)
 
-    ret.shufflebosses = get_choice('boss_shuffle', weights)
+    ret.shufflebosses = get_choice('boss_shuffle', weights, 'none')
 
     ret.enemy_shuffle = {'none': False,
                          'shuffled': 'shuffled',
@@ -386,7 +386,8 @@ def roll_settings(weights):
 
     # end of legacy block
 
-    ret.enemy_damage = {'default': 'default',
+    ret.enemy_damage = {None: 'default',
+                        'default': 'default',
                         'shuffled': 'shuffled',
                         'random': 'random',
                         'chaos': 'random'
@@ -458,6 +459,7 @@ def roll_settings(weights):
         ret.uw_palettes = get_choice('uw_palettes', romweights, "default")
     else:
         ret.quickswap = True
+        ret.sprite = "Link"
     return ret
 
 
