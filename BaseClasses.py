@@ -1930,7 +1930,7 @@ class Spoiler(object):
                     'Hints:                           %s\n' % ('Yes' if self.metadata['hints'][player] else 'No'))
                 outfile.write('Beemizer:                        %s\n' % self.metadata['beemizer'][player])
                 outfile.write('Pot shuffle                      %s\n' % ('Yes' if self.metadata['shufflepots'][player] else 'No'))
-                outfile.write('Prize shuffle                      %s\n' % self.metadata['shuffle_prizes'][player])
+                outfile.write('Prize shuffle                    %s\n' % self.metadata['shuffle_prizes'][player])
                 outfile.write('Experimental Doors:              %s\n' % ('Yes' if self.metadata['experimental'][player] else 'No'))
                 outfile.write('Debug Mode:                      %s\n' % ('Yes' if self.metadata['debug'][player] else 'No'))
             if self.doors:
