@@ -221,8 +221,7 @@ def get_weights(path):
             with open(path, 'rb') as f:
                 yaml = str(f.read(), "utf-8")
     except Exception as e:
-        print('Failed to read weights (%s)' % e)
-        return
+        raise Exception(f"Failed to read weights ({path})") from e
 
     return parse_yaml(yaml)
 
@@ -271,7 +270,7 @@ def roll_settings(weights):
         ret.name = handle_name(ret.name)
 
     glitches_required = get_choice('glitches_required', weights)
-    if glitches_required not in ['none', 'no_logic']:
+    if glitches_required not in [None, 'none', 'no_logic', 'minor_glitches']:
         logging.warning("Only NMG and No Logic supported")
         glitches_required = 'none'
     ret.logic = {None: 'noglitches', 'none': 'noglitches', 'no_logic': 'nologic'}[glitches_required]
@@ -300,13 +299,12 @@ def roll_settings(weights):
     entrance_shuffle = get_choice('entrance_shuffle', weights)
     ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
 
-    door_shuffle = get_choice('door_shuffle', weights)
-    ret.door_shuffle = door_shuffle if door_shuffle else 'vanilla'
+    ret.door_shuffle = get_choice('door_shuffle', weights, 'vanilla')
     ret.intensity = get_choice('intensity', weights, '1')
     ret.experimental = get_choice('experimental', weights, False)
     ret.debug = get_choice('debug', weights, False)
 
-    goal = get_choice('goals', weights)
+    goal = get_choice('goals', weights, 'ganon')
     ret.goal = {'ganon': 'ganon',
                 'fast_ganon': 'crystals',
                 'dungeons': 'dungeons',
@@ -350,13 +348,13 @@ def roll_settings(weights):
                   'assured': 'assured',
                   'vanilla': 'vanilla',
                   'swordless': 'swordless'
-                  }[get_choice('weapons', weights)]
+                  }[get_choice('weapons', weights, 'assured')]
 
     ret.difficulty = get_choice('item_pool', weights)
 
     ret.item_functionality = get_choice('item_functionality', weights)
 
-    ret.shufflebosses = get_choice('boss_shuffle', weights)
+    ret.shufflebosses = get_choice('boss_shuffle', weights, 'none')
 
     ret.enemy_shuffle = {'none': False,
                          'shuffled': 'shuffled',
@@ -388,7 +386,8 @@ def roll_settings(weights):
 
     # end of legacy block
 
-    ret.enemy_damage = {'default': 'default',
+    ret.enemy_damage = {None: 'default',
+                        'default': 'default',
                         'shuffled': 'shuffled',
                         'random': 'random',
                         'chaos': 'random'
@@ -412,6 +411,9 @@ def roll_settings(weights):
     ret.dungeon_counters = get_choice('dungeon_counters', weights, 'default')
 
     ret.progressive = convert_to_on_off(get_choice('progressive', weights, 'on'))
+
+    ret.shuffle_prizes = get_choice('shuffle_prizes', weights, "g")
+
     inventoryweights = weights.get('startinventory', {})
     startitems = []
     for item in inventoryweights.keys():
@@ -431,8 +433,8 @@ def roll_settings(weights):
 
     if get_choice("local_keys", weights, "l" in dungeon_items):
         # () important for ordering of commands, without them the Big Keys section is part of the Small Key else
-        ret.local_items = (item_name_groups["Small Keys"] if "s" in dungeon_items else set()) \
-                          | item_name_groups["Big Keys"] if "b" in dungeon_items else set()
+        ret.local_items = (item_name_groups["Small Keys"] if ret.keyshuffle else set()) \
+                          | item_name_groups["Big Keys"] if ret.bigkeyshuffle else set()
     else:
         ret.local_items = set()
     for item_name in weights.get('local_items', []):
@@ -457,6 +459,7 @@ def roll_settings(weights):
         ret.uw_palettes = get_choice('uw_palettes', romweights, "default")
     else:
         ret.quickswap = True
+        ret.sprite = "Link"
     return ret
 
 

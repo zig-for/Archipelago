@@ -79,6 +79,7 @@
   },
   "item_functionality": {
     "choices": [
+      "easy",
       "normal",
       "hard",
       "expert"
@@ -337,6 +338,15 @@
   "bush_shuffle": {
         "action": "store_true",
     "type": "bool"
+  },
+  "shuffle_prizes": {
+    "choices": [
+      "",
+      "g",
+      "b",
+      "gb",
+      "bg"
+    ]
   },
   "enemy_health": {
     "choices": [
