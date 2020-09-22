@@ -302,6 +302,7 @@ def roll_settings(weights):
 
     door_shuffle = get_choice('door_shuffle', weights)
     ret.door_shuffle = door_shuffle if door_shuffle else 'vanilla'
+    ret.intensity = get_choice('intensity', weights, '1')
     ret.experimental = get_choice('experimental', weights, False)
     ret.debug = get_choice('debug', weights, False)
 

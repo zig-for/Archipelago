@@ -27,7 +27,7 @@ from Utils import output_path, parse_player_names, get_options, __version__, _ve
 from source.classes.BabelFish import BabelFish
 import Patch
 
-__dr_version__ = '0.1.0.14-u'
+__dr_version__ = '0.2.0.0-u'
 seeddigits = 20
 
 
@@ -84,6 +84,7 @@ def main(args, seed=None, fish=None):
     world.shufflepots = args.shufflepots.copy()
     world.progressive = args.progressive.copy()
     world.dungeon_counters = args.dungeon_counters.copy()
+    world.intensity = {player: random.randint(1, 3) if args.intensity[player] == 'random' else int(args.intensity[player]) for player in range(1, world.players + 1)}
     world.experimental = args.experimental.copy()
     world.debug = args.debug.copy()
     world.fish = fish if fish else BabelFish(lang="en")
@@ -428,7 +429,9 @@ def main(args, seed=None, fish=None):
 
 def copy_world(world):
     # ToDo: Not good yet
-    ret = World(world.players, world.shuffle, world.doorShuffle, world.logic, world.mode, world.swords, world.difficulty, world.difficulty_adjustments, world.timer, world.progressive, world.goal, world.algorithm, world.accessibility, world.shuffle_ganon, world.retro, world.custom, world.customitemarray, world.hints)
+    ret = World(world.players, world.shuffle, world.doorShuffle, world.logic, world.mode, world.swords,
+                world.difficulty, world.difficulty_adjustments, world.timer, world.progressive, world.goal, world.algorithm,
+                world.accessibility, world.shuffle_ganon, world.retro, world.custom, world.customitemarray, world.hints)
     ret.teams = world.teams
     ret.player_names = copy.deepcopy(world.player_names)
     ret.remote_items = world.remote_items.copy()
@@ -464,6 +467,8 @@ def copy_world(world):
     ret.beemizer = world.beemizer.copy()
     ret.timer = world.timer.copy()
     ret.shufflepots = world.shufflepots.copy()
+    ret.intensity = world.intensity.copy()
+    ret.experimental = world.experimental.copy()
 
     for player in range(1, world.players + 1):
         if world.mode[player] != 'inverted':

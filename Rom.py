@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '00eeeb3d74088f070ee2aa2907c8607b'
+RANDOMIZERBASEHASH = '09d064f9583e45e55cc91efe97b38b0e'
 
 import io
 import json
@@ -672,7 +672,7 @@ def patch_rom(world, rom, player, team, enemized):
 
     # patch doors
     if world.doorShuffle[player] == 'crossed':
-        rom.write_byte(0x139004, 2)
+        rom.write_byte(0x138002, 2)
         for name, layout in world.key_layout[player].items():
             offset = compass_data[name][4]//2
             rom.write_byte(0x13f01c+offset, layout.max_chests + layout.max_drops)
@@ -697,7 +697,7 @@ def patch_rom(world, rom, player, team, enemized):
             if room.player == player and room.palette is not None:
                 rom.write_byte(0x13f200+room.index, room.palette)
     if world.doorShuffle[player] == 'basic':
-        rom.write_byte(0x139004, 1)
+        rom.write_byte(0x138002, 1)
     for door in world.doors:
         if door.dest is not None and door.player == player and door.type in [DoorType.Normal, DoorType.SpiralStairs,
                                                                              DoorType.Open, DoorType.StraightStairs]:
@@ -717,9 +717,11 @@ def patch_rom(world, rom, player, team, enemized):
                 dungeon_name = opposite_door.entrance.parent_region.dungeon.name
                 dungeon_id = boss_indicator[dungeon_name][0]
                 rom.write_byte(0x13f000+dungeon_id, opposite_door.roomIndex)
-    rom.write_byte(0x139006, dr_flags.value)
+            elif not opposite_door:
+                rom.write_byte(0x13f000+dungeon_id, 0)  # no supertile preceeding boss
+    rom.write_byte(0x138004, dr_flags.value)
     if dr_flags & DROptions.Town_Portal and world.mode[player] == 'inverted':
-        rom.write_byte(0x139008, 1)
+        rom.write_byte(0x138006, 1)
 
     for portal in world.dungeon_portals[player]:
         if not portal.default:
@@ -2323,7 +2325,7 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 # 24B118 and 20BB78
 compass_r_addr = 0x123118  # a9 90 24 8f 9a c7 7e
-compass_w_addr = 0x103b78  # e2 20 ad 0c 04 c9 00 d0
+compass_w_addr = 0x103b84  # e2 20 ad 0c 04 c9 00 d0
 
 
 

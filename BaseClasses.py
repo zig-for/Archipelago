@@ -39,6 +39,7 @@ class World(object):
         self.teams = 1
         self.shuffle = shuffle.copy()
         self.doorShuffle = doorShuffle.copy()
+        self.intensity = {}
         self.logic = logic.copy()
         self.mode = mode.copy()
         self.swords = swords.copy()
@@ -1230,6 +1231,7 @@ class Door(object):
         self.deadEnd = False
         self.passage = True
         self.dungeonLink = None
+        self.bk_shuffle_req = False
         # self.incognitoPos = -1
         # self.sectorLink = False
 
@@ -1371,6 +1373,13 @@ class Door(object):
         self.pseudo_bg = pseudo_bg
         self.portalAble = True
         return self
+
+    def dead_end(self, allowPassage=False):
+        self.deadEnd = True
+        if allowPassage:
+            self.passage = True
+        else:
+            self.passage = False
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name
@@ -1595,6 +1604,12 @@ class Portal(object):
             return 0x02
         else:
             return 0x12
+
+    def __str__(self):
+        return str(self.__unicode__())
+
+    def __unicode__(self):
+        return f'{self.name}:{self.door.name}'
 
 
 class DungeonInfo(object):
@@ -1942,6 +1957,7 @@ class Spoiler(object):
                          'goal': self.world.goal,
                          'shuffle': self.world.shuffle,
                          'door_shuffle': self.world.doorShuffle,
+                         'intensity': self.world.intensity,
                          'item_pool': self.world.difficulty,
                          'item_functionality': self.world.difficulty_adjustments,
                          'gt_crystals': self.world.crystals_needed_for_gt,
@@ -2035,6 +2051,7 @@ class Spoiler(object):
                 outfile.write('Item Progression:                %s\n' % self.metadata['progressive'][player])
                 outfile.write('Entrance Shuffle:                %s\n' % self.metadata['shuffle'][player])
                 outfile.write('Door Shuffle:                    %s\n' % self.metadata['door_shuffle'][player])
+                outfile.write('Intensity:                       %s\n' % self.metadata['intensity'][player])
                 outfile.write('Crystals required for GT:        %s\n' % self.metadata['gt_crystals'][player])
                 outfile.write('Crystals required for Ganon:     %s\n' % self.metadata['ganon_crystals'][player])
                 outfile.write('Pyramid hole pre-opened:         %s\n' % (

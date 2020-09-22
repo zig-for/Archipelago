@@ -40,7 +40,14 @@ def link_doors(world, player):
     for ent, ext in ladders:
         connect_two_way(world, ent, ext, player)
 
-    choose_portals(world, player)
+    if world.intensity[player] < 2:
+        for entrance, ext in open_edges:
+            connect_two_way(world, entrance, ext, player)
+        for entrance, ext in straight_staircases:
+            connect_two_way(world, entrance, ext, player)
+
+    if world.intensity[player] >= 3:
+        choose_portals(world, player)
 
     if world.doorShuffle[player] == 'vanilla':
         for entrance, ext in open_edges:
@@ -57,18 +64,8 @@ def link_doors(world, player):
             connect_one_way(world, ent, ext, player)
         vanilla_key_logic(world, player)
     elif world.doorShuffle[player] == 'basic':
-        if not world.experimental[player]:
-            for entrance, ext in open_edges:
-                connect_two_way(world, entrance, ext, player)
-            for entrance, ext in straight_staircases:
-                connect_two_way(world, entrance, ext, player)
         within_dungeon(world, player)
     elif world.doorShuffle[player] == 'crossed':
-        if not world.experimental[player]:
-            for entrance, ext in open_edges:
-                connect_two_way(world, entrance, ext, player)
-            for entrance, ext in straight_staircases:
-                connect_two_way(world, entrance, ext, player)
         cross_dungeon(world, player)
     else:
         logging.getLogger('').error('Invalid door shuffle setting: %s' % world.doorShuffle[player])
@@ -321,6 +318,7 @@ def choose_portals(world, player):
 
     if world.doorShuffle[player] in ['basic', 'crossed']:
         cross_flag = world.doorShuffle[player] == 'crossed'
+        bk_shuffle = world.bigkeyshuffle[player]
         # roast incognito doors
         world.get_room(0x60, player).delete(5)
         world.get_room(0x60, player).change(2, DoorKind.DungeonEntrance)
@@ -359,13 +357,15 @@ def choose_portals(world, player):
                 sanc.destination = True
                 clean_up_portal_assignment(portal_assignment, dungeon, sanc, master_door_list, outstanding_portals)
             for target_region, possible_portals in info.required_passage.items():
-                candidates = find_portal_candidates(master_door_list, dungeon, need_passage=True, crossed=cross_flag)
+                candidates = find_portal_candidates(master_door_list, dungeon, need_passage=True, crossed=cross_flag,
+                                                    bk_shuffle=bk_shuffle)
                 choice, portal = assign_portal(candidates, possible_portals, world, player)
                 portal.destination = True
                 clean_up_portal_assignment(portal_assignment, dungeon, portal, master_door_list, outstanding_portals)
             dead_end_choices = info.total - 1 - len(portal_assignment[dungeon])
             for i in range(0, dead_end_choices):
-                candidates = find_portal_candidates(master_door_list, dungeon, dead_end_allowed=True, crossed=cross_flag)
+                candidates = find_portal_candidates(master_door_list, dungeon, dead_end_allowed=True,
+                                                    crossed=cross_flag, bk_shuffle=bk_shuffle)
                 possible_portals = outstanding_portals if not info.sole_entrance else [x for x in outstanding_portals if x != info.sole_entrance]
                 choice, portal = assign_portal(candidates, possible_portals, world, player)
                 if choice.deadEnd:
@@ -373,7 +373,8 @@ def choose_portals(world, player):
                 clean_up_portal_assignment(portal_assignment, dungeon, portal, master_door_list, outstanding_portals)
             the_rest = info.total - len(portal_assignment[dungeon])
             for i in range(0, the_rest):
-                candidates = find_portal_candidates(master_door_list, dungeon, crossed=cross_flag)
+                candidates = find_portal_candidates(master_door_list, dungeon, crossed=cross_flag,
+                                                    bk_shuffle=bk_shuffle)
                 choice, portal = assign_portal(candidates, outstanding_portals, world, player)
                 clean_up_portal_assignment(portal_assignment, dungeon, portal, master_door_list, outstanding_portals)
 
@@ -417,23 +418,23 @@ def connect_portal(portal, world, player):
     world.regions.remove(placeholder)
 
 
-def find_portal_candidates(door_list, dungeon, need_passage=False, dead_end_allowed=False, crossed=False):
+def find_portal_candidates(door_list, dungeon, need_passage=False, dead_end_allowed=False, crossed=False, bk_shuffle=False):
+    filter_list = [x for x in door_list if bk_shuffle or not x.bk_shuffle_req]
     if need_passage:
         if crossed:
-            ret = [x for x in door_list if x.passage and not x.deadEnd]
-            return [x for x in ret if x.dungeonLink is None or x.entrance.parent_region.dungeon.name == dungeon]
+            return [x for x in filter_list if x.passage and (x.dungeonLink is None or x.entrance.parent_region.dungeon.name == dungeon)]
         else:
-            return [x for x in door_list if x.passage and x.entrance.parent_region.dungeon.name == dungeon and not x.deadEnd]
+            return [x for x in filter_list if x.passage and x.entrance.parent_region.dungeon.name == dungeon]
     elif dead_end_allowed:
         if crossed:
-            return [x for x in door_list if x.dungeonLink is None or x.entrance.parent_region.dungeon.name == dungeon]
+            return [x for x in filter_list if x.dungeonLink is None or x.entrance.parent_region.dungeon.name == dungeon]
         else:
-            return [x for x in door_list if x.entrance.parent_region.dungeon.name == dungeon]
+            return [x for x in filter_list if x.entrance.parent_region.dungeon.name == dungeon]
     else:
         if crossed:
-            return [x for x in door_list if (not x.dungeonLink or x.entrance.parent_region.dungeon.name == dungeon) and not x.deadEnd]
+            return [x for x in filter_list if (not x.dungeonLink or x.entrance.parent_region.dungeon.name == dungeon) and not x.deadEnd]
         else:
-            return [x for x in door_list if x.entrance.parent_region.dungeon.name == dungeon and not x.deadEnd]
+            return [x for x in filter_list if x.entrance.parent_region.dungeon.name == dungeon and not x.deadEnd]
 
 
 def assign_portal(candidates, possible_portals, world, player):
@@ -775,7 +776,7 @@ def cross_dungeon(world, player):
         possible_portals = []
         for portal_name in dungeon_portals[d_name]:
             portal = world.get_portal(portal_name, player)
-            if portal.door == 'Sanctuary S':
+            if portal.door.name == 'Sanctuary S':
                 possible_portals.clear()
                 possible_portals.append(portal)
                 break
@@ -1277,8 +1278,8 @@ def reassign_key_doors(builder, world, player):
                         dp.pair = False
                 if not found:
                     world.paired_doors[player].append(PairedDoor(d1.name, d2.name))
-                    change_door_to_small_key(d1, world, player)
-                    change_door_to_small_key(d2, world, player)
+                change_door_to_small_key(d1, world, player)
+                change_door_to_small_key(d2, world, player)
             world.spoiler.set_door_type(d1.name+' <-> '+d2.name, 'Key Door', player)
             logger.debug('Key Door: %s', d1.name+' <-> '+d2.name)
         else:
@@ -1512,7 +1513,7 @@ def determine_init_crystal(initial, state, start_regions):
     elif start_region in state.visited_orange:
         return CrystalBarrier.Orange
     else:
-        raise Exception('Can\'t get to %s from initial state', start_region.name)
+        raise Exception(f'Can\'t get to {start_region.name} from initial state')
 
 
 def explore_state(state, world, player):
@@ -1574,6 +1575,7 @@ logical_connections = [
     ('Desert Main Lobby Right Path', 'Desert Right Alcove'),
     ('Desert Left Alcove Path', 'Desert Main Lobby'),
     ('Desert Right Alcove Path', 'Desert Main Lobby'),
+    ('Hera Big Chest Hook Path', 'Hera Big Chest Landing'),
     ('Hera Big Chest Landing Exit', 'Hera 4F'),
     ('PoD Pit Room Block Path N', 'PoD Pit Room Blocked'),
     ('PoD Pit Room Block Path S', 'PoD Pit Room'),

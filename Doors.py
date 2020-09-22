@@ -271,6 +271,7 @@ def create_doors(world, player):
         create_door(player, 'Hera 4F Down Stairs', Sprl).dir(Dn, 0x27, 0, HTH).ss(S, 0x62, 0xc0),
         create_door(player, 'Hera 4F Up Stairs', Sprl).dir(Up, 0x27, 1, HTH).ss(A, 0x6b, 0x2c),
         create_door(player, 'Hera 4F Holes', Hole),
+        create_door(player, 'Hera Big Chest Hook Path', Lgcl),
         create_door(player, 'Hera Big Chest Landing Exit', Lgcl),
         create_door(player, 'Hera Big Chest Landing Holes', Hole),
         create_door(player, 'Hera 5F Down Stairs', Sprl).dir(Dn, 0x17, 1, HTH).ss(A, 0x62, 0x40),
@@ -388,7 +389,7 @@ def create_doors(world, player):
         create_door(player, 'PoD Dark Basement W Up Stairs', Sprl).dir(Up, 0x6a, 0, HTH).ss(S, 0x1b, 0x3c, True),
         create_door(player, 'PoD Dark Basement E Up Stairs', Sprl).dir(Up, 0x6a, 1, HTH).ss(S, 0x1b, 0x9c, True),
         create_door(player, 'PoD Dark Alley NE', Nrml).dir(No, 0x6a, Right, High).big_key().pos(0),
-        create_door(player, 'PoD Mimics 2 SW', Nrml).dir(So, 0x1b, Left, High).pos(1).kill().portal(X, 0x00),
+        create_door(player, 'PoD Mimics 2 SW', Nrml).dir(So, 0x1b, Left, High).pos(1).kill().portal(Z, 0x00),
         create_door(player, 'PoD Mimics 2 NW', Intr).dir(No, 0x1b, Left, High).pos(0),
         create_door(player, 'PoD Bow Statue SW', Intr).dir(So, 0x1b, Left, High).pos(0),
         create_door(player, 'PoD Bow Statue Down Ladder', Lddr).no_entrance(),
@@ -1294,32 +1295,40 @@ def create_doors(world, player):
     ]
     world.dungeon_portals[player] += dungeon_portals
 
-    world.get_door('Sanctuary S', player).deadEnd = True
+    world.get_door('Sanctuary S', player).dead_end(allowPassage=True)
     world.get_door('TR Big Chest Entrance SE', player).passage = False
     world.get_door('Sewers Secret Room Key Door S', player).dungeonLink = 'Hyrule Castle'
-    world.get_door('Desert Cannonball S', player).deadEnd = True
-    world.get_door('Desert Boss SW', player).deadEnd = True
+    world.get_door('Desert Cannonball S', player).dead_end()
+    world.get_door('Desert Boss SW', player).dead_end()
     world.get_door('Desert Boss SW', player).dungeonLink = 'Desert Palace'
     world.get_door('Skull 1 Lobby S', player).dungeonLink = 'Skull Woods'
     world.get_door('Skull Map Room SE', player).dungeonLink = 'Skull Woods'
     world.get_door('Skull Spike Corner SW', player).dungeonLink = 'Skull Woods'
-    world.get_door('Skull Spike Corner SW', player).deadEnd = True
-    world.get_door('Thieves Pot Alcove Bottom SW', player).deadEnd = True
-    world.get_door('Ice Conveyor SW', player).deadEnd = True
-    world.get_door('Mire Right Bridge SE', player).deadEnd = True
-    world.get_door('TR Roller Room SW', player).deadEnd = True
-    world.get_door('TR Tile Room SE', player).deadEnd = True
-    world.get_door('TR Boss SW', player).deadEnd = True
+    world.get_door('Skull Spike Corner SW', player).dead_end()
+    world.get_door('Thieves Pot Alcove Bottom SW', player).dead_end()
+    world.get_door('Ice Conveyor SW', player).dead_end(allowPassage=True)
+    world.get_door('Mire Right Bridge SE', player).dead_end(allowPassage=True)
+    world.get_door('TR Roller Room SW', player).dead_end()
+    world.get_door('TR Tile Room SE', player).dead_end()
+    world.get_door('TR Boss SW', player).dead_end()
     world.get_door('TR Boss SW', player).dungeonLink = 'Turtle Rock'
-    world.get_door('GT Petting Zoo SE', player).deadEnd = True
-    world.get_door('GT DMs Room SW', player).deadEnd = True
+    world.get_door('GT Petting Zoo SE', player).dead_end()
+    world.get_door('GT DMs Room SW', player).dead_end()
     world.get_door("GT Bob\'s Room SE", player).passage = False
+    world.get_door('PoD Mimics 2 SW', player).bk_shuffle_req = True
+    world.get_door('Desert Tiles 2 SE', player).bk_shuffle_req = True  # key-drop note (todo)
+
     # can't unlink from boss right now
-    world.get_door("Hera Lobby S", player).dungeonLink = 'Tower of Hera'
+    world.get_door('Hera Lobby S', player).dungeonLink = 'Tower of Hera'
+    # can't unlink from skull woods right now
+    world.get_door('Skull 2 West Lobby S', player).dungeonLink = 'Skull Woods'
 
     world.get_door('Ice Spike Cross SE', player).dungeonLink = 'linkIceFalls'
     world.get_door('Ice Tall Hint SE', player).dungeonLink = 'linkIceFalls'
     world.get_door('Ice Switch Room SE', player).dungeonLink = 'linkIceFalls'
+
+    world.get_door('Ice Cross Bottom SE', player).dungeonLink = 'linkIceFalls2'
+    world.get_door('Ice Conveyor SW', player).dungeonLink = 'linkIceFalls2'
 
 
 def create_paired_doors(world, player):

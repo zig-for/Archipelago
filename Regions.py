@@ -344,7 +344,7 @@ def create_dungeon_regions(world, player):
         create_dungeon_region(player, 'Hera Beetles', 'Tower of Hera', None, ['Hera Beetles Down Stairs', 'Hera Beetles WS', 'Hera Beetles Holes']),
         create_dungeon_region(player, 'Hera Startile Corner', 'Tower of Hera', None, ['Hera Startile Corner ES', 'Hera Startile Corner NW', 'Hera Startile Corner Holes']),
         create_dungeon_region(player, 'Hera Startile Wide', 'Tower of Hera', None, ['Hera Startile Wide SW', 'Hera Startile Wide Up Stairs', 'Hera Startile Wide Holes']),
-        create_dungeon_region(player, 'Hera 4F', 'Tower of Hera', ['Tower of Hera - Compass Chest'], ['Hera 4F Down Stairs', 'Hera 4F Up Stairs', 'Hera 4F Holes']),
+        create_dungeon_region(player, 'Hera 4F', 'Tower of Hera', ['Tower of Hera - Compass Chest'], ['Hera 4F Down Stairs', 'Hera 4F Up Stairs', 'Hera Big Chest Hook Path', 'Hera 4F Holes']),
         create_dungeon_region(player, 'Hera Big Chest Landing', 'Tower of Hera', ['Tower of Hera - Big Chest'], ['Hera Big Chest Landing Exit', 'Hera Big Chest Landing Holes']),
         create_dungeon_region(player, 'Hera 5F', 'Tower of Hera', None, ['Hera 5F Down Stairs', 'Hera 5F Up Stairs', 'Hera 5F Star Hole', 'Hera 5F Pothole Chain', 'Hera 5F Normal Holes']),
         create_dungeon_region(player, 'Hera Fairies', 'Tower of Hera', None, ['Hera Fairies\' Warp']),
@@ -681,13 +681,13 @@ def create_dungeon_regions(world, player):
         create_dungeon_region(player, 'GT Hookshot East Platform', 'Ganon\'s Tower', None, ['GT Hookshot EN', 'GT Hookshot East-North Path', 'GT Hookshot East-South Path']),
         create_dungeon_region(player, 'GT Hookshot North Platform', 'Ganon\'s Tower', None, ['GT Hookshot NW', 'GT Hookshot North-East Path', 'GT Hookshot North-South Path']),
         create_dungeon_region(player, 'GT Hookshot South Platform', 'Ganon\'s Tower', None, ['GT Hookshot ES', 'GT Hookshot South-East Path', 'GT Hookshot South-North Path', 'GT Hookshot Platform Blue Barrier']),
-        create_dungeon_region(player, 'GT Hookshot South Entry', 'Ganon\'s Tower', None, ['GT Hookshot SW', 'GT Hookshot Entry Blue Barrier', ]),
+        create_dungeon_region(player, 'GT Hookshot South Entry', 'Ganon\'s Tower', None, ['GT Hookshot SW', 'GT Hookshot Entry Blue Barrier', 'GT Hookshot Entry Boomerang Path']),
         create_dungeon_region(player, 'GT Map Room', 'Ganon\'s Tower', ['Ganons Tower - Map Chest'], ['GT Map Room WS']),
         create_dungeon_region(player, 'GT Double Switch Entry', 'Ganon\'s Tower', None, ['GT Double Switch NW', 'GT Double Switch Orange Barrier', 'GT Double Switch Orange Barrier 2']),
         create_dungeon_region(player, 'GT Double Switch Switches', 'Ganon\'s Tower', None, ['GT Double Switch Blue Path', 'GT Double Switch Orange Path']),
         create_dungeon_region(player, 'GT Double Switch Transition', 'Ganon\'s Tower', None, ['GT Double Switch Transition Blue']),
         create_dungeon_region(player, 'GT Double Switch Key Spot', 'Ganon\'s Tower', ['Ganons Tower - Double Switch Pot Key'], ['GT Double Switch Key Blue Path', 'GT Double Switch Key Orange Path']),
-        create_dungeon_region(player, 'GT Double Switch Exit', 'Ganon\'s Tower', None, ['GT Double Switch EN', 'GT Double Switch Blue Barrier', 'GT Hookshot Entry Boomerang Path']),
+        create_dungeon_region(player, 'GT Double Switch Exit', 'Ganon\'s Tower', None, ['GT Double Switch EN', 'GT Double Switch Blue Barrier']),
         create_dungeon_region(player, 'GT Spike Crystals', 'Ganon\'s Tower', None, ['GT Spike Crystals WN', 'GT Spike Crystals Warp']),
         create_dungeon_region(player, 'GT Warp Maze - Left Section', 'Ganon\'s Tower', None, ['GT Warp Maze - Left Section Warp']),
         create_dungeon_region(player, 'GT Warp Maze - Mid Section', 'Ganon\'s Tower', None, ['GT Warp Maze - Mid Section Left Warp', 'GT Warp Maze - Mid Section Right Warp']),
@@ -737,7 +737,7 @@ def create_dungeon_regions(world, player):
         create_dungeon_region(player, 'GT Staredown', 'Ganon\'s Tower', None, ['GT Staredown WS', 'GT Staredown Up Ladder']),
         create_dungeon_region(player, 'GT Falling Torches', 'Ganon\'s Tower', None, ['GT Falling Torches Down Ladder', 'GT Falling Torches NE', 'GT Falling Torches Hole']),
         create_dungeon_region(player, 'GT Mini Helmasaur Room', 'Ganon\'s Tower', ['Ganons Tower - Mini Helmasaur Room - Left',
-                                                                                   'Ganons Tower - Mini Helmasaur Room - Right', 'Ganons Tower - Mini Helmasuar Key Drop'], ['GT Mini Helmasaur Room SE', 'GT Mini Helmasaur Room WN']),
+                                                                                   'Ganons Tower - Mini Helmasaur Room - Right', 'Ganons Tower - Mini Helmasaur Key Drop'], ['GT Mini Helmasaur Room SE', 'GT Mini Helmasaur Room WN']),
         create_dungeon_region(player, 'GT Bomb Conveyor', 'Ganon\'s Tower', None, ['GT Bomb Conveyor EN', 'GT Bomb Conveyor SW']),
         create_dungeon_region(player, 'GT Crystal Circles', 'Ganon\'s Tower', ['Ganons Tower - Pre-Moldorm Chest'], ['GT Crystal Circles NW', 'GT Crystal Circles SW']),
         create_dungeon_region(player, 'GT Left Moldorm Ledge', 'Ganon\'s Tower', None, ['GT Left Moldorm Ledge Drop Down', 'GT Left Moldorm Ledge NW']),
@@ -918,7 +918,7 @@ key_only_locations = {
   'Ganons Tower - Conveyor Cross Pot Key': 'Small Key (Ganons Tower)',
   'Ganons Tower - Double Switch Pot Key': 'Small Key (Ganons Tower)',
   'Ganons Tower - Conveyor Star Pits Pot Key': 'Small Key (Ganons Tower)',
-  'Ganons Tower - Mini Helmasuar Key Drop': 'Small Key (Ganons Tower)'
+  'Ganons Tower - Mini Helmasaur Key Drop': 'Small Key (Ganons Tower)'
 }
 
 dungeon_events = [
