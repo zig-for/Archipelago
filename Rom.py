@@ -2340,7 +2340,6 @@ compass_r_addr = 0x123118  # a9 90 24 8f 9a c7 7e
 compass_w_addr = 0x103b90  # e2 20 ad 0c 04 c9 00 d0
 
 
-
 def compass_code_good(rom):
     if isinstance(rom, LocalRom):
         # a990248f9ac77e
