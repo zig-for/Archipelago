@@ -34,7 +34,7 @@ def start():
         sys.exit(0)
 
     # ToDo: Validate files further than mere existance
-    if not args.jsonout and not os.path.isfile(args.rom):
+    if not args.suppress_rom and not os.path.isfile(args.rom):
         input('Could not find valid base rom for patching at expected path %s. Please run with -h to see help for further information. \nPress Enter to exit.' % args.rom)
         sys.exit(1)
     if any([sprite is not None and not os.path.isfile(sprite) and not get_sprite_from_name(sprite) for sprite in args.sprite.values()]):
