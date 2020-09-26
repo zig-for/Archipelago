@@ -273,7 +273,7 @@ def roll_settings(weights):
     if glitches_required not in [None, 'none', 'no_logic', 'minor_glitches']:
         logging.warning("Only NMG and No Logic supported")
         glitches_required = 'none'
-    ret.logic = {None: 'noglitches', 'none': 'noglitches', 'no_logic': 'nologic'}[glitches_required]
+    ret.logic = {None: 'noglitches', 'none': 'noglitches', 'no_logic': 'nologic', 'minor_glitches': 'minorglitches'}[glitches_required]
     ret.progression_balancing = get_choice('progression_balancing', weights, True)
     # item_placement = get_choice('item_placement')
     # not supported in ER
