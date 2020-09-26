@@ -538,15 +538,15 @@ def create_dungeon_entrances(world, player):
                         the_rest.append(r_name)
                 choices = list(split_portals[key])
                 for r_name in dead_ends:
-                    choice = random.choice(choices)
+                    choice = world.random.choice(choices)
                     choices.remove(choice)
                     split_map[key][choice].append(r_name)
                 for r_name in the_rest:
-                    choice = random.choice(choices)
+                    choice = world.random.choice(choices)
                     split_map[key][choice].append(r_name)
                 dest_choices = [x for x in choices if len(split_map[key][x]) > 0]
                 for r_name in destinations:
-                    choice = random.choice(dest_choices)
+                    choice = world.random.choice(dest_choices)
                     split_map[key][choice].append(r_name)
             else:
                 for portal_name in portal_list:
