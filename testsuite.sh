@@ -34,7 +34,7 @@ vii=0
 
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle vanilla --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle vanilla --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vov++))
@@ -42,7 +42,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle vanilla --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle vanilla --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vsv++))
@@ -50,7 +50,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle vanilla --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle vanilla --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((viv++))
@@ -59,7 +59,7 @@ done
 
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle vanilla --retro --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle vanilla --retro --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vor++))
@@ -67,7 +67,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle vanilla --retro --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle vanilla --retro --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vsr++))
@@ -75,7 +75,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle vanilla --retro --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle vanilla --retro --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vir++))
@@ -83,7 +83,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle vanilla --keysanity --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle vanilla --keysanity --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vok++))
@@ -91,7 +91,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle vanilla --keysanity --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle vanilla --keysanity --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vsk++))
@@ -99,7 +99,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle vanilla --keysanity --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle vanilla --keysanity --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vik++))
@@ -107,7 +107,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle simple --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle simple --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vos++))
@@ -115,7 +115,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle simple --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle simple --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vss++))
@@ -123,7 +123,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle simple --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle simple --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vis++))
@@ -131,7 +131,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle full --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle full --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vof++))
@@ -139,7 +139,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle full --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle full --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vsf++))
@@ -147,7 +147,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle full --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle full --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vif++))
@@ -155,7 +155,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle crossed --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle crossed --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((voc++))
@@ -163,7 +163,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle crossed --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle crossed --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vsc++))
@@ -171,7 +171,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle crossed --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle crossed --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vic++))
@@ -180,7 +180,7 @@ done
 
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle insanity --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --shuffle insanity --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((voi++))
@@ -188,7 +188,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle insanity --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode standard --shuffle insanity --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vsi++))
@@ -196,7 +196,7 @@ do
 done
 for (( i=1; i<=$count; i++ ))
 do
-	python3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle insanity --suppress_rom --suppress_spoiler --rom $rom
+	py -3 DungeonRandomizer.py --door_shuffle $dr --intensity $tense --mode inverted --shuffle insanity --suppress_rom --suppress_spoiler --rom $rom
 	if [[ $? -eq 1 ]]
 	then
 		((vii++))
