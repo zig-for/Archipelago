@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '5b7c550a48fc56e413bb1a5efe179574'
+RANDOMIZERBASEHASH = '8f3973854e5a4ceed4ca385f8da6e374'
 
 import io
 import json
@@ -61,15 +61,6 @@ class LocalRom(object):
         self.buffer[startaddress:startaddress + len(values)] = values
 
     def write_to_file(self, file, hide_enemizer=False):
-
-        if hide_enemizer:
-            extra_zeroes = 0x400000 - len(self.buffer)
-            if extra_zeroes > 0:
-                buffer = self.buffer + bytes([0x00] * extra_zeroes)
-                with open(file, 'wb') as outfile:
-                    outfile.write(buffer)
-                return
-
         with open(file, 'wb') as outfile:
             outfile.write(self.buffer)
 
@@ -108,7 +99,7 @@ class LocalRom(object):
                 'Supplied Base Rom does not match known MD5 for JAP(1.0) release. Will try to patch anyway.')
 
         # extend to 2MB
-        self.buffer.extend(bytearray([0x00]) * (0x200000 - len(self.buffer)))
+        self.buffer.extend(bytearray([0x00]) * (0x400000 - len(self.buffer)))
 
         # load randomizer patches
         with open(local_path('data', 'base2current.json')) as stream:
@@ -197,7 +188,50 @@ def check_enemizer(enemizercli):
     check_enemizer.done = True
 
 
-def patch_enemizer(world, player: int, rom: LocalRom, enemizercli, random_sprite_on_hit: bool):
+def apply_random_sprite_on_event(rom: LocalRom, sprite, local_random, allow_random_on_event):
+    onevent = onhit = 0
+    sprites = list()
+    if not allow_random_on_event:
+        allow_random_on_event = not rom.read_byte(0x186381)  # Check if explicitly disabled in rom. If so, it stays that way.
+    if sprite and not isinstance(sprite, Sprite):
+        sprite = sprite.lower()
+        if sprite.startswith('randomon'):
+            onevent = onhit = 0x01 if 'hit' in sprite else 0x00
+            onevent += 0x02 if 'enter' in sprite else 0x00
+            onevent += 0x04 if 'exit' in sprite else 0x00
+            onevent += 0x08 if 'slash' in sprite else 0x00
+            onevent += 0x10 if 'item' in sprite else 0x00
+        sprite = Sprite(sprite) if os.path.isfile(sprite) else get_sprite_from_name(sprite, local_random)
+
+    # write link sprite if required
+    if sprite:
+        sprite.write_to_rom(rom)
+
+        if allow_random_on_event:
+            rom.write_int16(0x18637F, onevent)
+            rom.write_byte(0x186381, 0x00)  # Enable usage of Random On Event.
+            if rom.read_byte(0x200000):
+                rom.write_byte(0x200103, onhit)
+
+        _populate_sprite_table()
+        if onevent:
+            sprites = list(set(_sprite_table.values()))  # convert to list and remove dupes
+        else:
+            sprites.append(sprite)
+        if sprites:
+            while len(sprites) < 32:
+                sprites.extend(sprites)
+            local_random.shuffle(sprites)
+
+            for i, sprite in enumerate(sprites[:32]):
+                if not i and not onevent:
+                    continue
+                rom.write_bytes(0x300000 + (i * 0x8000), sprite.sprite)
+                rom.write_bytes(0x307000 + (i * 0x8000), sprite.palette)
+                rom.write_bytes(0x307078 + (i * 0x8000), sprite.glove_palette)
+
+
+def patch_enemizer(world, player: int, rom: LocalRom, enemizercli):
     randopatch_path = os.path.abspath(output_path(f'enemizer_randopatch_{player}.sfc'))
     options_path = os.path.abspath(output_path(f'enemizer_options_{player}.json'))
     enemizer_output_path = os.path.abspath(output_path(f'enemizer_output_{player}.sfc'))
@@ -258,7 +292,7 @@ def patch_enemizer(world, player: int, rom: LocalRom, enemizercli, random_sprite
         'RandomizeTileTrapPattern': world.tile_shuffle[player],
         'RandomizeTileTrapFloorTile': False,
         'AllowKillableThief': world.killable_thieves[player],
-        'RandomizeSpriteOnHit': random_sprite_on_hit,
+        'RandomizeSpriteOnHit': False,
         'DebugMode': False,
         'DebugForceEnemy': False,
         'DebugForceEnemyId': 0,
@@ -334,19 +368,6 @@ def patch_enemizer(world, player: int, rom: LocalRom, enemizercli, random_sprite
         rom.write_byte(0x04DE81, 6)
         rom.write_byte(0x200101, 0)  # Do not close boss room door on entry.
 
-    if random_sprite_on_hit:
-        _populate_sprite_table()
-        sprites = list(set(_sprite_table.values()))  # convert to list and remove dupes
-        if sprites:
-            while len(sprites) < 32:
-                sprites.extend(sprites)
-            world.rom_seeds[player].shuffle(sprites)
-
-            for i, sprite in enumerate(sprites[:32]):
-                rom.write_bytes(0x300000 + (i * 0x8000), sprite.sprite)
-                rom.write_bytes(0x307000 + (i * 0x8000), sprite.palette)
-                rom.write_bytes(0x307078 + (i * 0x8000), sprite.glove_palette)
-
     for used in (randopatch_path, options_path):
         try:
             os.remove(used)
@@ -376,7 +397,7 @@ def _populate_sprite_table():
 def get_sprite_from_name(name, local_random=random):
     _populate_sprite_table()
     name = name.lower()
-    if name in ['random', 'randomonhit']:
+    if name.startswith('random'):
         return local_random.choice(list(_sprite_table.values()))
     if name == '(default link)':
         name = 'link'
@@ -413,7 +434,7 @@ class Sprite(object):
             self.sprite = filedata[:0x7000]
             self.palette = filedata[0x7000:0x7078]
             self.glove_palette = filedata[0x7078:]
-        elif len(filedata) in [0x100000, 0x200000]:
+        elif len(filedata) in [0x100000, 0x200000, 0x400000]:
             # full rom with patched sprite, extract it
             self.sprite = filedata[0x80000:0x87000]
             self.palette = filedata[0xDD308:0xDD380]
@@ -548,6 +569,9 @@ class Sprite(object):
         rom.write_bytes(0x80000, self.sprite)
         rom.write_bytes(0xDD308, self.palette)
         rom.write_bytes(0xDEDF5, self.glove_palette)
+        rom.write_bytes(0x300000, self.sprite)
+        rom.write_bytes(0x307000, self.palette)
+        rom.write_bytes(0x307078, self.glove_palette)
 
 def patch_rom(world, rom, player, team, enemized):
     local_random = world.rom_seeds[player]
@@ -1543,10 +1567,9 @@ def hud_format_text(text):
     return output[:32]
 
 
-def apply_rom_settings(rom, beep, color, quickswap, fastmenu, disable_music, sprite, ow_palettes, uw_palettes, world=None, player=1):
+def apply_rom_settings(rom, beep, color, quickswap, fastmenu, disable_music, sprite, ow_palettes, uw_palettes, world=None, player=1, allow_random_on_event=False):
     local_random = random if not world else world.rom_seeds[player]
-    if sprite and not isinstance(sprite, Sprite):
-        sprite = Sprite(sprite) if os.path.isfile(sprite) else get_sprite_from_name(sprite, local_random)
+    apply_random_sprite_on_event(rom, sprite, local_random, allow_random_on_event)
 
     # enable instant item menu
     if fastmenu == 'instant':
@@ -1596,10 +1619,6 @@ def apply_rom_settings(rom, beep, color, quickswap, fastmenu, disable_music, spr
     rom.write_byte(0x6FA2E, {'red': 0x24, 'blue': 0x2C, 'green': 0x3C, 'yellow': 0x28}[color])
     rom.write_byte(0x6FA30, {'red': 0x24, 'blue': 0x2C, 'green': 0x3C, 'yellow': 0x28}[color])
     rom.write_byte(0x65561, {'red': 0x05, 'blue': 0x0D, 'green': 0x19, 'yellow': 0x09}[color])
-
-    # write link sprite if required
-    if sprite:
-        sprite.write_to_rom(rom)
 
     # reset palette if it was adjusted already
     default_ow_palettes(rom)
