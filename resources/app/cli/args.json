@@ -348,6 +348,7 @@
       "bg"
     ]
   },
+  "sprite_pool": {},
   "enemy_health": {
     "choices": [
       "default",
