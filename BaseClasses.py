@@ -1833,7 +1833,7 @@ class Spoiler(object):
                          'triforce_pieces_required': self.world.triforce_pieces_required,
                          'shop_shuffle': self.world.shop_shuffle,
                          'shuffle_prizes': self.world.shuffle_prizes,
-                         'sprite_pool': self.world.sprite_pool
+                         'sprite_pool': self.world.sprite_pool,
                          'experimental' : self.world.experimental,
                          'debug' : self.world.debug
                          }
