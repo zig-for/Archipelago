@@ -210,6 +210,7 @@
       "3:       (Coming soon) And shuffles dungeon lobbies",
       "random:  Picks one of those at random"
     ],
+    "sprite_pool": [ "Specifies a colon separated list of sprites used for random/randomonevent. If not specified, the full sprite pool is used." ],
     "experimental": [ "Enable experimental features. (default: %(default)s)" ],
     "debug": ["Enable door debugging features. (default: %(default)s)" ],
     "dungeon_counters": [ "Enable dungeon chest counters. (default: %(default)s)" ],

@@ -106,7 +106,7 @@ def parse_cli(argv, no_defaults=False):
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
                          'heartbeep',  "skip_progression_balancing", "triforce_pieces_available", "triforce_pieces_required",
                          'remote_items', 'timer', 'progressive', "glitch_boots", 'killable_thieves', 'shuffle_prizes',
-                         'tile_shuffle', 'bush_shuffle', 'shop_shuffle']:
+                         'tile_shuffle', 'bush_shuffle', 'shop_shuffle', 'sprite_pool']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
                     setattr(ret, name, {1: value})
@@ -164,6 +164,7 @@ def parse_settings():
         "debug": False,
         "dungeon_counters": "default",
         "shop_shuffle": "",
+        "sprite_pool": [],
 
         "multi": 1,
         "names": "",
@@ -222,7 +223,7 @@ def parse_settings():
         "outputpath": os.path.join("."),
         "saveonexit": "ask",
         "outputname": "",
-        "startinventoryarray": {}
+        "startinventoryarray": {},
     }
 
     if sys.platform.lower().find("windows"):
