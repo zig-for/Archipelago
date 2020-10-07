@@ -35,7 +35,7 @@ def main(args=None):
 
             def gen_seed():
                 taskcommand = basecommand + " " + command + mode[1]
-                return subprocess.run(taskcommand, capture_output=True, shell=False, text=True)
+                return subprocess.run(taskcommand, capture_output=True, shell=True, text=True)
 
             for x in range(1, max_attempts + 1):
                 task = pool.submit(gen_seed)
@@ -80,7 +80,7 @@ def main(args=None):
             success = f"{testname}{mode} Rate: {(len(alive) / len(dead_or_alive)) * 100:.2f}%"
             successes.append(success)
             print(success)
-            result += f"{(len(alive)/len(dead_or_alive))*100:.2f}% "
+            result += f"{(len(alive)/len(dead_or_alive))*100:.2f}%\t"
         return result.strip()
 
     results = []
