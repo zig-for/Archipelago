@@ -391,7 +391,7 @@ def main(args, seed=None, fish=None):
             enemizer_result = False
             for player in range(1, world.players + 1):
                 enemizer_used = _get_enemizer(player)
-                enemizer_result |= enemizer_used[1]
+                enemizer_result |= enemizer_used
             return enemizer_result
 
         multidata_future = pool.submit(get_enemizer_results)
