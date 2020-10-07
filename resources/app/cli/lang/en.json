@@ -211,6 +211,11 @@
       "random:  Picks one of those at random"
     ],
     "sprite_pool": [ "Specifies a colon separated list of sprites used for random/randomonevent. If not specified, the full sprite pool is used." ],
+    "dark_room_logic": [
+      "For unlit dark rooms, require the Lamp to be considered in logic by default. ",
+      "Torches means additionally easily accessible Torches that can be lit with Fire Rod are considered doable.",
+      "None means full traversal through dark rooms without tools is considered doable."
+    ],
     "experimental": [ "Enable experimental features. (default: %(default)s)" ],
     "debug": ["Enable door debugging features. (default: %(default)s)" ],
     "dungeon_counters": [ "Enable dungeon chest counters. (default: %(default)s)" ],

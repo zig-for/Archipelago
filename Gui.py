@@ -264,6 +264,15 @@ def guiMain(args=None):
     logicLabel = Label(logicFrame, text='Game logic')
     logicLabel.pack(side=LEFT)
 
+    darklogicFrame = Frame(drowDownFrame)
+    darklogicVar = StringVar()
+    darklogicVar.set('Lamp')
+    darklogicOptionMenu = OptionMenu(darklogicFrame, darklogicVar, 'Lamp', 'Lamp or easy Fire Rod torches',
+                                     'dark traversal')
+    darklogicOptionMenu.pack(side=RIGHT)
+    darklogicLabel = Label(darklogicFrame, text='Dark Room Logic')
+    darklogicLabel.pack(side=LEFT)
+
     goalFrame = Frame(drowDownFrame)
     goalVar = StringVar()
     goalVar.set('ganon')
@@ -368,7 +377,7 @@ def guiMain(args=None):
     prizeVar.set('general')
     prizeOptionMenu = OptionMenu(prizeFrame, prizeVar, 'none', 'general', 'bonk', 'both')
     prizeOptionMenu.pack(side=RIGHT)
-    prizeLabel = Label(prizeFrame, text='Shuffle Prices/Drops')
+    prizeLabel = Label(prizeFrame, text='Shuffle Prizes/Drops')
     prizeLabel.pack(side=LEFT)
 
 
@@ -390,6 +399,7 @@ def guiMain(args=None):
 
     modeFrame.pack(expand=True, anchor=E)
     logicFrame.pack(expand=True, anchor=E)
+    darklogicFrame.pack(expand=True, anchor=E)
     goalFrame.pack(expand=True, anchor=E)
     crystalsGTFrame.pack(expand=True, anchor=E)
     crystalsGanonFrame.pack(expand=True, anchor=E)
@@ -514,6 +524,9 @@ def guiMain(args=None):
         guiargs.count = int(countVar.get()) if countVar.get() != '1' else None
         guiargs.mode = modeVar.get()
         guiargs.logic = logicVar.get()
+        guiargs.dark_room_logic = {"Lamp": "lamp",
+                                   "Lamp or easy Fire Rod torches": "torches",
+                                   "dark traversal": "none"}[darklogicVar.get()]
         guiargs.goal = goalVar.get()
         guiargs.crystals_gt = crystalsGTVar.get()
         guiargs.crystals_ganon = crystalsGanonVar.get()
