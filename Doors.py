@@ -248,7 +248,7 @@ def create_doors(world, player):
         create_door(player, 'Desert Boss SW', Nrml).dir(So, 0x33, Left, High).no_exit().trap(0x4).pos(0).portal(Z, 0x00),
 
         # Hera
-        create_door(player, 'Hera Lobby S', Nrml).dir(So, 0x77, Mid, Low).no_exit().pos(0).portal(Z, 0x22, 1),
+        create_door(player, 'Hera Lobby S', Nrml).dir(So, 0x77, Mid, Low).pos(0).portal(Z, 0x22, 1),
         create_door(player, 'Hera Lobby Down Stairs', Sprl).dir(Dn, 0x77, 3, HTL).ss(Z, 0x21, 0x90, False, True),
         create_door(player, 'Hera Lobby Key Stairs', Sprl).dir(Dn, 0x77, 1, HTL).ss(A, 0x12, 0x80).small_key().pos(1),
         create_door(player, 'Hera Lobby Up Stairs', Sprl).dir(Up, 0x77, 2, HTL).ss(X, 0x2b, 0x5c, False, True),
