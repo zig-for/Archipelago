@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '99ecbdd375a6650f5f1732fac6135694'
+RANDOMIZERBASEHASH = 'eb246fe94b2dfc4501464c291b7eed40'
 
 import io
 import json
@@ -178,6 +178,7 @@ def apply_random_sprite_on_event(rom: LocalRom, sprite, local_random, allow_rand
             onevent += 0x04 if 'exit' in sprite else 0x00
             onevent += 0x08 if 'slash' in sprite else 0x00
             onevent += 0x10 if 'item' in sprite else 0x00
+            onevent += 0x20 if 'bonk' in sprite else 0x00
         sprite = Sprite(sprite) if os.path.isfile(sprite) else get_sprite_from_name(sprite, local_random)
 
     # write link sprite if required

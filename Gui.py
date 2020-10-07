@@ -1467,6 +1467,7 @@ class SpriteSelector(object):
         self.randomOnExitVar = IntVar()
         self.randomOnSlashVar = IntVar()
         self.randomOnItemVar = IntVar()
+        self.randomOnBonkVar = IntVar()
 
         button = Checkbutton(frame, text="Hit", command=self.update_random_button, variable=self.randomOnHitVar)
         button.pack(side=LEFT, padx=(0, 5))
@@ -1481,6 +1482,9 @@ class SpriteSelector(object):
         button.pack(side=LEFT, padx=(0, 5))
 
         button = Checkbutton(frame, text="Item", command=self.update_random_button, variable=self.randomOnItemVar)
+        button.pack(side=LEFT, padx=(0, 5))
+
+        button = Checkbutton(frame, text="Bonk", command=self.update_random_button, variable=self.randomOnBonkVar)
         button.pack(side=LEFT, padx=(0, 5))
 
         if adjuster:
@@ -1651,6 +1655,7 @@ class SpriteSelector(object):
         randomon += "-exit" if self.randomOnExitVar.get() else ""
         randomon += "-slash" if self.randomOnSlashVar.get() else ""
         randomon += "-item" if self.randomOnItemVar.get() else ""
+        randomon += "-bonk" if self.randomOnBonkVar.get() else ""
         self.randomOnEventText.set(f"randomon{randomon}" if randomon else None)
         self.randomButtonText.set("Random On Event" if randomon else "Random")
 
