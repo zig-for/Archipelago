@@ -1,10 +1,11 @@
 import logging
 from collections import deque
 
-from BaseClasses import CollectionState, RegionType, DoorType, Entrance
+from BaseClasses import CollectionState, RegionType, DoorType, Entrance, World
 from Items import progression_items, item_name_groups
 from Regions import key_only_locations
 from RoomData import DoorKind
+from Bosses import GanonDefeatRule
 
 
 def set_rules(world, player):
@@ -43,12 +44,18 @@ def set_rules(world, player):
     else:
         raise NotImplementedError(f'Not implemented yet: Logic - {world.logic[player]}')
 
+    ganon = world.get_location('Ganon', player)
+    set_rule(ganon, lambda state: GanonDefeatRule(state, player))
     if world.goal[player] == 'dungeons':
         # require all dungeons to beat ganon
-        add_rule(world.get_location('Ganon', player), lambda state: state.can_reach('Master Sword Pedestal', 'Location', player) and state.has('Beat Agahnim 1', player) and state.has('Beat Agahnim 2', player) and state.has_crystals(7, player))
+        add_rule(ganon, lambda state: state.can_reach('Master Sword Pedestal', 'Location', player) and state.has('Beat Agahnim 1', player) and state.has('Beat Agahnim 2', player) and state.has_crystals(7, player))
     elif world.goal[player] == 'ganon':
         # require aga2 to beat ganon
-        add_rule(world.get_location('Ganon', player), lambda state: state.has('Beat Agahnim 2', player))
+        add_rule(ganon, lambda state: state.has('Beat Agahnim 2', player))
+    elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+        add_rule(ganon, lambda state: state.has_triforce_pieces(world.treasure_hunt_count[player], player))
+    else:
+        add_rule(ganon, lambda state: state.has_crystals(world.crystals_needed_for_ganon[player], player))
     
     if world.mode[player] != 'inverted':
         set_big_bomb_rules(world, player)
@@ -82,8 +89,18 @@ def add_rule(spot, rule, combine='and'):
         spot.access_rule = lambda state: rule(state) and old_rule(state)
 
 
-def add_lamp_requirement(spot, player):
-    add_rule(spot, lambda state: state.has('Lamp', player))
+def add_lamp_requirement(world: World, spot, player: int, has_accessible_torch: bool = False):
+    if world.dark_room_logic[player] == "lamp":
+        add_rule(spot, lambda state: state.has('Lamp', player))
+    elif world.dark_room_logic[player] == "torches":  # implicitly lamp as well
+        if has_accessible_torch:
+            add_rule(spot, lambda state: state.has('Lamp', player) or state.has('Fire Rod', player))
+        else:
+            add_rule(spot, lambda state: state.has('Lamp', player))
+    elif world.dark_room_logic[player] == "none":
+        pass
+    else:
+        raise ValueError(f"Unknown Dark Room Logic: {world.dark_room_logic[player]}")
 
 
 def forbid_item(location, item, player: int):
@@ -91,9 +108,14 @@ def forbid_item(location, item, player: int):
     location.item_rule = lambda i: (i.name != item or i.player != player) and old_rule(i)
 
 
-def forbid_items(location, items: set, player: int):
+def forbid_items_for_player(location, items: set, player: int):
     old_rule = location.item_rule
     location.item_rule = lambda i: (i.player != player or i.name not in items) and old_rule(i)
+
+def forbid_items(location, items: set):
+    """unused, but kept as a debugging tool."""
+    old_rule = location.item_rule
+    location.item_rule = lambda i: i.name not in items and old_rule(i)
 
 
 def add_item_rule(location, rule):
@@ -121,7 +143,7 @@ def locality_rules(world, player):
     if world.local_items[player]:
         for location in world.get_locations():
             if location.player != player:
-                forbid_items(location, world.local_items[player], player)
+                forbid_items_for_player(location, world.local_items[player], player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
 
@@ -155,7 +177,7 @@ def global_rules(world, player):
     set_rule(world.get_location('Dark Blacksmith Ruins', player), lambda state: state.has('Return Smith', player))
     set_rule(world.get_location('Purple Chest', player),
              lambda state: state.has('Pick Up Purple Chest', player))  # Can S&Q with chest
-    set_rule(world.get_location('Ether Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has_beam_sword(player))
+    set_rule(world.get_location('Ether Tablet', player), lambda state: state.can_retrieve_tablet(player))
     set_rule(world.get_location('Master Sword Pedestal', player), lambda state: state.has('Red Pendant', player) and state.has('Blue Pendant', player) and state.has('Green Pendant', player))
 
     set_rule(world.get_location('Missing Smith', player), lambda state: state.has('Get Frog', player) and state.can_reach('Blacksmiths Hut', 'Region', player)) # Can't S&Q with smith
@@ -185,8 +207,9 @@ def global_rules(world, player):
 
     # Eastern Palace
     # Eyegore room needs a bow
-    set_rule(world.get_entrance('Eastern Duo Eyegores NE', player), lambda state: state.can_shoot_arrows(player))
-    set_rule(world.get_entrance('Eastern Single Eyegore NE', player), lambda state: state.can_shoot_arrows(player))
+    if not world.enemy_shuffle[player]:
+        set_rule(world.get_entrance('Eastern Duo Eyegores NE', player), lambda state: state.can_shoot_arrows(player))
+        set_rule(world.get_entrance('Eastern Single Eyegore NE', player), lambda state: state.can_shoot_arrows(player))
     set_rule(world.get_entrance('Eastern Map Balcony Hook Path', player), lambda state: state.has('Hookshot', player))
 
     # Boss rules. Same as below but no BK or arrow requirement.
@@ -216,7 +239,8 @@ def global_rules(world, player):
     set_defeat_dungeon_boss_rule(world.get_location('Agahnim 1', player))
 
     set_rule(world.get_entrance('PoD Arena Bonk Path', player), lambda state: state.has_Boots(player))
-    set_rule(world.get_entrance('PoD Mimics 1 NW', player), lambda state: state.can_shoot_arrows(player))
+    if not world.enemy_shuffle[player]:
+        set_rule(world.get_entrance('PoD Mimics 1 NW', player), lambda state: state.can_shoot_arrows(player))
     set_rule(world.get_entrance('PoD Mimics 2 NW', player), lambda state: state.can_shoot_arrows(player))
     set_rule(world.get_entrance('PoD Bow Statue Down Ladder', player), lambda state: state.can_shoot_arrows(player))
     set_rule(world.get_entrance('PoD Map Balcony Drop Down', player), lambda state: state.has('Hammer', player))
@@ -345,10 +369,11 @@ def global_rules(world, player):
     set_rule(world.get_entrance('GT Ice Armos NE', player), lambda state: world.get_region('GT Ice Armos', player).dungeon.bosses['bottom'].can_defeat(state))
     set_rule(world.get_entrance('GT Ice Armos WS', player), lambda state: world.get_region('GT Ice Armos', player).dungeon.bosses['bottom'].can_defeat(state))
 
-    set_rule(world.get_entrance('GT Mimics 1 NW', player), lambda state: state.can_shoot_arrows(player))
-    set_rule(world.get_entrance('GT Mimics 1 ES', player), lambda state: state.can_shoot_arrows(player))
-    set_rule(world.get_entrance('GT Mimics 2 WS', player), lambda state: state.can_shoot_arrows(player))
-    set_rule(world.get_entrance('GT Mimics 2 NE', player), lambda state: state.can_shoot_arrows(player))
+    if not world.enemy_shuffle[player]:
+        set_rule(world.get_entrance('GT Mimics 1 NW', player), lambda state: state.can_shoot_arrows(player))
+        set_rule(world.get_entrance('GT Mimics 1 ES', player), lambda state: state.can_shoot_arrows(player))
+        set_rule(world.get_entrance('GT Mimics 2 WS', player), lambda state: state.can_shoot_arrows(player))
+        set_rule(world.get_entrance('GT Mimics 2 NE', player), lambda state: state.can_shoot_arrows(player))
     # consider access to refill room
     set_rule(world.get_entrance('GT Gauntlet 1 WN', player), lambda state: state.can_kill_most_things(player))
     set_rule(world.get_entrance('GT Gauntlet 2 EN', player), lambda state: state.can_kill_most_things(player))
@@ -424,13 +449,7 @@ def global_rules(world, player):
     # End of door rando rules.
 
     add_rule(world.get_location('Sunken Treasure', player), lambda state: state.has('Open Floodgate', player))
-    if world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
-        set_rule(world.get_location('Ganon', player), lambda state: state.has_beam_sword(player) and state.has_fire_source(player) and state.has_triforce_pieces(world.treasure_hunt_count[player], player)
-            and (state.has('Tempered Sword', player) or state.has('Golden Sword', player) or (state.has('Silver Bow', player) and state.can_shoot_arrows(player)) or state.has('Lamp', player) or state.can_extend_magic(player, 12)))  # need to light torch a sufficient amount of times
-    else:
-        set_rule(world.get_location('Ganon', player), lambda state: state.has_beam_sword(player) and state.has_fire_source(player) and state.has_crystals(world.crystals_needed_for_ganon[player], player)
-            and (state.has('Tempered Sword', player) or state.has('Golden Sword', player) or (state.has('Silver Bow', player) and state.can_shoot_arrows(player)) or state.has('Lamp', player) or state.can_extend_magic(player, 12)))  # need to light torch a sufficient amount of times
-    set_rule(world.get_entrance('Ganon Drop', player), lambda state: state.has_beam_sword(player))  # need to damage ganon to get tiles to drop
+    set_rule(world.get_entrance('Ganon Drop', player), lambda state: state.has_beam_sword(player) or (state.has('Hammer', player) and (world.difficulty_adjustments[player] == "easy" or world.swords[player] == "swordless")))  # need to damage ganon to get tiles to drop
 
 
 def default_rules(world, player):
@@ -487,7 +506,7 @@ def default_rules(world, player):
     set_rule(world.get_entrance('Hyrule Castle Ledge Mirror Spot', player), lambda state: state.has_Mirror(player))
     set_rule(world.get_entrance('Hyrule Castle Main Gate', player), lambda state: state.has_Mirror(player))
     set_rule(world.get_entrance('Dark Lake Hylia Drop (East)', player), lambda state: (state.has_Pearl(player) and state.has('Flippers', player) or state.has_Mirror(player)))  # Overworld Bunny Revival
-    set_rule(world.get_location('Bombos Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has_beam_sword(player) and state.has_Mirror(player))
+    set_rule(world.get_location('Bombos Tablet', player), lambda state: state.can_retrieve_tablet(player) and state.has_Mirror(player))
     set_rule(world.get_entrance('Dark Lake Hylia Drop (South)', player), lambda state: state.has_Pearl(player) and state.has('Flippers', player))  # ToDo any fake flipper set up?
     set_rule(world.get_entrance('Dark Lake Hylia Ledge Fairy', player), lambda state: state.has_Pearl(player)) # bomb required
     set_rule(world.get_entrance('Dark Lake Hylia Ledge Spike Cave', player), lambda state: state.can_lift_rocks(player) and state.has_Pearl(player))
@@ -621,7 +640,7 @@ def inverted_rules(world, player):
     set_rule(world.get_entrance('Bonk Fairy (Dark)', player), lambda state: state.has_Boots(player))
     set_rule(world.get_entrance('West Dark World Gap', player), lambda state: state.has('Hookshot', player))
     set_rule(world.get_entrance('Dark Lake Hylia Drop (East)', player), lambda state: state.has('Flippers', player))
-    set_rule(world.get_location('Bombos Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has_beam_sword(player))
+    set_rule(world.get_location('Bombos Tablet', player), lambda state: state.can_retrieve_tablet(player))
     set_rule(world.get_entrance('Dark Lake Hylia Drop (South)', player), lambda state: state.has('Flippers', player))  # ToDo any fake flipper set up?
     set_rule(world.get_entrance('Dark Lake Hylia Ledge Pier', player), lambda state: state.has('Flippers', player))
     set_rule(world.get_entrance('Dark Lake Hylia Ledge Spike Cave', player), lambda state: state.can_lift_rocks(player))
@@ -736,47 +755,48 @@ def no_glitches_rules(world, player):
                 return True
         return False
 
-    def add_conditional_lamp(spot, region, spottype='Location'):
-        if spottype == 'Location':
-            spot = world.get_location(spot, player)
-        else:
-            spot = world.get_entrance(spot, player)
-        if (not world.dark_world_light_cone and check_is_dark_world(world.get_region(region, player))) or (not world.light_world_light_cone and not check_is_dark_world(world.get_region(region, player))):
-            add_lamp_requirement(spot, player)
+    def add_conditional_lamp(spot, region, spottype='Location', accessible_torch=False):
+        if (not world.dark_world_light_cone and check_is_dark_world(world.get_region(region, player))) or (
+                not world.light_world_light_cone and not check_is_dark_world(world.get_region(region, player))):
+            if spottype == 'Location':
+                spot = world.get_location(spot, player)
+            else:
+                spot = world.get_entrance(spot, player)
+            add_lamp_requirement(world, spot, player, accessible_torch)
 
     dark_rooms = {
-        'TR Dark Ride': {'sewer': False, 'entrances': ['TR Dark Ride Up Stairs', 'TR Dark Ride SW'], 'locations': []},
-        'Mire Dark Shooters': {'sewer': False, 'entrances': ['Mire Dark Shooters Up Stairs', 'Mire Dark Shooters SW', 'Mire Dark Shooters SE'], 'locations': []},
-        'Mire Key Rupees': {'sewer': False, 'entrances': ['Mire Key Rupees NE'], 'locations': []},
-        'Mire Block X': {'sewer': False, 'entrances': ['Mire Block X NW', 'Mire Block X WS'], 'locations': []},
-        'Mire Tall Dark and Roomy': {'sewer': False, 'entrances': ['Mire Tall Dark and Roomy ES', 'Mire Tall Dark and Roomy WS', 'Mire Tall Dark and Roomy WN'], 'locations': []},
-        'Mire Crystal Right': {'sewer': False, 'entrances': ['Mire Crystal Right ES'], 'locations': []},
-        'Mire Crystal Mid': {'sewer': False, 'entrances': ['Mire Crystal Mid NW'], 'locations': []},
-        'Mire Crystal Left': {'sewer': False, 'entrances': ['Mire Crystal Left WS'], 'locations': []},
-        'Mire Crystal Top': {'sewer': False, 'entrances': ['Mire Crystal Top SW'], 'locations': []},
-        'Mire Shooter Rupees': {'sewer': False, 'entrances': ['Mire Shooter Rupees EN'], 'locations': []},
-        'PoD Dark Alley': {'sewer': False, 'entrances': ['PoD Dark Alley NE'], 'locations': []},
-        'PoD Callback': {'sewer': False, 'entrances': ['PoD Callback WS', 'PoD Callback Warp'], 'locations': []},
-        'PoD Turtle Party': {'sewer': False, 'entrances': ['PoD Turtle Party ES', 'PoD Turtle Party NW'], 'locations': []},
-        'PoD Lonely Turtle': {'sewer': False, 'entrances': ['PoD Lonely Turtle SW', 'PoD Lonely Turtle EN'], 'locations': []},
-        'PoD Dark Pegs': {'sewer': False, 'entrances': ['PoD Dark Pegs Up Ladder', 'PoD Dark Pegs WN'], 'locations': []},
-        'PoD Dark Basement': {'sewer': False, 'entrances': ['PoD Dark Basement W Up Stairs', 'PoD Dark Basement E Up Stairs'], 'locations': ['Palace of Darkness - Dark Basement - Left', 'Palace of Darkness - Dark Basement - Right']},
-        'PoD Dark Maze': {'sewer': False, 'entrances': ['PoD Dark Maze EN', 'PoD Dark Maze E'], 'locations': ['Palace of Darkness - Dark Maze - Top', 'Palace of Darkness - Dark Maze - Bottom']},
-        'Eastern Dark Square': {'sewer': False, 'entrances': ['Eastern Dark Square NW', 'Eastern Dark Square Key Door WN', 'Eastern Dark Square EN'], 'locations': []},
-        'Eastern Dark Pots': {'sewer': False, 'entrances': ['Eastern Dark Pots WN'], 'locations': ['Eastern Palace - Dark Square Pot Key']},
-        'Eastern Darkness': {'sewer': False, 'entrances': ['Eastern Darkness S', 'Eastern Darkness Up Stairs', 'Eastern Darkness NE'], 'locations': ['Eastern Palace - Dark Eyegore Key Drop']},
-        'Eastern Rupees': {'sewer': False, 'entrances': ['Eastern Rupees SE'], 'locations': []},
-        'Tower Lone Statue': {'sewer': False, 'entrances': ['Tower Lone Statue Down Stairs', 'Tower Lone Statue WN'], 'locations': []},
-        'Tower Dark Maze': {'sewer': False, 'entrances': ['Tower Dark Maze EN', 'Tower Dark Maze ES'], 'locations': ['Castle Tower - Dark Maze']},
-        'Tower Dark Chargers': {'sewer': False, 'entrances': ['Tower Dark Chargers WS', 'Tower Dark Chargers Up Stairs'], 'locations': []},
-        'Tower Dual Statues': {'sewer': False, 'entrances': ['Tower Dual Statues Down Stairs', 'Tower Dual Statues WS'], 'locations': []},
-        'Tower Dark Pits': {'sewer': False, 'entrances': ['Tower Dark Pits ES', 'Tower Dark Pits EN'], 'locations': []},
-        'Tower Dark Archers': {'sewer': False, 'entrances': ['Tower Dark Archers WN', 'Tower Dark Archers Up Stairs'], 'locations': ['Castle Tower - Dark Archer Key Drop']},
-        'Sewers Dark Cross': {'sewer': True, 'entrances': ['Sewers Dark Cross Key Door N', 'Sewers Dark Cross South Stairs'], 'locations': ['Sewers - Dark Cross']},
-        'Sewers Behind Tapestry': {'sewer': True, 'entrances': ['Sewers Behind Tapestry S', 'Sewers Behind Tapestry Down Stairs'], 'locations': []},
-        'Sewers Rope Room': {'sewer': True, 'entrances': ['Sewers Rope Room Up Stairs', 'Sewers Rope Room North Stairs'], 'locations': []},
-        'Sewers Water': {'sewer': True, 'entrances': ['Sewers Water S', 'Sewers Water W'], 'locations': []},
-        'Sewers Key Rat': {'sewer': True, 'entrances': ['Sewers Key Rat E', 'Sewers Key Rat Key Door N'], 'locations': ['Hyrule Castle - Key Rat Key Drop']},
+        'TR Dark Ride': {'sewer': False, 'entrances': ['TR Dark Ride Up Stairs', 'TR Dark Ride SW'], 'locations': [], 'easy_torches': []},
+        'Mire Dark Shooters': {'sewer': False, 'entrances': ['Mire Dark Shooters Up Stairs', 'Mire Dark Shooters SW', 'Mire Dark Shooters SE'], 'locations': [], 'easy_torches': []},
+        'Mire Key Rupees': {'sewer': False, 'entrances': ['Mire Key Rupees NE'], 'locations': [], 'easy_torches': []},
+        'Mire Block X': {'sewer': False, 'entrances': ['Mire Block X NW', 'Mire Block X WS'], 'locations': [], 'easy_torches': []},
+        'Mire Tall Dark and Roomy': {'sewer': False, 'entrances': ['Mire Tall Dark and Roomy ES', 'Mire Tall Dark and Roomy WS', 'Mire Tall Dark and Roomy WN'], 'locations': [], 'easy_torches': []},
+        'Mire Crystal Right': {'sewer': False, 'entrances': ['Mire Crystal Right ES'], 'locations': [], 'easy_torches': []},
+        'Mire Crystal Mid': {'sewer': False, 'entrances': ['Mire Crystal Mid NW'], 'locations': [], 'easy_torches': []},
+        'Mire Crystal Left': {'sewer': False, 'entrances': ['Mire Crystal Left WS'], 'locations': [], 'easy_torches': []},
+        'Mire Crystal Top': {'sewer': False, 'entrances': ['Mire Crystal Top SW'], 'locations': [], 'easy_torches': []},
+        'Mire Shooter Rupees': {'sewer': False, 'entrances': ['Mire Shooter Rupees EN'], 'locations': [], 'easy_torches': []},
+        'PoD Dark Alley': {'sewer': False, 'entrances': ['PoD Dark Alley NE'], 'locations': [], 'easy_torches': []},
+        'PoD Callback': {'sewer': False, 'entrances': ['PoD Callback WS', 'PoD Callback Warp'], 'locations': [], 'easy_torches': []},
+        'PoD Turtle Party': {'sewer': False, 'entrances': ['PoD Turtle Party ES', 'PoD Turtle Party NW'], 'locations': [], 'easy_torches': []},
+        'PoD Lonely Turtle': {'sewer': False, 'entrances': ['PoD Lonely Turtle SW', 'PoD Lonely Turtle EN'], 'locations': [], 'easy_torches': []},
+        'PoD Dark Pegs': {'sewer': False, 'entrances': ['PoD Dark Pegs Up Ladder', 'PoD Dark Pegs WN'], 'locations': [], 'easy_torches': []},
+        'PoD Dark Basement': {'sewer': False, 'entrances': ['PoD Dark Basement W Up Stairs', 'PoD Dark Basement E Up Stairs'], 'locations': ['Palace of Darkness - Dark Basement - Left', 'Palace of Darkness - Dark Basement - Right'], 'easy_torches': ['PoD Dark Basement W Up Stairs', 'PoD Dark Basement E Up Stairs', 'Palace of Darkness - Dark Basement - Left', 'Palace of Darkness - Dark Basement - Right']},
+        'PoD Dark Maze': {'sewer': False, 'entrances': ['PoD Dark Maze EN', 'PoD Dark Maze E'], 'locations': ['Palace of Darkness - Dark Maze - Top', 'Palace of Darkness - Dark Maze - Bottom'], 'easy_torches': []},
+        'Eastern Dark Square': {'sewer': False, 'entrances': ['Eastern Dark Square NW', 'Eastern Dark Square Key Door WN', 'Eastern Dark Square EN'], 'locations': [], 'easy_torches': []},
+        'Eastern Dark Pots': {'sewer': False, 'entrances': ['Eastern Dark Pots WN'], 'locations': ['Eastern Palace - Dark Square Pot Key'], 'easy_torches': []},
+        'Eastern Darkness': {'sewer': False, 'entrances': ['Eastern Darkness S', 'Eastern Darkness Up Stairs', 'Eastern Darkness NE'], 'locations': ['Eastern Palace - Dark Eyegore Key Drop'], 'easy_torches': ['Eastern Darkness S']},
+        'Eastern Rupees': {'sewer': False, 'entrances': ['Eastern Rupees SE'], 'locations': [], 'easy_torches': []},
+        'Tower Lone Statue': {'sewer': False, 'entrances': ['Tower Lone Statue Down Stairs', 'Tower Lone Statue WN'], 'locations': [], 'easy_torches': []},
+        'Tower Dark Maze': {'sewer': False, 'entrances': ['Tower Dark Maze EN', 'Tower Dark Maze ES'], 'locations': ['Castle Tower - Dark Maze'], 'easy_torches': []},
+        'Tower Dark Chargers': {'sewer': False, 'entrances': ['Tower Dark Chargers WS', 'Tower Dark Chargers Up Stairs'], 'locations': [], 'easy_torches': []},
+        'Tower Dual Statues': {'sewer': False, 'entrances': ['Tower Dual Statues Down Stairs', 'Tower Dual Statues WS'], 'locations': [], 'easy_torches': []},
+        'Tower Dark Pits': {'sewer': False, 'entrances': ['Tower Dark Pits ES', 'Tower Dark Pits EN'], 'locations': [], 'easy_torches': []},
+        'Tower Dark Archers': {'sewer': False, 'entrances': ['Tower Dark Archers WN', 'Tower Dark Archers Up Stairs'], 'locations': ['Castle Tower - Dark Archer Key Drop'], 'easy_torches': []},
+        'Sewers Dark Cross': {'sewer': True, 'entrances': ['Sewers Dark Cross Key Door N', 'Sewers Dark Cross South Stairs'], 'locations': ['Sewers - Dark Cross'], 'easy_torches': []},
+        'Sewers Behind Tapestry': {'sewer': True, 'entrances': ['Sewers Behind Tapestry S', 'Sewers Behind Tapestry Down Stairs'], 'locations': [], 'easy_torches': []},
+        'Sewers Rope Room': {'sewer': True, 'entrances': ['Sewers Rope Room Up Stairs', 'Sewers Rope Room North Stairs'], 'locations': [], 'easy_torches': []},
+        'Sewers Water': {'sewer': True, 'entrances': ['Sewers Water S', 'Sewers Water W'], 'locations': [], 'easy_torches': ['Sewers Water S']},
+        'Sewers Key Rat': {'sewer': True, 'entrances': ['Sewers Key Rat E', 'Sewers Key Rat Key Door N'], 'locations': ['Hyrule Castle - Key Rat Key Drop'], 'easy_torches': []},
     }
 
     dark_debug_set = set()
@@ -792,9 +812,9 @@ def no_glitches_rules(world, player):
         if is_dark:
             dark_debug_set.add(region)
             for ent in info['entrances']:
-                add_conditional_lamp(ent, region, 'Entrance')
+                add_conditional_lamp(ent, region, 'Entrance', ent in info['easy_torches'])
             for loc in info['locations']:
-                add_conditional_lamp(loc, region, 'Location')
+                add_conditional_lamp(loc, region, 'Location', loc in info['easy_torches'])
     logging.getLogger('').debug('Non Dark Regions: ' + ', '.join(set(dark_rooms.keys()).difference(dark_debug_set)))
 
     add_conditional_lamp('Old Man', 'Old Man Cave', 'Location')
@@ -839,23 +859,14 @@ def swordless_rules(world, player):
     set_rule(world.get_entrance('Ice Lobby WS', player), lambda state: state.has('Fire Rod', player) or state.has('Bombos', player))
     set_rule(world.get_location('Ice Palace - Freezor Chest', player), lambda state: state.has('Fire Rod', player) or state.has('Bombos', player))
 
-    set_rule(world.get_location('Ether Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has('Hammer', player))
-    if world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
-        set_rule(world.get_location('Ganon', player), lambda state: state.has('Hammer', player) and state.has_fire_source(player) and state.has('Silver Bow', player) and state.can_shoot_arrows(player) and state.has_triforce_pieces(world.treasure_hunt_count[player], player))
-    else:
-        set_rule(world.get_location('Ganon', player), lambda state: state.has('Hammer', player) and state.has_fire_source(player) and state.has('Silver Bow', player) and state.can_shoot_arrows(player) and state.has_crystals(world.crystals_needed_for_ganon[player], player))
-    set_rule(world.get_entrance('Ganon Drop', player), lambda state: state.has('Hammer', player))  # need to damage ganon to get tiles to drop
-
     if world.mode[player] != 'inverted':
         set_rule(world.get_entrance('Agahnims Tower', player), lambda state: state.has('Cape', player) or state.has('Hammer', player) or state.has('Beat Agahnim 1', player))  # barrier gets removed after killing agahnim, relevant for entrance shuffle
         set_rule(world.get_entrance('Turtle Rock', player), lambda state: state.has_Pearl(player) and state.has_turtle_rock_medallion(player) and state.can_reach('Turtle Rock (Top)', 'Region', player))   # sword not required to use medallion for opening in swordless (!)
         set_rule(world.get_entrance('Misery Mire', player), lambda state: state.has_Pearl(player) and state.has_misery_mire_medallion(player))  # sword not required to use medallion for opening in swordless (!)
-        set_rule(world.get_location('Bombos Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has('Hammer', player) and state.has_Mirror(player))    
     else:
         # only need ddm access for aga tower in inverted
         set_rule(world.get_entrance('Turtle Rock', player), lambda state: state.has_turtle_rock_medallion(player) and state.can_reach('Turtle Rock (Top)', 'Region', player))   # sword not required to use medallion for opening in swordless (!)
         set_rule(world.get_entrance('Misery Mire', player), lambda state: state.has_misery_mire_medallion(player))  # sword not required to use medallion for opening in swordless (!)
-        set_rule(world.get_location('Bombos Tablet', player), lambda state: state.has('Book of Mudora', player) and state.has('Hammer', player))
 
 
 std_kill_rooms = {

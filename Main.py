@@ -96,6 +96,8 @@ def main(args, seed=None, fish=None):
     world.progression_balancing = {player: not balance for player, balance in args.skip_progression_balancing.items()}
     world.shuffle_prizes = args.shuffle_prizes.copy()
     world.sprite_pool = args.sprite_pool.copy()
+    world.dark_room_logic = args.dark_room_logic.copy()
+    world.restrict_dungeon_item_on_boss = args.restrict_dungeon_item_on_boss.copy()
 
     world.rom_seeds = {player: random.Random(world.random.randint(0, 999999999)) for player in range(1, world.players + 1)}
 
@@ -118,10 +120,6 @@ def main(args, seed=None, fish=None):
 
     for player in range(1, world.players + 1):
         world.difficulty_requirements[player] = difficulties[world.difficulty[player]]
-
-        if world.mode[player] == 'standard' and world.enemy_shuffle[player] != 'none':
-            if hasattr(world,"escape_assist") and player in world.escape_assist:
-                world.escape_assist[player].append('bombs') # enemized escape assumes infinite bombs available and will likely be unbeatable without it
 
         for tok in filter(None, args.startinventory[player].split(',')):
             item = ItemFactory(tok.strip(), player)
@@ -183,9 +181,7 @@ def main(args, seed=None, fish=None):
     shuffled_locations = None
     if args.algorithm in ['balanced', 'vt26'] or any(list(args.mapshuffle.values()) + list(args.compassshuffle.values()) +
                                                      list(args.keyshuffle.values()) + list(args.bigkeyshuffle.values())):
-        shuffled_locations = world.get_unfilled_locations()
-        world.random.shuffle(shuffled_locations)
-        fill_dungeons_restrictive(world, shuffled_locations)
+        fill_dungeons_restrictive(world)
     else:
         fill_dungeons(world)
 
@@ -467,6 +463,9 @@ def copy_world(world):
     ret.beemizer = world.beemizer.copy()
     ret.timer = world.timer.copy()
     ret.shufflepots = world.shufflepots.copy()
+    ret.shuffle_prizes = world.shuffle_prizes.copy()
+    ret.dark_room_logic = world.dark_room_logic.copy()
+    ret.restrict_dungeon_item_on_boss = world.restrict_dungeon_item_on_boss.copy()
     ret.intensity = world.intensity.copy()
     ret.experimental = world.experimental.copy()
 

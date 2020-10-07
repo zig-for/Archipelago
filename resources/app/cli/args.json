@@ -349,6 +349,17 @@
     ]
   },
   "sprite_pool": {},
+  "dark_room_logic": {
+    "choices": [
+      "lamp",
+      "torches",
+      "none"
+    ]
+  },
+  "restrict_dungeon_item_on_boss": {
+    "action": "store_true",
+    "type": "bool"
+  },
   "enemy_health": {
     "choices": [
       "default",
