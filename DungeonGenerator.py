@@ -9,7 +9,7 @@ import operator as op
 import time
 from typing import List
 
-from BaseClasses import DoorType, Direction, CrystalBarrier, RegionType, Polarity, PolSlot, flooded_keys
+from BaseClasses import DoorType, Direction, CrystalBarrier, RegionType, Polarity, PolSlot, flooded_keys, Sector
 from BaseClasses import Hook, hook_from_door
 from Regions import key_only_locations, dungeon_events, flooded_keys_reverse
 from Dungeons import dungeon_regions, split_region_starts
@@ -30,6 +30,12 @@ class GraphPiece:
 # Dungeons shouldn't be generated until all entrances are appropriately accessible
 def pre_validate(builder, entrance_region_names, split_dungeon, world, player):
     entrance_regions = convert_regions(entrance_region_names, world, player)
+    excluded = {}
+    for region in entrance_regions:
+        portal = next((x for x in world.dungeon_portals[player] if x.door.entrance.parent_region == region), None)
+        if portal and portal.destination:
+            excluded[region] = None
+    entrance_regions = [x for x in entrance_regions if x not in excluded.keys()]
     proposed_map = {}
     doors_to_connect = {}
     all_regions = set()
@@ -41,11 +47,11 @@ def pre_validate(builder, entrance_region_names, split_dungeon, world, player):
         all_regions.update(sector.regions)
         bk_needed = bk_needed or determine_if_bk_needed(sector, split_dungeon, world, player)
         bk_special = bk_special or check_for_special(sector)
-    paths = determine_required_paths(world, player, split_dungeon, all_regions, builder.name)[builder.name]
+    paths = determine_paths_for_dungeon(world, player, all_regions, builder.name)
     dungeon, hangers, hooks = gen_dungeon_info(builder.name, builder.sectors, entrance_regions, all_regions,
                                                proposed_map, doors_to_connect, bk_needed, bk_special, world, player)
-    return check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
-                       bk_needed, paths, entrance_regions)
+    return check_valid(builder.name, dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
+                       bk_needed, bk_special, paths, entrance_regions, world, player)
 
 
 def generate_dungeon(builder, entrance_region_names, split_dungeon, world, player):
@@ -69,11 +75,14 @@ def generate_dungeon_main(builder, entrance_region_names, split_dungeon, world, 
         proposed_map = builder.valid_proposal
     else:
         proposed_map = generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon, world, player)
+        builder.valid_proposal = proposed_map
     queue = collections.deque(proposed_map.items())
     while len(queue) > 0:
         a, b = queue.popleft()
         connect_doors(a, b)
         queue.remove((b, a))
+    if len(builder.sectors) == 0:
+        return Sector()
     available_sectors = list(builder.sectors)
     master_sector = available_sectors.pop()
     for sub_sector in available_sectors:
@@ -87,6 +96,12 @@ def generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon
     logger = logging.getLogger('')
     name = builder.name
     entrance_regions = convert_regions(entrance_region_names, world, player)
+    excluded = {}
+    for region in entrance_regions:
+        portal = next((x for x in world.dungeon_portals[player] if x.door.entrance.parent_region == region), None)
+        if portal and portal.destination:
+            excluded[region] = None
+    entrance_regions = [x for x in entrance_regions if x not in excluded.keys()]
     doors_to_connect = {}
     all_regions = set()
     bk_needed = False
@@ -106,7 +121,7 @@ def generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon
     attempt = 1
     finished = False
     # flag if standard and this is hyrule castle
-    paths = determine_required_paths(world, player, split_dungeon, all_regions, name)[name]
+    paths = determine_paths_for_dungeon(world, player, all_regions, name)
     while not finished:
         # what are my choices?
         itr += 1
@@ -125,8 +140,8 @@ def generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon
             dungeon, hangers, hooks = gen_dungeon_info(name, builder.sectors, entrance_regions, all_regions, proposed_map,
                                                        doors_to_connect, bk_needed, bk_special, world, player)
             dungeon_cache[depth] = dungeon, hangers, hooks
-            valid = check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
-                                bk_needed, paths, entrance_regions)
+            valid = check_valid(name, dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
+                                bk_needed, bk_special, paths, entrance_regions, world, player)
         else:
             dungeon, hangers, hooks = dungeon_cache[depth]
             valid = True
@@ -143,7 +158,7 @@ def generate_dungeon_find_proposal(builder, entrance_region_names, split_dungeon
                 continue
             prev_choices = choices_master[depth]
             # make a choice
-            hanger, hook = make_a_choice(dungeon, hangers, hooks, prev_choices, name)
+            hanger, hook = make_a_choice(dungeon, hangers, hooks, prev_choices, name, world)
             if hanger is None:
                 backtrack = True
             else:
@@ -190,11 +205,12 @@ def gen_dungeon_info(name, available_sectors, entrance_regions, all_regions, pro
     start = ExplorationState(dungeon=name)
     start.big_key_special = bk_special
     group_flags, door_map = find_bk_groups(name, available_sectors, proposed_map, bk_special)
+    bk_flag = False if world.bigkeyshuffle[player] and not bk_special else bk_needed
 
     def exception(d):
         return name == 'Skull Woods 2' and d.name == 'Skull Pinball WS'
     original_state = extend_reachable_state_improved(entrance_regions, start, proposed_map, all_regions,
-                                                     valid_doors, bk_needed, world, player, exception)
+                                                     valid_doors, bk_flag, world, player, exception)
     dungeon['Origin'] = create_graph_piece_from_state(None, original_state, original_state, proposed_map, exception)
     either_crystal = True  # if all hooks from the origin are either, explore all bits with either
     for hook, crystal in dungeon['Origin'].hooks.items():
@@ -319,7 +335,7 @@ def explore_blue_state(door, dungeon, o_state, proposed_map, all_regions, valid_
     dungeon[door.name] = create_graph_piece_from_state(door, o_state, b_state, proposed_map, exception)
 
 
-def make_a_choice(dungeon, hangers, avail_hooks, prev_choices, name):
+def make_a_choice(dungeon, hangers, avail_hooks, prev_choices, name, world):
     # choose a hanger
     all_hooks = {}
     origin = dungeon['Origin']
@@ -330,7 +346,7 @@ def make_a_choice(dungeon, hangers, avail_hooks, prev_choices, name):
     for key in hangers.keys():
         candidate_hangers.extend(hangers[key])
     candidate_hangers.sort(key=lambda x: x.name)  # sorting to create predictable seeds
-    random.shuffle(candidate_hangers)  # randomize if equal preference
+    world.random.shuffle(candidate_hangers)  # randomize if equal preference
     stage_2_hangers = []
     if len(prev_choices) > 0:
         prev_hanger = prev_choices[0][0]
@@ -370,7 +386,7 @@ def make_a_choice(dungeon, hangers, avail_hooks, prev_choices, name):
                 hook_candidates.append(door)
         if len(hook_candidates) > 0:
             hook_candidates.sort(key=lambda x: x.name)  # sort for deterministic seeds
-            hook = random.choice(tuple(hook_candidates))
+            hook = world.random.choice(tuple(hook_candidates))
         elif name == 'Skull Woods 2' and next_hanger.name == 'Skull Pinball WS':
             continue
         else:
@@ -385,21 +401,22 @@ def filter_choices(next_hanger, door, orig_hang, prev_choices, hook_candidates):
     return next_hanger != door and orig_hang != next_hanger and door not in hook_candidates
 
 
-def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
-                bk_needed, paths, entrance_regions):
+def check_valid(name, dungeon, hangers, hooks, proposed_map, doors_to_connect, all_regions,
+                bk_needed, bk_special, paths, entrance_regions, world, player):
     # evaluate if everything is still plausible
 
     # only origin is left in the dungeon and not everything is connected
     if len(dungeon.keys()) <= 1 and len(proposed_map.keys()) < len(doors_to_connect):
         return False
     # origin has no more hooks, but not all doors have been proposed
-    possible_bks = len(dungeon['Origin'].possible_bk_locations)
-    true_origin_hooks = [x for x in dungeon['Origin'].hooks.keys() if not x.bigKey or possible_bks > 0 or not bk_needed]
-    if len(true_origin_hooks) == 0 and len(proposed_map.keys()) < len(doors_to_connect):
-        return False
-    if len(true_origin_hooks) == 0 and bk_needed and possible_bks == 0 and len(proposed_map.keys()) == len(
-         doors_to_connect):
-        return False
+    if not world.bigkeyshuffle[player]:
+        possible_bks = len(dungeon['Origin'].possible_bk_locations)
+        true_origin_hooks = [x for x in dungeon['Origin'].hooks.keys() if not x.bigKey or possible_bks > 0 or not bk_needed]
+        if len(true_origin_hooks) == 0 and len(proposed_map.keys()) < len(doors_to_connect):
+            return False
+        if len(true_origin_hooks) == 0 and bk_needed and possible_bks == 0 and len(proposed_map.keys()) == len(
+             doors_to_connect):
+            return False
     for key in hangers.keys():
         if len(hooks[key]) > 0 and len(hangers[key]) == 0:
             return False
@@ -425,7 +442,7 @@ def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_reg
         if len(outstanding_doors[key]) > 0 and len(hangers[key]) == 0 and len(hooks[opp_key]) == 0:
             return False
     all_visited = set()
-    bk_possible = not bk_needed
+    bk_possible = not bk_needed or (world.bigkeyshuffle[player] and not bk_special)
     for piece in dungeon.values():
         all_visited.update(piece.visited_regions)
         if not bk_possible and len(piece.possible_bk_locations) > 0:
@@ -434,7 +451,8 @@ def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_reg
         return False
     if not bk_possible:
         return False
-    if not valid_paths(paths, entrance_regions, doors_to_connect, all_regions, proposed_map):
+    if not valid_paths(name, paths, entrance_regions, doors_to_connect, all_regions, proposed_map,
+                       bk_needed, bk_special, world, player):
         return False
     new_hangers_found = True
     accessible_hook_types = []
@@ -463,7 +481,8 @@ def check_valid(dungeon, hangers, hooks, proposed_map, doors_to_connect, all_reg
     return len(all_hangers.difference(hanger_matching)) == 0
 
 
-def valid_paths(paths, entrance_regions, valid_doors, all_regions, proposed_map):
+def valid_paths(name, paths, entrance_regions, valid_doors, all_regions, proposed_map,
+                bk_needed, bk_special, world, player):
     for path in paths:
         if type(path) is tuple:
             target = path[1]
@@ -475,76 +494,82 @@ def valid_paths(paths, entrance_regions, valid_doors, all_regions, proposed_map)
         else:
             target = path
             start_regions = entrance_regions
-        if not valid_path(start_regions, target, valid_doors, proposed_map):
+        if not valid_path(name, start_regions, target, valid_doors, proposed_map, all_regions,
+                          bk_needed, bk_special, world, player):
             return False
     return True
 
 
-def valid_path(starting_regions, target, valid_doors, proposed_map):
-    queue = deque(starting_regions)
-    visited = set(starting_regions)
-    while len(queue) > 0:
-        region = queue.popleft()
-        if region.name == target:
+def valid_path(name, starting_regions, target, valid_doors, proposed_map, all_regions,
+               bk_needed, bk_special, world, player):
+    target_regions = set()
+    if type(target) is not list:
+        for region in all_regions:
+            if target == region.name:
+                target_regions.add(region)
+                break
+    else:
+        for region in all_regions:
+            if region.name in target:
+                target_regions.add(region)
+
+    start = ExplorationState(dungeon=name)
+    start.big_key_special = bk_special
+    bk_flag = False if world.bigkeyshuffle[player] and not bk_special else bk_needed
+
+    def exception(d):
+        return name == 'Skull Woods 2' and d.name == 'Skull Pinball WS'
+    original_state = extend_reachable_state_improved(starting_regions, start, proposed_map, all_regions,
+                                                     valid_doors, bk_flag, world, player, exception)
+
+    for exp_door in original_state.unattached_doors:
+        if not exp_door.door.blocked:
+            return True  # outstanding connection possible
+    for target in target_regions:
+        if original_state.visited_at_all(target):
             return True
-        for ext in region.exits:
-            connect = ext.connected_region
-            if connect is None and ext.name in valid_doors:
-                door = valid_doors[ext.name]
-                if not door.blocked:
-                    if door in proposed_map:
-                        new_region = proposed_map[door].entrance.parent_region
-                        if new_region not in visited:
-                            visited.add(new_region)
-                            queue.append(new_region)
-                    else:
-                        return True  # outstanding connection possible
-            elif connect is not None:
-                door = ext.door
-                if door is not None and not door.blocked and connect not in visited:
-                    visited.add(connect)
-                    queue.append(connect)
     return False  # couldn't find an outstanding door or the target
 
 
-def determine_required_paths(world, player, split_dungeon=False, all_regions=None, name=None):
-    if all_regions is None:
-        all_regions = set()
-    paths = {
-        'Hyrule Castle': ['Hyrule Castle Lobby', 'Hyrule Castle West Lobby', 'Hyrule Castle East Lobby'],
-        'Eastern Palace': ['Eastern Boss'],
-        'Desert Palace': ['Desert Main Lobby', 'Desert East Lobby', 'Desert West Lobby', 'Desert Boss'],
-        'Tower of Hera': ['Hera Boss'],
-        'Agahnims Tower': ['Tower Agahnim 1'],
-        'Palace of Darkness': ['PoD Boss'],
-        'Swamp Palace': ['Swamp Boss'],
-        'Skull Woods': ['Skull 1 Lobby', 'Skull 2 East Lobby', 'Skull 2 West Lobby', 'Skull Boss'],
-        'Thieves Town': ['Thieves Boss', ('Thieves Blind\'s Cell', 'Thieves Boss')],
-        'Ice Palace': ['Ice Boss'],
-        'Misery Mire': ['Mire Boss'],
-        'Turtle Rock': ['TR Main Lobby', 'TR Lazy Eyes', 'TR Big Chest Entrance', 'TR Eye Bridge', 'TR Boss'],
-        'Ganons Tower': ['GT Agahnim 2'],
-        'Skull Woods 1': ['Skull 1 Lobby'],
-        'Skull Woods 2': ['Skull 2 East Lobby', 'Skull 2 West Lobby'],
-        'Skull Woods 3': [],
-        'Desert Palace Main': ['Desert Main Lobby', 'Desert East Lobby', 'Desert West Lobby'],
-        'Desert Palace Back': []
-    }
-    if world.mode[player] == 'standard':
-        paths['Hyrule Castle'].append('Hyrule Dungeon Cellblock')
-        # noinspection PyTypeChecker
-        paths['Hyrule Castle'].append(('Hyrule Dungeon Cellblock', 'Sanctuary'))
-    if world.doorShuffle[player] in ['basic']:
-        paths['Thieves Town'].append('Thieves Attic Window')
-    if split_dungeon:
-        if world.get_region('Desert Boss', player) in all_regions:
-            paths[name].append('Desert Boss')
-        if world.get_region('Skull Boss', player) in all_regions:
-            paths[name].append('Skull Boss')
+def determine_required_paths(world, player):
+    paths = {}
+    for name, builder in world.dungeon_layouts[player].items():
+        all_regions = builder.master_sector.regions
+        paths[name] = determine_paths_for_dungeon(world, player, all_regions, name)
     return paths
 
 
+boss_path_checks = ['Eastern Boss', 'Desert Boss', 'Hera Boss', 'Tower Agahnim 1', 'PoD Boss', 'Swamp Boss',
+                    'Skull Boss', 'Ice Boss', 'Mire Boss', 'TR Boss', 'GT Agahnim 2']
 
+# pinball is allowed to orphan you
+drop_path_checks = ['Skull Pot Circle', 'Skull Left Drop', 'Skull Back Drop', 'Sewers Rat Path']
+
+
+def determine_paths_for_dungeon(world, player, all_regions, name):
+    all_r_names = set(x.name for x in all_regions)
+    paths = []
+    non_hole_portals = []
+    for portal in world.dungeon_portals[player]:
+        if portal.door.entrance.parent_region in all_regions:
+            non_hole_portals.append(portal.door.entrance.parent_region.name)
+            if portal.destination:
+                paths.append(portal.door.entrance.parent_region.name)
+    if world.mode[player] == 'standard' and name == 'Hyrule Castle':
+        paths.append('Hyrule Dungeon Cellblock')
+        paths.append(('Hyrule Dungeon Cellblock', 'Sanctuary'))
+    if world.doorShuffle[player] in ['basic'] and name == 'Thieves Town':
+        paths.append('Thieves Attic Window')
+    for boss in boss_path_checks:
+        if boss in all_r_names:
+            paths.append(boss)
+    if 'Thieves Boss' in all_r_names:
+        paths.append('Thieves Boss')
+        paths.append(('Thieves Blind\'s Cell', 'Thieves Boss'))
+    for drop_check in drop_path_checks:
+        if drop_check in all_r_names:
+            paths.append((drop_check, non_hole_portals))
+    return paths
 
 
 def winnow_hangers(hangers, hooks):
@@ -1063,14 +1088,18 @@ def special_big_key_found(state, world, player):
 def valid_region_to_explore_in_regions(region, all_regions, world, player):
     if region is None:
         return False
-    return (region.type == RegionType.Dungeon and region in all_regions) or region.name in world.inaccessible_regions[player]
+    return (region.type == RegionType.Dungeon and region in all_regions)\
+        or region.name in world.inaccessible_regions[player]\
+        or (region.name == 'Hyrule Castle Ledge' and world.mode[player] == 'standard')
 
 
 # cross-utility methods
 def valid_region_to_explore(region, name, world, player):
     if region is None:
         return False
-    return (region.type == RegionType.Dungeon and region.dungeon.name in name) or region.name in world.inaccessible_regions[player]
+    return (region.type == RegionType.Dungeon and region.dungeon.name in name)\
+        or region.name in world.inaccessible_regions[player]\
+        or (region.name == 'Hyrule Castle Ledge' and world.mode[player] == 'standard')
 
 
 def get_doors(world, region, player):
@@ -1146,9 +1175,7 @@ class DungeonBuilder(object):
         self.key_door_proposal = None
 
         self.allowance = None
-        if name in dungeon_dead_end_allowance.keys():
-            self.allowance = dungeon_dead_end_allowance[name]
-        elif 'Stonewall' in name:
+        if 'Stonewall' in name:
             self.allowance = 1
         elif 'Prewall' in name:
             orig_name = name[:-8]
@@ -1236,7 +1263,20 @@ def create_dungeon_builders(all_sectors, connections_tuple, world, player,
         identify_destination_sectors(accessible_sectors, reverse_d_map, dungeon_map, connections,
                                      dungeon_entrances, split_dungeon_entrances)
         for name, builder in dungeon_map.items():
-            calc_allowance_and_dead_ends(builder, connections_tuple)
+            calc_allowance_and_dead_ends(builder, connections_tuple, world.dungeon_portals[player])
+
+        if world.mode[player] == 'open' and world.shuffle[player] not in ['crossed', 'insanity']:
+            sanc = find_sector('Sanctuary', candidate_sectors)
+            lw_builders = []
+            if sanc:  # only run if sanc if a candidate
+                for name, portal_list in dungeon_portals.items():
+                    for portal_name in portal_list:
+                        if world.get_portal(portal_name, player).light_world:
+                            lw_builders.append(dungeon_map[name])
+                            break
+                # portals only - not drops for mirror stuff
+                sanc_builder = world.random.choice(lw_builders)
+                assign_sector(sanc, sanc_builder, candidate_sectors, global_pole)
 
         free_location_sectors = {}
         crystal_switches = {}
@@ -1254,16 +1294,16 @@ def create_dungeon_builders(all_sectors, connections_tuple, world, player,
                 neutral_sectors[sector] = None
             else:
                 polarized_sectors[sector] = None
-        assign_location_sectors(dungeon_map, free_location_sectors, global_pole)
-        leftover = assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers, global_pole)
-        ensure_crystal_switches_reachable(dungeon_map, leftover, polarized_sectors, crystal_barriers, global_pole)
+        assign_location_sectors(dungeon_map, free_location_sectors, global_pole, world)
+        leftover = assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers, global_pole, world)
+        ensure_crystal_switches_reachable(dungeon_map, leftover, polarized_sectors, crystal_barriers, global_pole, world)
         for sector in leftover:
             if sector.polarity().is_neutral():
                 neutral_sectors[sector] = None
             else:
                 polarized_sectors[sector] = None
         # blue barriers
-        assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole)
+        assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole, world)
         try:
             # polarity:
             if not global_pole.is_valid(dungeon_map):
@@ -1327,11 +1367,12 @@ def identify_destination_sectors(accessible_sectors, reverse_d_map, dungeon_map,
                                 break
 
 
-def calc_allowance_and_dead_ends(builder, connections_tuple):
+def calc_allowance_and_dead_ends(builder, connections_tuple, portals):
     entrances_map, potentials, connections = connections_tuple
     needed_connections = [x for x in builder.all_entrances if x not in entrances_map[builder.name]]
     starting_allowance = 0
     used_sectors = set()
+    destination_entrances = [x.door.entrance.parent_region.name for x in portals if x.destination]
     for entrance in entrances_map[builder.name]:
         sector = find_sector(entrance, builder.sectors)
         outflow_target = 0 if entrance not in drop_entrances_allowance else 1
@@ -1443,13 +1484,13 @@ def find_sector(r_name, sectors):
     return None
 
 
-def assign_location_sectors(dungeon_map, free_location_sectors, global_pole):
+def assign_location_sectors(dungeon_map, free_location_sectors, global_pole, world):
     valid = False
     choices = None
     sector_list = list(free_location_sectors)
-    random.shuffle(sector_list)
+    world.random.shuffle(sector_list)
     while not valid:
-        choices, d_idx, totals = weighted_random_locations(dungeon_map, sector_list)
+        choices, d_idx, totals = weighted_random_locations(dungeon_map, sector_list, world)
         for i, sector in enumerate(sector_list):
             choice = d_idx[choices[i].name]
             totals[choice] += sector.chest_locations
@@ -1463,7 +1504,7 @@ def assign_location_sectors(dungeon_map, free_location_sectors, global_pole):
         assign_sector(sector_list[i], builder, free_location_sectors, global_pole)
 
 
-def weighted_random_locations(dungeon_map, free_location_sectors):
+def weighted_random_locations(dungeon_map, free_location_sectors, world):
     population = []
     ttl_assigned = 0
     weights = []
@@ -1482,11 +1523,11 @@ def weighted_random_locations(dungeon_map, free_location_sectors):
         if db.location_cnt > average:
             weights[i] = max(0, weights[i] - db.location_cnt + average)
 
-    choices = random.choices(population, weights, k=len(free_location_sectors))
+    choices = world.random.choices(population, weights, k=len(free_location_sectors))
     return choices, d_idx, totals
 
 
-def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers, global_pole, assign_one=False):
+def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers, global_pole, world, assign_one=False):
     population = []
     some_c_switches_present = False
     for name, builder in dungeon_map.items():
@@ -1500,17 +1541,17 @@ def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barrier
                 raise GenerationException('No crystal switches to assign. Ref %s' % next(iter(dungeon_map.keys())))
             valid, builder_choice, switch_choice = False, None, None
             switch_candidates = list(crystal_switches)
-            switch_choice = random.choice(switch_candidates)
+            switch_choice = world.random.choice(switch_candidates)
             switch_candidates.remove(switch_choice)
             builder_candidates = [name for name, builder in dungeon_map.items() if not builder.c_locked]
             while not valid:
                 if len(builder_candidates) == 0:
                     if len(switch_candidates) == 0:
                         raise GenerationException('No where to assign crystal switch. Ref %s' % next(iter(dungeon_map.keys())))
-                    switch_choice = random.choice(switch_candidates)
+                    switch_choice = world.random.choice(switch_candidates)
                     switch_candidates.remove(switch_choice)
                     builder_candidates = list(dungeon_map.keys())
-                choice = random.choice(builder_candidates)
+                choice = world.random.choice(builder_candidates)
                 builder_candidates.remove(choice)
                 builder_choice = dungeon_map[choice]
                 test_set = [switch_choice]
@@ -1519,14 +1560,14 @@ def assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barrier
             assign_sector(switch_choice, builder_choice, crystal_switches, global_pole)
         return crystal_switches
     sector_list = list(crystal_switches)
-    choices = random.sample(sector_list, k=len(population))
+    choices = world.random.sample(sector_list, k=len(population))
     for i, choice in enumerate(choices):
         builder = dungeon_map[population[i]]
         assign_sector(choice, builder, crystal_switches, global_pole)
     return crystal_switches
 
 
-def ensure_crystal_switches_reachable(dungeon_map, crystal_switches, polarized_sectors, crystal_barriers, global_pole):
+def ensure_crystal_switches_reachable(dungeon_map, crystal_switches, polarized_sectors, crystal_barriers, global_pole, world):
     invalid_builders = []
     for name, builder in dungeon_map.items():
         if builder.c_switch_present and not builder.c_locked:
@@ -1573,7 +1614,7 @@ def ensure_crystal_switches_reachable(dungeon_map, crystal_switches, polarized_s
                     while not valid:
                         if len(candidates) <= 0:
                             raise GenerationException(f'need to provide more sophisticatedted crystal connection for {entrance_sector}')
-                        sector, which_list = random.choice(list(candidates.items()))
+                        sector, which_list = world.random.choice(list(candidates.items()))
                         del candidates[sector]
                         valid = global_pole.is_valid_choice(dungeon_map, builder, [sector])
                     if which_list == 'Polarized':
@@ -1661,14 +1702,14 @@ def crystal_cand_matches_access(sector, access):
     return False
 
 
-def assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole):
+def assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole, world):
     population = []
     for name, builder in dungeon_map.items():
         if builder.c_switch_present and not builder.c_locked:
             population.append(name)
     sector_list = list(crystal_barriers)
-    random.shuffle(sector_list)
-    choices = random.choices(population, k=len(sector_list))
+    world.random.shuffle(sector_list)
+    choices = world.random.choices(population, k=len(sector_list))
     for i, choice in enumerate(choices):
         builder = dungeon_map[choice]
         assign_sector(sector_list[i], builder, crystal_barriers, global_pole)
@@ -1775,16 +1816,6 @@ def loop_present(hook, opp, h_mag, other_mag):
         return h_mag[opp] >= h_mag[hook.value] - other_mag[opp]
 
 
-def is_entrance_sector(builder, sector):
-    if builder is None:
-        return False
-    for entrance in builder.all_entrances:
-        r_set = sector.region_set()
-        if entrance in r_set:
-            return True
-    return False
-
-
 def is_satisfied(door_dict_list):
     for door_dict in door_dict_list:
         for door_list in door_dict.values():
@@ -1825,6 +1856,7 @@ def sum_polarity(sector_list):
 
 
 def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info):
+    _, _, world, _ = builder_info
     # step 1: fix polarity connection issues
     unconnected_builders = identify_polarity_issues(dungeon_map)
     while len(unconnected_builders) > 0:
@@ -1834,7 +1866,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
             while not valid:
                 if len(candidates) == 0:
                     raise GenerationException('Cross Dungeon Builder: Cannot find a candidate for connectedness. %s' % name)
-                sector = random.choice(candidates)
+                sector = world.random.choice(candidates)
                 candidates.remove(sector)
                 valid = global_pole.is_valid_choice(dungeon_map, builder, [sector])
             assign_sector(sector, builder, polarized_sectors, global_pole)
@@ -1855,7 +1887,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
                         raise GenerationException('Cross Dungeon Builder: Simple branch problems: %s' % name)
                     best = min(charges)
                     best_candidates = [x for i, x in enumerate(candidates) if charges[i] <= best]
-                choice = random.choice(best_candidates)
+                choice = world.random.choice(best_candidates)
                 best_candidates.remove(choice)
                 i = candidates.index(choice)
                 candidates.pop(i)
@@ -1867,10 +1899,10 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
         problem_builders = identify_simple_branching_issues(problem_builders)
 
     # step 3: fix neutrality issues
-    polarity_step_3(dungeon_map, polarized_sectors, global_pole)
+    polarity_step_3(dungeon_map, polarized_sectors, global_pole, world)
 
     # step 4: fix dead ends again
-    neutral_choices: List[List] = neutralize_the_rest(polarized_sectors)
+    neutral_choices: List[List] = neutralize_the_rest(polarized_sectors, world)
     problem_builders = identify_branching_issues(dungeon_map, builder_info)
     while len(problem_builders) > 0:
         for name, builder in problem_builders.items():
@@ -1879,7 +1911,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
             while not valid:
                 if len(candidates) <= 0:
                         raise GenerationException('Cross Dungeon Builder: Complex branch problems: %s' % name)
-                choice = random.choice(candidates)
+                choice = world.random.choice(candidates)
                 candidates.remove(choice)
                 valid = global_pole.is_valid_choice(dungeon_map, builder, choice) and valid_polarized_assignment(builder, choice)
             neutral_choices.remove(choice)
@@ -1893,7 +1925,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
     combinations = None
     if comb_w_replace <= 1000:
         combinations = list(itertools.product(dungeon_map.keys(), repeat=len(neutral_choices)))
-        random.shuffle(combinations)
+        world.random.shuffle(combinations)
     tries = 0
     while len(polarized_sectors) > 0:
         if tries > 1000 or (combinations and tries >= len(combinations)):
@@ -1901,7 +1933,7 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
         if combinations:
             choices = combinations[tries]
         else:
-            choices = random.choices(list(dungeon_map.keys()), k=len(neutral_choices))
+            choices = world.random.choices(list(dungeon_map.keys()), k=len(neutral_choices))
         chosen_sectors = defaultdict(list)
         for i, choice in enumerate(choices):
             chosen_sectors[choice].extend(neutral_choices[i])
@@ -1918,11 +1950,11 @@ def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builde
         tries += 1
 
 
-def polarity_step_3(dungeon_map, polarized_sectors, global_pole):
+def polarity_step_3(dungeon_map, polarized_sectors, global_pole, world):
     # step 3a: fix odd builders
     odd_builders = [x for x in dungeon_map.values() if sum_polarity(x.sectors).charge() % 2 != 0]
     grouped_choices: List[List] = find_forced_groupings(polarized_sectors, dungeon_map)
-    random.shuffle(odd_builders)
+    world.random.shuffle(odd_builders)
     odd_candidates = find_odd_sectors(grouped_choices)
     tries = 0
     while len(odd_builders) > 0:
@@ -1935,7 +1967,7 @@ def polarity_step_3(dungeon_map, polarized_sectors, global_pole):
         sample_target = 100 if combos > 10 else combos * 2
         while best_choices is None or samples < sample_target:
             samples += 1
-            choices = random.sample(odd_candidates, k=len(odd_builders))
+            choices = world.random.sample(odd_candidates, k=len(odd_builders))
             valid = global_pole.is_valid_multi_choice(dungeon_map, odd_builders, choices)
             charge = calc_total_charge(dungeon_map, odd_builders, choices)
             if valid and charge < best_charge:
@@ -1949,7 +1981,7 @@ def polarity_step_3(dungeon_map, polarized_sectors, global_pole):
         for i, candidate_list in enumerate(best_choices):
             test_set = find_forced_connections(dungeon_map, candidate_list, polarized_sectors)
             builder = odd_builders[i]
-            if ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_map, global_pole):
+            if ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_map, global_pole, world):
                 all_valid &= valid_branch_only(builder, candidate_list)
             else:
                 all_valid = False
@@ -1966,10 +1998,10 @@ def polarity_step_3(dungeon_map, polarized_sectors, global_pole):
             tries += 1
 
     # step 3b: neutralize all builders
-    parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole)
+    parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole, world)
 
 
-def parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole):
+def parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole, world):
     start = time.process_time()
     builders = list(dungeon_map.values())
     finished = all([x.polarity().is_neutral() for x in builders])
@@ -1988,7 +2020,7 @@ def parallel_full_neutralization(dungeon_map, polarized_sectors, global_pole):
                 if len(candidate_list) == 0:
                     increment_depth = False  #need to look again at current level
                     break
-                sectors = random.choice(candidate_list)
+                sectors = world.random.choice(candidate_list)
                 candidate_list.remove(sectors)
                 proposal = solution_list.copy()
                 proposal[builder] = list(proposal[builder])
@@ -2056,7 +2088,7 @@ def valid_self(c_mag, val, opp):
         return c_mag[opp.value] > 0 and sum(c_mag) > 2
 
 
-def ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_map, global_pole):
+def ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_map, global_pole, world):
     test_copy = list(test_set)
     while not valid_connected_assignment(builder, test_copy):
         dummy_builder = DungeonBuilder("Dummy Builder for " + builder.name)
@@ -2067,7 +2099,7 @@ def ensure_test_set_connectedness(test_set, builder, polarized_sectors, dungeon_
         while not valid:
             if len(candidates) == 0:
                 return False
-            sector = random.choice(candidates)
+            sector = world.random.choice(candidates)
             candidates.remove(sector)
             t2 = test_copy+[sector]
             valid = global_pole.is_valid_choice(dungeon_map, builder, t2) and valid_branch_only(builder, t2)
@@ -2438,7 +2470,7 @@ def find_connected_candidates(sector_pool):
     return candidates
 
 
-def neutralize_the_rest(sector_pool):
+def neutralize_the_rest(sector_pool, world):
     neutral_choices = []
     main_pool = list(sector_pool)
     failed_pool = []
@@ -2448,7 +2480,7 @@ def neutralize_the_rest(sector_pool):
             main_pool.extend(failed_pool)
             failed_pool.clear()
             r_size += 1
-        candidate = random.choice(main_pool)
+        candidate = world.random.choice(main_pool)
         main_pool.remove(candidate)
         if r_size > len(main_pool):
             raise GenerationException("Cross Dungeon Builder: no more neutral pairings possible")
@@ -2580,12 +2612,42 @@ def categorize_groupings(sectors):
 
 
 def valid_assignment(builder, sector_list, builder_info):
+    if not valid_entrance(builder, sector_list, builder_info):
+        return False
     if not valid_c_switch(builder, sector_list):
         return False
     if not valid_polarized_assignment(builder, sector_list):
         return False
     resolved, problems = check_for_valid_layout(builder, sector_list, builder_info)
     return resolved
+
+
+def valid_entrance(builder, sector_list, builder_info):
+    is_dead_end = False
+    if len(builder.sectors) == 0:
+        is_dead_end = True
+    else:
+        entrances, splits, world, player = builder_info
+        if builder.name not in entrances.keys():
+            name_parts = builder.name.rsplit(' ', 1)
+            entrance_list = splits[name_parts[0]][name_parts[1]]
+            entrances = []
+            for sector in builder.sectors:
+                if sector.is_entrance_sector():
+                    sector.region_set()
+                    entrances.append(sector)
+            all_dead = True
+            for sector in entrances:
+                for region in entrance_list:
+                    if region in sector.region_set():
+                        portal = next((x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == region))
+                        if not portal.deadEnd:
+                            all_dead = False
+                        break
+                if not all_dead:
+                    break
+            is_dead_end = all_dead
+    return len(sector_list) == 0 if is_dead_end else True
 
 
 def valid_c_switch(builder, sector_list):
@@ -2604,7 +2666,11 @@ def valid_c_switch(builder, sector_list):
 
 def valid_connected_assignment(builder, sector_list):
     full_list = sector_list + builder.sectors
+    if len(full_list) == 1 and sum_magnitude(full_list) == [0, 0, 0]:
+        return True
     for sector in full_list:
+        if sector.is_entrance_sector():
+            continue
         others = [x for x in full_list if x != sector]
         other_mag = sum_magnitude(others)
         sector_mag = sector.magnitude()
@@ -2641,11 +2707,12 @@ def valid_polarized_assignment(builder, sector_list):
 
 
 def assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info):
+    _, _, world, _ = builder_info
     comb_w_replace = len(dungeon_map) ** len(neutral_sectors)
     combinations = None
     if comb_w_replace <= 1000:
         combinations = list(itertools.product(dungeon_map.keys(), repeat=len(neutral_sectors)))
-        random.shuffle(combinations)
+        world.random.shuffle(combinations)
     tries = 0
     while len(neutral_sectors) > 0:
         if tries > 1000 or (combinations and tries >= len(combinations)):
@@ -2654,7 +2721,7 @@ def assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info):
         if combinations:
             choices = combinations[tries]
         else:
-            choices = random.choices(list(dungeon_map.keys()), k=len(neutral_sectors))
+            choices = world.random.choices(list(dungeon_map.keys()), k=len(neutral_sectors))
         neutral_sector_list = list(neutral_sectors)
         chosen_sectors = defaultdict(list)
         for i, choice in enumerate(choices):
@@ -2678,17 +2745,38 @@ def split_dungeon_builder(builder, split_list, builder_info):
             builder.split_dungeon_map[name].valid_proposal = proposal
         return builder.split_dungeon_map  # we made this earlier in gen, just use it
 
-    attempts, comb_w_replace = 0, None
+    attempts, comb_w_replace, merge_attempt = 0, None, False
     while attempts < 5:  # does not solve coin flips 3% of the time
         try:
             candidate_sectors = dict.fromkeys(builder.sectors)
             global_pole = GlobalPolarity(candidate_sectors)
 
-            dungeon_map = {}
+            dungeon_map, sub_builder, merge_keys = {}, None, []
+            if merge_attempt:
+                candidates = []
+                for name, split_entrances in split_list.items():
+                    if len(split_entrances) > 1:
+                        candidates.append(name)
+                        continue
+                    elif len(split_entrances) <= 0:
+                        continue
+                    x, y, world, player = builder_info
+                    r_name = split_entrances[0]
+                    p = next(x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == r_name)
+                    if not p.deadEnd:
+                        candidates.append(name)
+                merge_keys = random.sample(candidates, 2)
             for name, split_entrances in split_list.items():
                 key = builder.name + ' ' + name
-                dungeon_map[key] = sub_builder = DungeonBuilder(key)
-                sub_builder.all_entrances = split_entrances
+                if merge_keys and name in merge_keys:
+                    other_key = builder.name + ' ' + [x for x in merge_keys if x != name][0]
+                    if other_key in dungeon_map:
+                        key = other_key
+                        sub_builder = dungeon_map[other_key]
+                        sub_builder.all_entrances.extend(split_entrances)
+                if key not in dungeon_map:
+                    dungeon_map[key] = sub_builder = DungeonBuilder(key)
+                    sub_builder.all_entrances = list(split_entrances)
                 for r_name in split_entrances:
                     assign_sector(find_sector(r_name, candidate_sectors), sub_builder, candidate_sectors, global_pole)
             comb_w_replace = len(dungeon_map) ** len(candidate_sectors)
@@ -2698,14 +2786,18 @@ def split_dungeon_builder(builder, split_list, builder_info):
                 attempts += 5  # all the combinations were tried already, no use repeating
             else:
                 attempts += 1
+        if attempts >= 5 and not merge_attempt:
+            merge_attempt, attempts = True, 0
+
     raise GenerationException('Unable to resolve in 5 attempts')
 
 
 def balance_split(candidate_sectors, dungeon_map, global_pole, builder_info):
+    _, _, world, _ = builder_info
     comb_w_replace = len(dungeon_map) ** len(candidate_sectors)
     if comb_w_replace <= 10000:
         combinations = list(itertools.product(dungeon_map.keys(), repeat=len(candidate_sectors)))
-        random.shuffle(combinations)
+        world.random.shuffle(combinations)
         tries = 0
         while tries < len(combinations):
             choices = combinations[tries]
@@ -2714,8 +2806,8 @@ def balance_split(candidate_sectors, dungeon_map, global_pole, builder_info):
             for i, choice in enumerate(choices):
                 chosen_sectors[choice].append(main_sector_list[i])
             all_valid = True
-            for name, sector_list in chosen_sectors.items():
-                if not valid_assignment(dungeon_map[name], sector_list, builder_info):
+            for name, builder in dungeon_map.items():
+                if not valid_assignment(builder, chosen_sectors[name], builder_info):
                     all_valid = False
                     break
             if all_valid:
@@ -2728,20 +2820,20 @@ def balance_split(candidate_sectors, dungeon_map, global_pole, builder_info):
         raise GenerationException('Split Dungeon Builder: Impossible dungeon. Ref %s' % next(iter(dungeon_map.keys())))
 
     # categorize sectors
-    check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole)
+    check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole, world)
     check_for_forced_assignments(dungeon_map, candidate_sectors, global_pole)
     check_for_forced_crystal(dungeon_map, candidate_sectors, global_pole)
     crystal_switches, crystal_barriers, neutral_sectors, polarized_sectors = categorize_sectors(candidate_sectors)
     leftover = assign_crystal_switch_sectors(dungeon_map, crystal_switches, crystal_barriers,
-                                             global_pole, len(crystal_barriers) > 0)
-    ensure_crystal_switches_reachable(dungeon_map, leftover, polarized_sectors, crystal_barriers, global_pole)
+                                             global_pole, world, len(crystal_barriers) > 0)
+    ensure_crystal_switches_reachable(dungeon_map, leftover, polarized_sectors, crystal_barriers, global_pole, world)
     for sector in leftover:
         if sector.polarity().is_neutral():
             neutral_sectors[sector] = None
         else:
             polarized_sectors[sector] = None
     # blue barriers
-    assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole)
+    assign_crystal_barrier_sectors(dungeon_map, crystal_barriers, global_pole, world)
     # polarity:
     assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info)
     # the rest
@@ -2749,7 +2841,7 @@ def balance_split(candidate_sectors, dungeon_map, global_pole, builder_info):
     return dungeon_map
 
 
-def check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole):
+def check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole, world):
     dead_end_sectors = [x for x in candidate_sectors if x.branching_factor() <= 1]
     other_sectors = [x for x in candidate_sectors if x not in dead_end_sectors]
     for name, builder in dungeon_map.items():
@@ -2778,7 +2870,7 @@ def check_for_forced_dead_ends(dungeon_map, candidate_sectors, global_pole):
                     while not valid:
                         if len(candidates) == 0:
                             raise GenerationException('Split Dungeon Builder: Bad dead end %s' % builder.name)
-                        candidate_sector = random.choice(candidates)
+                        candidate_sector = world.random.choice(candidates)
                         candidates.remove(candidate_sector)
                         valid = global_pole.is_valid_choice(dungeon_map, builder, [candidate_sector]) and check_crystal(candidate_sector, sector)
                     assign_sector(candidate_sector, builder, candidate_sectors, global_pole)
@@ -2831,6 +2923,8 @@ def check_for_forced_crystal_single(builder, candidate_sectors):
     for sector in builder.sectors:
         for door in sector.outstanding_doors:
             builder_doors[hook_from_door(door)][door] = sector
+    if len(builder_doors) == 0:
+        return False
     candidate_doors = defaultdict(dict)
     for sector in candidate_sectors:
         for door in sector.outstanding_doors:
@@ -3124,15 +3218,27 @@ def check_for_valid_layout(builder, sector_list, builder_info):
             temp_builder = DungeonBuilder(builder.name)
             for s in sector_list + builder.sectors:
                 assign_sector_helper(s, temp_builder)
-            split_list = split_region_starts[builder.name]
+            split_list = split_dungeon_entrances[builder.name]
             builder.split_dungeon_map = split_dungeon_builder(temp_builder, split_list, builder_info)
             builder.valid_proposal = {}
+            possible_regions = set()
+            for portal in world.dungeon_portals[player]:
+                if not portal.destination and portal.name in dungeon_portals[builder.name]:
+                    possible_regions.add(portal.door.entrance.parent_region.name)
+            if builder.name in dungeon_drops.keys():
+                possible_regions.update(dungeon_drops[builder.name])
             for name, split_build in builder.split_dungeon_map.items():
                 name_bits = name.split(" ")
                 orig_name = " ".join(name_bits[:-1])
                 entrance_regions = split_dungeon_entrances[orig_name][name_bits[-1]]
                 # todo: this is hardcoded information for random entrances
-                entrance_regions = [x for x in entrance_regions if x not in split_check_entrance_invalid]
+                for sector in split_build.sectors:
+                    match_set = set(sector.region_set()).intersection(possible_regions)
+                    if len(match_set) > 0:
+                        for r_name in match_set:
+                            if r_name not in entrance_regions:
+                                entrance_regions.append(r_name)
+                # entrance_regions = [x for x in entrance_regions if x not in split_check_entrance_invalid]
                 proposal = generate_dungeon_find_proposal(split_build, entrance_regions, True, world, player)
                 # record split proposals
                 builder.valid_proposal[name] = proposal
@@ -3150,7 +3256,7 @@ def check_for_valid_layout(builder, sector_list, builder_info):
 
 def resolve_equations(builder, sector_list):
     unreached_doors = defaultdict(list)
-    equations = copy_door_equations(builder, sector_list)
+    equations = {x: y for x, y in copy_door_equations(builder, sector_list).items() if len(y) > 0}
     current_access = {}
     sector_split = {}  # those sectors that belong to a certain sector
     if builder.name in split_region_starts.keys():
@@ -3252,7 +3358,7 @@ def find_priority_equation(equations, access_id, current_access):
     if len(filtered_candidates) == 1:
         return filtered_candidates[0]
 
-    neutral_candidates = [x for x in filtered_candidates if x[0].neutral_profit() or x[0].neutral()]
+    neutral_candidates = [x for x in filtered_candidates if (x[0].neutral_profit() or x[0].neutral()) and x[0].profit(current_access) == local_profit_map[x[2]]]
     if len(neutral_candidates) == 0:
         neutral_candidates = filtered_candidates
     if len(neutral_candidates) == 1:
@@ -3531,7 +3637,7 @@ def copy_door_equations(builder, sector_list):
 
 def calc_sector_equations(sector, builder):
     equations = []
-    is_entrance = is_entrance_sector(builder, sector) and not sector.destination_entrance
+    is_entrance = sector.is_entrance_sector() and not sector.destination_entrance
     if is_entrance:
         flagged_equations = []
         for door in sector.outstanding_doors:
@@ -3724,14 +3830,28 @@ dead_entrances = [
     'TR Big Chest Entrance'
 ]
 
-destination_entrances = [
-    'Sanctuary', 'Hyrule Castle West Lobby', 'Hyrule Castle East Lobby', 'Sewers Rat Path', 'Desert East Lobby',
-    'Desert West Lobby', 'Skull Pinball', 'Skull Pot Circle', 'Skull Left Drop', 'Skull 2 West Lobby',
-    'Skull Back Drop', 'TR Big Chest Entrance', 'TR Eye Bridge', 'TR Lazy Eyes'
-]
-
 split_check_entrance_invalid = [
     'Desert East Lobby', 'Skull 2 West Lobby'
 ]
 
+dungeon_portals = {
+    'Hyrule Castle': ['Hyrule Castle South', 'Hyrule Castle West', 'Hyrule Castle East', 'Sanctuary'],
+    'Eastern Palace': ['Eastern'],
+    'Desert Palace': ['Desert Back', 'Desert South', 'Desert West', 'Desert East'],
+    'Tower of Hera': ['Hera'],
+    'Agahnims Tower': ['Agahnims Tower'],
+    'Palace of Darkness': ['Palace of Darkness'],
+    'Swamp Palace': ['Swamp'],
+    'Skull Woods': ['Skull 1', 'Skull 2 East', 'Skull 2 West', 'Skull 3'],
+    'Thieves Town': ['Thieves Town'],
+    'Ice Palace': ['Ice'],
+    'Misery Mire': ['Mire'],
+    'Turtle Rock': ['Turtle Rock Main', 'Turtle Rock Lazy Eyes', 'Turtle Rock Chest', 'Turtle Rock Eye Bridge'],
+    'Ganons Tower': ['Ganons Tower']
+}
+
+dungeon_drops = {
+    'Hyrule Castle': ['Sewers Rat Path'],
+    'Skull Woods': ['Skull Pot Circle', 'Skull Pinball', 'Skull Left Drop', 'Skull Back Drop'],
+}
 

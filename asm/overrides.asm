@@ -80,3 +80,35 @@ BlindAtticFix:
         lda #$01 : rtl
     + lda $7EF3CC : cmp.b #$06
     rtl
+
+SuctionOverworldFix:
+    stz $50 : stz $5e
+    lda.l DRMode : beq +
+        stz $49
+    + rtl
+
+; TT Alcove, Mire bridges, pod falling, SW torch room, TR Pipe room, Bob's Room, Ice Many Pots, Mire Hub
+; swamp waterfall, Gauntlet 3
+CutoffRooms:
+db $bc, $a2, $1a, $49, $14, $8c, $9f, $c2
+db $66, $5d
+
+CutoffEntranceRug:
+    pha : phx
+    lda.l DRMode : beq .norm
+        lda $04 : cmp #$000A : beq +
+        cmp #$000C : bne .norm
+          + lda $a0 : sep #$20 : ldx #$0000
+          	- cmp.l CutoffRooms, x : beq .check
+          	inx : cpx #$0009 : !blt - ; CutoffRoom Count is here!
+        rep #$20
+    .norm plx : pla : lda $9B52, y : sta $7E2000, x ; what we wrote over
+rtl
+     .check
+		  rep #$20
+		  lda $0c : cmp #$0006 : !bge .skip
+		  lda $0e : cmp #$0008 : !bge .skip
+		  cmp #$0004 : !blt .skip
+      bra  .norm
+.skip plx : pla : rtl
+

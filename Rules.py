@@ -250,6 +250,7 @@ def global_rules(world, player):
     set_defeat_dungeon_boss_rule(world.get_location('Palace of Darkness - Prize', player))
 
     set_rule(world.get_entrance('Swamp Lobby Moat', player), lambda state: state.has('Flippers', player) and state.has('Open Floodgate', player))
+    set_rule(world.get_entrance('Swamp Entrance Moat', player), lambda state: state.has('Flippers', player) and state.has('Open Floodgate', player))
     set_rule(world.get_entrance('Swamp Trench 1 Approach Dry', player), lambda state: not state.has('Trench 1 Filled', player))
     set_rule(world.get_entrance('Swamp Trench 1 Key Ledge Dry', player), lambda state: not state.has('Trench 1 Filled', player))
     set_rule(world.get_entrance('Swamp Trench 1 Departure Dry', player), lambda state: not state.has('Trench 1 Filled', player))
@@ -364,6 +365,7 @@ def global_rules(world, player):
     set_rule(world.get_entrance('GT Hookshot East-South Path', player), lambda state: state.has('Hookshot', player) or state.has_Boots(player))
     set_rule(world.get_entrance('GT Hookshot North-East Path', player), lambda state: state.has('Hookshot', player) or state.has_Boots(player))
     set_rule(world.get_entrance('GT Hookshot North-South Path', player), lambda state: state.has('Hookshot', player) or state.has_Boots(player))
+    set_rule(world.get_entrance('GT Hookshot Entry Boomerang Path', player), lambda state: state.has('Blue Boomerang', player) or state.has('Red Boomerang', player))
     set_rule(world.get_entrance('GT Firesnake Room Hook Path', player), lambda state: state.has('Hookshot', player))
     # I am tempted to stick an invincibility rule for getting across falling bridge
     set_rule(world.get_entrance('GT Ice Armos NE', player), lambda state: world.get_region('GT Ice Armos', player).dungeon.bosses['bottom'].can_defeat(state))
@@ -660,7 +662,7 @@ def inverted_rules(world, player):
     set_rule(world.get_entrance('Bumper Cave Exit (Top)', player), lambda state: state.has('Cape', player))
     set_rule(world.get_entrance('Bumper Cave Exit (Bottom)', player), lambda state: state.has('Cape', player) or state.has('Hookshot', player))
 
-    set_rule(world.get_entrance('Skull Woods Final Section', player), lambda state: state.has('Fire Rod', player)) 
+    set_rule(world.get_entrance('Skull Woods Final Section', player), lambda state: state.has('Fire Rod', player))
     set_rule(world.get_entrance('Misery Mire', player), lambda state: state.has_sword(player) and state.has_misery_mire_medallion(player))  # sword required to cast magic (!)
 
     set_rule(world.get_entrance('Hookshot Cave', player), lambda state: state.can_lift_rocks(player))
@@ -675,7 +677,7 @@ def inverted_rules(world, player):
     set_rule(world.get_entrance('Superbunny Cave Exit (Bottom)', player), lambda state: False)  # Cannot get to bottom exit from top. Just exists for shuffling
     set_rule(world.get_entrance('Floating Island Mirror Spot', player), lambda state: state.has_Mirror(player))
     set_rule(world.get_entrance('Turtle Rock', player), lambda state: state.has_sword(player) and state.has_turtle_rock_medallion(player) and state.can_reach('Turtle Rock (Top)', 'Region', player)) # sword required to cast magic (!)
-    
+
     # new inverted spots
     set_rule(world.get_entrance('Post Aga Teleporter', player), lambda state: state.has('Beat Agahnim 1', player))
     set_rule(world.get_entrance('Mire Mirror Spot', player), lambda state: state.has_Mirror(player))
@@ -693,7 +695,7 @@ def inverted_rules(world, player):
     set_rule(world.get_entrance('Graveyard Cave Mirror Spot', player), lambda state: state.has_Mirror(player))
     set_rule(world.get_entrance('Bomb Hut Mirror Spot', player), lambda state: state.has_Mirror(player))
     set_rule(world.get_entrance('Skull Woods Mirror Spot', player), lambda state: state.has_Mirror(player))
-    
+
     # inverted flute spots
 
     set_rule(world.get_entrance('DDM Flute', player), lambda state: state.can_flute(player))
@@ -706,7 +708,7 @@ def inverted_rules(world, player):
     set_rule(world.get_entrance('EDDM Flute', player), lambda state: state.can_flute(player))
     set_rule(world.get_entrance('Dark Grassy Lawn Flute', player), lambda state: state.can_flute(player))
     set_rule(world.get_entrance('Hammer Peg Area Flute', player), lambda state: state.can_flute(player))
-    
+
     set_rule(world.get_entrance('Inverted Pyramid Hole', player), lambda state: state.has('Beat Agahnim 2', player) or world.open_pyramid[player])
     set_rule(world.get_entrance('Inverted Ganons Tower', player), lambda state: False) # This is a safety for the TR function below to not require GT entrance in its key logic.
 
@@ -989,7 +991,9 @@ def find_rules_for_zelda_delivery(world, player):
         region, path_rules, path = queue.popleft()
         for ext in region.exits:
             connect = ext.connected_region
-            if connect and connect.type == RegionType.Dungeon and connect not in visited:
+            valid_region = connect and connect not in visited and\
+                (connect.type == RegionType.Dungeon or connect.name == 'Hyrule Castle Ledge')
+            if valid_region:
                 rule = ext.access_rule
                 rule_list = list(path_rules)
                 next_path = list(path)
@@ -1639,10 +1643,10 @@ bunny_impassible_doors = {
     'Ice Backwards Room Hole', 'Ice Switch Room SE', 'Ice Antechamber NE', 'Ice Antechamber Hole', 'Mire Lobby Gap',
     'Mire Post-Gap Gap', 'Mire 2 NE', 'Mire Hub Upper Blue Barrier', 'Mire Hub Lower Blue Barrier',
     'Mire Hub Right Blue Barrier', 'Mire Hub Top Blue Barrier', 'Mire Hub Switch Blue Barrier N',
-    'Mire Hub Switch Blue Barrier S', 'Mire Falling Bridge WN',
-    'Mire Map Spike Side Blue Barrier', 'Mire Map Spot Blue Barrier', 'Mire Crystal Dead End Left Barrier',
-    'Mire Crystal Dead End Right Barrier', 'Mire Cross ES', 'Mire Hidden Shooters Block Path S',
-    'Mire Hidden Shooters Block Path N', 'Mire Left Bridge Hook Path', 'Mire Fishbone Blue Barrier',
+    'Mire Hub Switch Blue Barrier S', 'Mire Falling Bridge WN', 'Mire Map Spike Side Blue Barrier',
+    'Mire Map Spot Blue Barrier', 'Mire Crystal Dead End Left Barrier', 'Mire Crystal Dead End Right Barrier',
+    'Mire Cross ES', 'Mire Hidden Shooters Block Path S', 'Mire Hidden Shooters Block Path N',
+    'Mire Left Bridge Hook Path', 'Mire Fishbone Blue Barrier',
     'Mire South Fish Blue Barrier', 'Mire Tile Room NW', 'Mire Compass Blue Barrier', 'Mire Attic Hint Hole',
     'Mire Dark Shooters SW', 'Mire Crystal Mid Blue Barrier', 'Mire Crystal Left Blue Barrier', 'TR Main Lobby Gap',
     'TR Lobby Ledge Gap', 'TR Hub SW', 'TR Hub SE', 'TR Hub ES', 'TR Hub EN', 'TR Hub NW', 'TR Hub NE', 'TR Torches NW',
@@ -1654,14 +1658,15 @@ bunny_impassible_doors = {
     'GT Crystal Conveyor NE', 'GT Crystal Conveyor WN', 'GT Conveyor Cross EN', 'GT Conveyor Cross WN',
     'GT Hookshot East-North Path', 'GT Hookshot East-South Path', 'GT Hookshot North-East Path',
     'GT Hookshot North-South Path', 'GT Hookshot South-East Path', 'GT Hookshot South-North Path',
-    'GT Hookshot Platform Blue Barrier', 'GT Hookshot Entry Blue Barrier', 'GT Double Switch Blue Path',
-    'GT Double Switch Key Blue Path', 'GT Double Switch Blue Barrier', 'GT Double Switch Transition Blue',
-    'GT Firesnake Room Hook Path', 'GT Falling Bridge WN', 'GT Falling Bridge WS', 'GT Ice Armos NE', 'GT Ice Armos WS',
-    'GT Crystal Paths SW', 'GT Mimics 1 NW', 'GT Mimics 1 ES', 'GT Mimics 2 WS', 'GT Mimics 2 NE',
-    'GT Hidden Spikes EN', 'GT Cannonball Bridge SE', 'GT Gauntlet 1 WN', 'GT Gauntlet 2 EN', 'GT Gauntlet 2 SW',
-    'GT Gauntlet 3 NW',  'GT Gauntlet 3 SW', 'GT Gauntlet 4 NW', 'GT Gauntlet 4 SW', 'GT Gauntlet 5 NW',
-    'GT Gauntlet 5 WS', 'GT Lanmolas 2 ES', 'GT Lanmolas 2 NW', 'GT Wizzrobes 1 SW', 'GT Wizzrobes 2 SE',
-    'GT Wizzrobes 2 NE', 'GT Torch Cross ES', 'GT Falling Torches NE', 'GT Moldorm Gap', 'GT Validation Block Path'
+    'GT Hookshot Platform Blue Barrier', 'GT Hookshot Entry Blue Barrier', 'GT Hookshot Entry Boomerang Path',
+    'GT Double Switch Blue Path', 'GT Double Switch Key Blue Path', 'GT Double Switch Blue Barrier',
+    'GT Double Switch Transition Blue', 'GT Firesnake Room Hook Path', 'GT Falling Bridge WN', 'GT Falling Bridge WS',
+    'GT Ice Armos NE', 'GT Ice Armos WS', 'GT Crystal Paths SW', 'GT Mimics 1 NW', 'GT Mimics 1 ES', 'GT Mimics 2 WS',
+    'GT Mimics 2 NE', 'GT Hidden Spikes EN', 'GT Cannonball Bridge SE', 'GT Gauntlet 1 WN', 'GT Gauntlet 2 EN',
+    'GT Gauntlet 2 SW', 'GT Gauntlet 3 NW',  'GT Gauntlet 3 SW', 'GT Gauntlet 4 NW', 'GT Gauntlet 4 SW',
+    'GT Gauntlet 5 NW', 'GT Gauntlet 5 WS', 'GT Lanmolas 2 ES', 'GT Lanmolas 2 NW', 'GT Wizzrobes 1 SW',
+    'GT Wizzrobes 2 SE', 'GT Wizzrobes 2 NE', 'GT Torch Cross ES', 'GT Falling Torches NE', 'GT Moldorm Gap',
+    'GT Validation Block Path'
 }
 
 
@@ -1670,7 +1675,8 @@ def add_key_logic_rules(world, player):
     for d_name, d_logic in key_logic.items():
         for door_name, keys in d_logic.door_rules.items():
             spot = world.get_entrance(door_name, player)
-            add_rule(spot, create_advanced_key_rule(d_logic, player, keys))
+            if not world.retro[player] or world.mode[player] != 'standard' or not retro_in_hc(spot):
+                add_rule(spot, create_advanced_key_rule(d_logic, player, keys))
             if keys.opposite:
                 add_rule(spot, create_advanced_key_rule(d_logic, player, keys.opposite), 'or')
         for location in d_logic.bk_restricted:
@@ -1682,6 +1688,10 @@ def add_key_logic_rules(world, player):
             add_rule(world.get_entrance(door.name, player), create_rule(d_logic.bk_name, player))
         for chest in d_logic.bk_chests:
             add_rule(world.get_location(chest.name, player), create_rule(d_logic.bk_name, player))
+
+
+def retro_in_hc(spot):
+    return spot.parent_region.dungeon.name == 'Hyrule Castle' if spot.parent_region.dungeon else False
 
 
 def create_rule(item_name, player):

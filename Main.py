@@ -17,7 +17,7 @@ from InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from EntranceShuffle import link_entrances, link_inverted_entrances
 from Rom import patch_rom, patch_race_rom, patch_enemizer, apply_rom_settings, LocalRom, get_hash_string, check_enemizer
 from Doors import create_doors
-from DoorShuffle import link_doors
+from DoorShuffle import link_doors, connect_portal_copy
 from RoomData import create_rooms
 from Rules import set_rules
 from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive, dungeon_regions
@@ -27,7 +27,7 @@ from Utils import output_path, parse_player_names, get_options, __version__, _ve
 from source.classes.BabelFish import BabelFish
 import Patch
 
-__dr_version__ = '0.1.0-dev'
+__dr_version__ = '0.2.0.0-u'
 seeddigits = 20
 
 
@@ -83,9 +83,8 @@ def main(args, seed=None, fish=None):
     world.timer = args.timer.copy()
     world.shufflepots = args.shufflepots.copy()
     world.progressive = args.progressive.copy()
-    world.intensity = {player: random.randint(1, 3) if args.intensity[player] == 'random' else int(args.intensity[player]) for player in range(1, world.players + 1)}
-    world.experimental = args.experimental.copy()
     world.dungeon_counters = args.dungeon_counters.copy()
+    world.intensity = {player: random.randint(1, 3) if args.intensity[player] == 'random' else int(args.intensity[player]) for player in range(1, world.players + 1)}
     world.experimental = args.experimental.copy()
     world.debug = args.debug.copy()
     world.fish = fish if fish else BabelFish(lang="en")
@@ -392,7 +391,7 @@ def main(args, seed=None, fish=None):
             enemizer_result = False
             for player in range(1, world.players + 1):
                 enemizer_used = _get_enemizer(player)
-                enemizer_result |= enemizer_used[1]
+                enemizer_result |= enemizer_used
             return enemizer_result
 
         multidata_future = pool.submit(get_enemizer_results)
@@ -538,6 +537,11 @@ def copy_world(world):
     ret.inaccessible_regions = world.inaccessible_regions
     ret.dungeon_layouts = world.dungeon_layouts
     ret.key_logic = world.key_logic
+    ret.dungeon_portals = world.dungeon_portals
+    for player, portals in world.dungeon_portals.items():
+        for portal in portals:
+            connect_portal_copy(portal, ret, player)
+    ret.sanc_portal = world.sanc_portal
 
     for player in range(1, world.players + 1):
         set_rules(ret, player)
@@ -604,7 +608,7 @@ def create_playthrough(world):
         if not sphere:
             logging.error(world.fish.translate("cli","cli","cannot.reach.items"), [world.fish.translate("cli","cli","cannot.reach.item") % (location.item.name, location.item.player, location.name, location.player) for location in sphere_candidates])
             if any([world.accessibility[location.item.player] != 'none' for location in sphere_candidates]):
-                raise RuntimeError(world.fish.translate("cli","cli","cannot.reach.progression"))
+                raise RuntimeError(world.fish.translate("cli", "cli", "cannot.reach.progression"))
             else:
                 old_world.spoiler.unreachables = sphere_candidates.copy()
                 break
