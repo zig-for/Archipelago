@@ -1242,7 +1242,7 @@ def set_paired_rules(key_logic, world, player):
 
 def check_bk_special(regions, world, player):
     for r_name in regions:
-        region = world.get_region(r_name, player)
+        region = world.get_region(r_name.name, player)
         for loc in region.locations:
             if loc.forced_big_key():
                 return True
