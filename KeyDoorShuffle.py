@@ -1240,9 +1240,8 @@ def set_paired_rules(key_logic, world, player):
             rule.opposite = key_logic.door_rules[door.dest.name]
 
 
-def check_bk_special(regions, world, player):
-    for r_name in regions:
-        region = world.get_region(r_name.name, player)
+def check_bk_special(regions):
+    for region in regions:
         for loc in region.locations:
             if loc.forced_big_key():
                 return True
@@ -1257,7 +1256,7 @@ def validate_key_layout(key_layout, world, player):
     flat_proposal = key_layout.flat_prop
     state = ExplorationState(dungeon=key_layout.sector.name)
     state.key_locations = key_layout.max_chests
-    state.big_key_special = check_bk_special(key_layout.sector.regions, world, player)
+    state.big_key_special = check_bk_special(key_layout.sector.regions)
     for region in key_layout.start_regions:
         state.visit_region(region, key_checks=True)
         state.add_all_doors_check_keys(region, flat_proposal, world, player)
