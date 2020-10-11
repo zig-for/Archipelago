@@ -161,7 +161,7 @@ def crossover_logic(world, player):
     if no_logic_players:
         for location in world.get_locations():
             if location.player in no_logic_players:
-                forbid_items(location, non_crossover_items, player)
+                forbid_items_for_player(location, non_crossover_items, player)
 
 def global_rules(world, player):
     # ganon can only carry triforce
