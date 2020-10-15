@@ -54,6 +54,8 @@ def set_rules(world, player):
         add_rule(ganon, lambda state: state.has('Beat Agahnim 2', player))
     elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
         add_rule(ganon, lambda state: state.has_triforce_pieces(world.treasure_hunt_count[player], player))
+    elif world.goal[player] == 'ganonpedestal':
+        add_rule(world.get_location('Ganon', player), lambda state: state.can_reach('Master Sword Pedestal', 'Location', player))
     else:
         add_rule(ganon, lambda state: state.has_crystals(world.crystals_needed_for_ganon[player], player))
     

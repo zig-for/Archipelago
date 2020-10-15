@@ -45,6 +45,7 @@
     "choices": [
       "ganon",
       "pedestal",
+      "ganonpedestal",
       "dungeons",
       "triforcehunt",
       "localtriforcehunt",

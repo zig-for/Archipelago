@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = 'ff71f509d9758645e24d7d91dcacd2e3'
+RANDOMIZERBASEHASH = 'd803847892840bc6d4924c568d9e9aa5'
 
 import io
 import json
@@ -1295,6 +1295,8 @@ def patch_rom(world, rom, player, team, enemized):
         rom.write_byte(0x18003E, 0x01)  # make ganon invincible
     elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
         rom.write_byte(0x18003E, 0x05)  # make ganon invincible until enough triforce pieces are collected
+    elif world.goal[player] in ['ganonpedestal']:
+        rom.write_byte(0x18003E, 0x06)
     elif world.goal[player] in ['dungeons']:
         rom.write_byte(0x18003E, 0x02)  # make ganon invincible until all dungeons are beat
     elif world.goal[player] in ['crystals']:
@@ -2007,6 +2009,8 @@ def write_strings(rom, world, player, team):
 
     if world.goal[player] == 'dungeons':
         tt['sign_ganon'] = 'You need to complete all the dungeons.'
+    if world.goal[player] == 'ganonpedestal':
+        tt['sign_ganon'] = 'You need to pull the pedestal to defeat Ganon.'
     elif world.goal[player]  == "ganon":
         if world.crystals_needed_for_ganon[player] == 1:
             tt['sign_ganon'] = 'You need 1 crystal to beat Ganon and have beaten Agahnim atop Ganons Tower.'
