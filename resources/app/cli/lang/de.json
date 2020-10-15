@@ -1,6 +1,6 @@
 {
   "cli": {
-    "app.title": "ALttP Berserker\\'s Multiwelt Tür Randomisier Version %s : %s - Nummer: %d",
+    "app.title": "ALttP Berserker's Multiwelt Tür Randomisier Version %s : %s - Nummer: %d",
     "shuffling.world": "Welt wird durchmischt.",
     "generating.itempool": "Generier Gegenstandsbasis.",
     "calc.access.rules": "Berechne Zugriffsregeln.",

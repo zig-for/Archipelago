@@ -1972,7 +1972,9 @@ class Spoiler(object):
             self.bosses = self.bosses["1"]
 
         from Utils import __version__ as ERVersion
+        from Main import __dr_version__ as DRVersion
         self.metadata = {'version': ERVersion,
+                         'drversion': DRVersion,
                          'logic': self.world.logic,
                          'dark_room_logic': self.world.dark_room_logic,
                          'mode': self.world.mode,
@@ -2046,8 +2048,8 @@ class Spoiler(object):
 
         with open(filename, 'w', encoding="utf-8-sig") as outfile:
             outfile.write(
-                'ALttP Berserker\'s Multiworld Version %s  -  Seed: %s\n\n' % (
-                    self.metadata['version'], self.world.seed))
+                'ALttP Berserker\'s Multiworld Door Randomizer Version %s : %s - Seed: %d\n\n' % (
+                    self.metadata['version'], self.metadata['drversion'], self.world.seed))
             outfile.write('Filling Algorithm:               %s\n' % self.world.algorithm)
             outfile.write('Players:                         %d\n' % self.world.players)
             outfile.write('Teams:                           %d\n' % self.world.teams)
