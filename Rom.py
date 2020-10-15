@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = 'f299fb098099ae18e889b44fa6c8135a'
+RANDOMIZERBASEHASH = 'ff71f509d9758645e24d7d91dcacd2e3'
 
 import io
 import json
@@ -2345,7 +2345,7 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 
 # 24B118 and 20BB78
-compass_r_addr = 0x123118  # a9 90 24 8f 9a c7 7e
+compass_r_addr = 0x123128  # a9 90 24 8f 9a c7 7e
 compass_w_addr = 0x103b90  # e2 20 ad 0c 04 c9 00 d0
 
 
