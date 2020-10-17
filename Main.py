@@ -127,7 +127,7 @@ def main(args, seed=None, fish=None):
         if args.local_items and args.local_items[player]:
             world.local_items[player] = {item.strip() for item in args.local_items[player].split(',')}
         else:
-            world.local_items[player] = {}
+            world.local_items[player] = set()
 
         world.triforce_pieces_available[player] = max(world.triforce_pieces_available[player], world.triforce_pieces_required[player])
 
