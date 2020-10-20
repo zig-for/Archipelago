@@ -2742,6 +2742,7 @@ def assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info):
 
 
 def split_dungeon_builder(builder, split_list, builder_info):
+    _, _, world, _ = builder_info
     if builder.split_dungeon_map and len(builder.exception_list) == 0:
         for name, proposal in builder.valid_proposal.items():
             builder.split_dungeon_map[name].valid_proposal = proposal
@@ -2767,7 +2768,7 @@ def split_dungeon_builder(builder, split_list, builder_info):
                     p = next(x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == r_name)
                     if not p.deadEnd:
                         candidates.append(name)
-                merge_keys = random.sample(candidates, 2) if len(candidates) >= 2 else []
+                merge_keys = world.random.sample(candidates, 2) if len(candidates) >= 2 else []
             for name, split_entrances in split_list.items():
                 key = builder.name + ' ' + name
                 if merge_keys and name in merge_keys:

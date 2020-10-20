@@ -84,7 +84,7 @@ def main(args, seed=None, fish=None):
     world.shufflepots = args.shufflepots.copy()
     world.progressive = args.progressive.copy()
     world.dungeon_counters = args.dungeon_counters.copy()
-    world.intensity = {player: random.randint(1, 3) if args.intensity[player] == 'random' else int(args.intensity[player]) for player in range(1, world.players + 1)}
+    world.intensity = {player: world.random.randint(1, 3) if args.intensity[player] == 'random' else int(args.intensity[player]) for player in range(1, world.players + 1)}
     world.experimental = args.experimental.copy()
     world.debug = args.debug.copy()
     world.fish = fish if fish else BabelFish(lang="en")
