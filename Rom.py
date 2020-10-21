@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = 'd803847892840bc6d4924c568d9e9aa5'
+RANDOMIZERBASEHASH = '857091fc50212a3e947cb8a0683cf26d'
 
 import io
 import json
@@ -75,13 +75,18 @@ class LocalRom(object):
 
         itemtable = []
         locationtable = []
+        itemplayertable = []
         for i in range(168):
             itemtable.append(self.read_byte(0xE96E + (i * 3)))
+            itemplayertable.append(self.read_byte(0x186142 + (i * 3)))
             locationtable.append(self.read_byte(0xe96C + (i * 3)))
             locationtable.append(self.read_byte(0xe96D + (i * 3)))
         self.write_bytes(0xE96C, locationtable)
         self.write_bytes(0xE96C + 0x150, itemtable)
         self.encrypt_range(0xE96C + 0x150, 168, key)
+        self.write_bytes(0x186140, [0] * 0x150)
+        self.write_bytes(0x186140 + 0x150, itemplayertable)
+        self.encrypt_range(0x186140 + 0x150, 168, key)
         self.encrypt_range(0x180000, 32, key)
         self.encrypt_range(0x180140, 32, key)
 
@@ -2371,7 +2376,7 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 
 # 24B118 and 20BB78
-compass_r_addr = 0x123128  # a9 90 24 8f 9a c7 7e
+compass_r_addr = 0x1231B6  # a9 90 24 8f 9a c7 7e
 compass_w_addr = 0x103b90  # e2 20 ad 0c 04 c9 00 d0
 
 
