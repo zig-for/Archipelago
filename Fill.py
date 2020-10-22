@@ -81,7 +81,7 @@ def fill_restrictive(world, base_state: CollectionState, locations, itempool, ke
 
 
 def valid_key_placement(item, location, itempool, world):
-    if (not item.smallkey and not item.bigkey) or item.player != location.player or world.retro[item.player] or world.logic[item.player] == 'nologic':
+    if (not item.smallkey and not item.bigkey) or item.player != location.player or world.keyshuffle[item.player] == "universal" or world.logic[item.player] == 'nologic':
         return True
     dungeon = location.parent_region.dungeon
     if dungeon:

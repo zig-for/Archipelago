@@ -1677,7 +1677,7 @@ def add_key_logic_rules(world, player):
     for d_name, d_logic in key_logic.items():
         for door_name, keys in d_logic.door_rules.items():
             spot = world.get_entrance(door_name, player)
-            if not world.retro[player] or world.mode[player] != 'standard' or not retro_in_hc(spot):
+            if world.keyshuffle[player] != 'universal' or world.mode[player] != 'standard' or not retro_in_hc(spot):
                 add_rule(spot, create_advanced_key_rule(d_logic, player, keys))
             if keys.opposite:
                 add_rule(spot, create_advanced_key_rule(d_logic, player, keys.opposite), 'or')
