@@ -154,6 +154,8 @@ class World(object):
             set_player_attr('dark_room_logic', "lamp")
             set_player_attr('restrict_dungeon_item_on_boss', False)
 
+            set_player_attr('keydropshuffle', False)
+
     def secure(self):
         self.random = secrets.SystemRandom()
 
@@ -588,21 +590,26 @@ class CollectionState(object):
     def _do_not_flood_the_keys(self, reachable_events):
         adjusted_checks = list(reachable_events)
         for event in reachable_events:
-            if event.name in flooded_keys.keys() and self.world.get_location(flooded_keys[event.name], event.player) not in reachable_events:
-                adjusted_checks.remove(event)
+            if event.name in flooded_keys.keys():
+                flood_location = self.world.get_location(flooded_keys[event.name], event.player)
+                if flood_location.item and flood_location not in self.locations_checked:
+                    adjusted_checks.remove(event)
         if len(adjusted_checks) < len(reachable_events):
             return adjusted_checks
         return reachable_events
 
     def not_flooding_a_key(self, world, location):
         if location.name in flooded_keys.keys():
-            return world.get_location(flooded_keys[location.name], location.player) in self.locations_checked
+            flood_location = world.get_location(flooded_keys[location.name], location.player)
+            item = flood_location.item
+            item_is_important = False if not item else item.advancement or item.bigkey or item.smallkey
+            return flood_location in self.locations_checked or not item_is_important
         return True
 
     def has(self, item, player: int, count: int = 1):
         return self.prog_items[item, player] >= count
 
-    def has_key(self, item, player, count: int = 1):
+    def has_sm_key(self, item, player, count=1):
         if self.world.logic[player] == 'nologic':
             return True
         if self.world.keyshuffle[player] == "universal":
@@ -1417,7 +1424,6 @@ class Sector(object):
         self.name = None
         self.r_name_set = None
         self.chest_locations = 0
-        self.big_chest_present = False
         self.key_only_locations = 0
         self.c_switch = False
         self.orange_barrier = False
@@ -1860,9 +1866,10 @@ class Spoiler(object):
     def __init__(self, world):
         self.world = world
         self.hashes = {}
-        self.entrances = OrderedDict()
-        self.doors = OrderedDict()
-        self.doorTypes = OrderedDict()
+        self.entrances = {}
+        self.doors = {}
+        self.doorTypes = {}
+        self.lobbies = {}
         self.medallions = {}
         self.playthrough = {}
         self.unreachables = []
@@ -1884,6 +1891,12 @@ class Spoiler(object):
             self.doors[(entrance, direction, player)] = OrderedDict([('player', player), ('entrance', entrance), ('exit', exit), ('direction', direction), ('dname', d_name)])
         else:
             self.doors[(entrance, direction, player)] = OrderedDict([('player', player), ('entrance', entrance), ('exit', exit), ('direction', direction), ('dname', d_name)])
+
+    def set_lobby(self, lobby_name, door_name, player):
+        if self.world.players == 1:
+            self.lobbies[(lobby_name, player)] = {'lobby_name': lobby_name, 'door_name': door_name}
+        else:
+            self.lobbies[(lobby_name, player)] = {'player': player, 'lobby_name': lobby_name, 'door_name': door_name}
 
     def set_door_type(self, doorNames, type, player):
         if self.world.players == 1:
@@ -1971,6 +1984,11 @@ class Spoiler(object):
         if self.world.players == 1:
             self.bosses = self.bosses["1"]
 
+        for player in range(1, self.world.players + 1):
+            if self.world.intensity[player] >= 3:
+                for portal in self.world.dungeon_portals[player]:
+                    self.set_lobby(portal.name, portal.door.name, player)
+
         from Utils import __version__ as ERVersion
         from Main import __dr_version__ as DRVersion
         self.metadata = {'version': ERVersion,
@@ -2023,6 +2041,7 @@ class Spoiler(object):
         out = OrderedDict()
         out['Entrances'] = list(self.entrances.values())
         out['Doors'] = list(self.doors.values())
+        out['Lobbies'] = list(self.lobbies.values())
         out['DoorTypes'] = list(self.doorTypes.values())
         out.update(self.locations)
         out['Starting Inventory'] = self.startinventory
@@ -2127,6 +2146,12 @@ class Spoiler(object):
                                         self.world.fish.translate("meta","doors",entry['exit']),
                                         '({0})'.format(entry['dname']) if self.world.doorShuffle[entry['player']] == 'crossed' else '') for
                      entry in self.doors.values()]))
+            if self.lobbies:
+                outfile.write('\n\nDungeon Lobbies:\n\n')
+                outfile.write('\n'.join(
+                    [f"{'Player {0}: '.format(entry['player']) if self.world.players > 1 else ''}{entry['lobby_name']}: {entry['door_name']}"
+                     for
+                     entry in self.lobbies.values()]))
             if self.doorTypes:
                 # doorNames: For some reason these come in combined, somehow need to split on the thing to translate
                 # doorTypes: Small Key, Bombable, Bonkable
@@ -2196,3 +2221,8 @@ flooded_keys = {
     'Trench 1 Switch': 'Swamp Palace - Trench 1 Pot Key',
     'Trench 2 Switch': 'Swamp Palace - Trench 2 Pot Key'
 }
+
+dungeon_names = [
+    'Hyrule Castle', 'Eastern Palace', 'Desert Palace', 'Tower of Hera', 'Agahnims Tower', 'Palace of Darkness',
+    'Swamp Palace', 'Skull Woods', 'Thieves Town', 'Ice Palace', 'Misery Mire', 'Turtle Rock', 'Ganons Tower'
+]

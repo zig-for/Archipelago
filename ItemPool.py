@@ -441,6 +441,9 @@ def generate_itempool(world, player: int):
     if world.retro[player]:
         set_up_take_anys(world, player)  # depends on world.itempool to be set
 
+    if world.keyshuffle[player] == "universal" and world.keydropshuffle[player]:
+        world.itempool += [ItemFactory('Small Key (Universal)', player)] * 32
+
 
 def shuffle_shops(world, items, player: int):
     option = world.shop_shuffle[player]

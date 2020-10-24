@@ -12,7 +12,7 @@ import concurrent.futures
 from BaseClasses import World, CollectionState, Item, Region, Location, Shop, Entrance
 from Items import ItemFactory
 from KeyDoorShuffle import validate_key_placement
-from Regions import create_regions, create_shops, mark_light_world_regions, lookup_vanilla_location_to_entrance, create_dungeon_regions
+from Regions import create_regions, create_shops, mark_light_world_regions, lookup_vanilla_location_to_entrance, create_dungeon_regions, adjust_locations
 from InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from EntranceShuffle import link_entrances, link_inverted_entrances
 from Rom import patch_rom, patch_race_rom, patch_enemizer, apply_rom_settings, LocalRom, get_hash_string, check_enemizer
@@ -27,7 +27,7 @@ from Utils import output_path, parse_player_names, get_options, __version__, _ve
 from source.classes.BabelFish import BabelFish
 import Patch
 
-__dr_version__ = '0.2.0.1-u'
+__dr_version__ = '0.2.0.2-u'
 seeddigits = 20
 
 
@@ -97,6 +97,7 @@ def main(args, seed=None, fish=None):
     world.sprite_pool = args.sprite_pool.copy()
     world.dark_room_logic = args.dark_room_logic.copy()
     world.restrict_dungeon_item_on_boss = args.restrict_dungeon_item_on_boss.copy()
+    world.keydropshuffle = args.keydropshuffle.copy()
 
     world.rom_seeds = {player: random.Random(world.random.randint(0, 999999999)) for player in range(1, world.players + 1)}
 
@@ -140,6 +141,7 @@ def main(args, seed=None, fish=None):
         create_doors(world, player)
         create_rooms(world, player)
         create_dungeons(world, player)
+        adjust_locations(world, player)
 
     logger.info(world.fish.translate("cli","cli","shuffling.world"))
 
@@ -474,6 +476,7 @@ def copy_world(world):
     ret.restrict_dungeon_item_on_boss = world.restrict_dungeon_item_on_boss.copy()
     ret.intensity = world.intensity.copy()
     ret.experimental = world.experimental.copy()
+    ret.keydropshuffle = world.keydropshuffle.copy()
 
     for player in range(1, world.players + 1):
         if world.mode[player] != 'inverted':
