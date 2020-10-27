@@ -321,6 +321,7 @@ def roll_settings(weights):
     ret.door_shuffle = get_choice('door_shuffle', weights, 'vanilla')
     ret.experimental = get_choice('experimental', weights, False)
     ret.intensity = get_choice('intensity', weights, '2' if ret.experimental else '1')
+    ret.keydropshuffle = get_choice('key_drop_shuffle', weights, False)
     ret.debug = get_choice('debug', weights, False)
 
     goal = get_choice('goals', weights, 'ganon')
