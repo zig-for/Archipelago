@@ -1250,7 +1250,9 @@ location_table = {'Mushroom': (0x180013, 0x186338, False, 'in the woods'),
                       [0x120A7, 0x53F24, 0x53F25, 0x18005C, 0x180079, 0xC708], None, True, 'Turtle Rock')}
 
 lookup_id_to_name = {data[0]: name for name, data in location_table.items() if type(data[0]) == int}
-lookup_id_to_name[-1] = "cheat console"
+lookup_id_to_name = {**lookup_id_to_name, **{data[1]: name for name, data in key_drop_data.items()}, -1: "cheat console"}
+lookup_name_to_id = {name: data[0] for name, data in location_table.items() if type(data[0]) == int}
+lookup_name_to_id = {**lookup_name_to_id, **{name: data[1] for name, data in key_drop_data.items()}, "cheat console": -1}
 
 lookup_vanilla_location_to_entrance = {1572883: 'Kings Grave Inner Rocks', 191256: 'Kings Grave Inner Rocks',
                                        1573194: 'Kings Grave Inner Rocks', 1573189: 'Kings Grave Inner Rocks',
@@ -1355,7 +1357,28 @@ lookup_vanilla_location_to_entrance = {1572883: 'Kings Grave Inner Rocks', 19125
                                        60103: 'Ganons Tower', 60106: 'Ganons Tower', 60109: 'Ganons Tower',
                                        60127: 'Ganons Tower', 60118: 'Ganons Tower', 60148: 'Ganons Tower',
                                        60151: 'Ganons Tower', 60145: 'Ganons Tower', 60157: 'Ganons Tower',
-                                       60160: 'Ganons Tower', 60163: 'Ganons Tower', 60166: 'Ganons Tower'}
+                                       60160: 'Ganons Tower', 60163: 'Ganons Tower', 60166: 'Ganons Tower',
+                                       0x140037: 'Hyrule Castle Entrance (South)',
+                                       0x140034: 'Hyrule Castle Entrance (South)',
+                                       0x14000d: 'Hyrule Castle Entrance (South)',
+                                       0x14003d: 'Hyrule Castle Entrance (South)',
+                                       0x14005b: 'Eastern Palace', 0x140049: 'Eastern Palace',
+                                       0x140031: 'Desert Palace Entrance (North)',
+                                       0x14002b: 'Desert Palace Entrance (North)',
+                                       0x140028: 'Desert Palace Entrance (North)',
+                                       0x140061: 'Agahnims Tower', 0x140052: 'Agahnims Tower',
+                                       0x140019: 'Swamp Palace', 0x140016: 'Swamp Palace', 0x140013: 'Swamp Palace',
+                                       0x140010: 'Swamp Palace', 0x14000a: 'Swamp Palace',
+                                       0x14002e: 'Skull Woods Second Section Door (East)',
+                                       0x14001c: 'Skull Woods Final Section',
+                                       0x14005e: 'Thieves Town', 0x14004f: 'Thieves Town',
+                                       0x140004: 'Ice Palace', 0x140022: 'Ice Palace',
+                                       0x140025: 'Ice Palace', 0x140046: 'Ice Palace',
+                                       0x140055: 'Misery Mire', 0x14004c: 'Misery Mire',
+                                       0x140064: 'Misery Mire',
+                                       0x140058: 'Turtle Rock', 0x140007: 'Dark Death Mountain Ledge (West)',
+                                       0x140040: 'Ganons Tower', 0x140043: 'Ganons Tower',
+                                       0x14003a: 'Ganons Tower', 0x14001f: 'Ganons Tower'}
 
 lookup_prizes = {location for location in location_table if location.endswith(" - Prize")}
 lookup_boss_drops = {location for location in location_table if location.endswith(" - Boss")}
