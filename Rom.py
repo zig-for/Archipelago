@@ -1,5 +1,5 @@
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '8fbc753d552f4ea460f1a964fecb1a6e'
+RANDOMIZERBASEHASH = 'f06dfc47832858eae51b7c4b6d5fb835'
 
 import io
 import json
@@ -1493,7 +1493,13 @@ def patch_rom(world, rom, player, team, enemized):
 
     # set correct flag for hera basement item
     hera_basement = world.get_location('Tower of Hera - Basement Cage', player)
-    if hera_basement.item is not None and hera_basement.item.name == 'Small Key (Tower of Hera)' and hera_basement.item.player == player:
+    is_small_key_this_dungeon = False
+    if hera_basement.item is not None and hera_basement.item.smallkey:
+        item_dungeon = hera_basement.item.name.split('(')[1][:-1]
+        if item_dungeon == 'Escape':
+            item_dungeon = 'Hyrule Castle'
+        is_small_key_this_dungeon = hera_basement.dungeon.name == item_dungeon
+    if is_small_key_this_dungeon:
         rom.write_byte(0x4E3BB, 0xE4)
     else:
         rom.write_byte(0x4E3BB, 0xEB)
