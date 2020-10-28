@@ -107,7 +107,7 @@ def parse_cli(argv, no_defaults=False):
                          'heartbeep',  "skip_progression_balancing", "triforce_pieces_available", "triforce_pieces_required",
                          'remote_items', 'timer', 'progressive', "glitch_boots", 'killable_thieves', 'shuffle_prizes',
                          'tile_shuffle', 'bush_shuffle', 'shop_shuffle', 'sprite_pool', 'dark_room_logic', 'restrict_dungeon_item_on_boss',
-                         'keydropshuffle']:
+                         'hud_palettes', 'sword_palettes', 'shield_palettes', 'link_palettes', 'keydropshuffle']:
                 value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
                 if player == 1:
                     setattr(ret, name, {1: value})
