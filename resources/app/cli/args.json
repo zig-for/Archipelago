@@ -275,14 +275,78 @@
     "choices": [
       "default",
       "random",
-      "blackout"
+      "blackout",
+      "puke",
+      "classic",
+      "grayscale",
+      "negative",
+      "dizzy",
+      "sick"
     ]
   },
   "uw_palettes": {
     "choices": [
       "default",
       "random",
-      "blackout"
+      "blackout",
+      "puke",
+      "classic",
+      "grayscale",
+      "negative",
+      "dizzy",
+      "sick"
+    ]
+  },
+  "hud_palettes": {
+    "choices": [
+      "default",
+      "random",
+      "blackout",
+      "puke",
+      "classic",
+      "grayscale",
+      "negative",
+      "dizzy",
+      "sick"
+    ]
+  },
+  "shield_palettes": {
+    "choices": [
+      "default",
+      "random",
+      "blackout",
+      "puke",
+      "classic",
+      "grayscale",
+      "negative",
+      "dizzy",
+      "sick"
+    ]
+  },
+  "sword_palettes": {
+    "choices": [
+      "default",
+      "random",
+      "blackout",
+      "puke",
+      "classic",
+      "grayscale",
+      "negative",
+      "dizzy",
+      "sick"
+    ]
+  },
+  "link_palettes": {
+    "choices": [
+      "default",
+      "random",
+      "blackout",
+      "puke",
+      "classic",
+      "grayscale",
+      "negative",
+      "dizzy",
+      "sick"
     ]
   },
   "sprite": {},

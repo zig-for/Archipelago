@@ -184,6 +184,10 @@ def parse_settings():
         "fastmenu": "normal",
         "ow_palettes": "default",
         "uw_palettes": "default",
+        "hud_palettes": "default",
+        "shield_palettes": "default",
+        "sword_palettes": "default",
+        "link_palettes": "default",
 
         # Spoiler     defaults to FALSE
         # Playthrough defaults to TRUE
