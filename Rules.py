@@ -3,7 +3,6 @@ from collections import deque
 
 from BaseClasses import CollectionState, RegionType, DoorType, Entrance, World
 from Items import progression_items, item_name_groups
-from Regions import key_only_locations
 from RoomData import DoorKind
 from Bosses import GanonDefeatRule
 

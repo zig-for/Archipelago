@@ -886,7 +886,7 @@ def adjust_locations(world, player):
             item_dungeon = key_item.name.split('(')[1][:-1]
             item_dungeon = 'Hyrule Castle' if item_dungeon == 'Escape' else item_dungeon
             dungeon = world.get_dungeon(item_dungeon, player)
-            if key_item.smallkey and not world.retro[player]:
+            if key_item.smallkey and world.keyshuffle[player] != "universal":
                 dungeon.small_keys.append(key_item)
             elif key_item.bigkey:
                 dungeon.big_key = key_item
@@ -911,10 +911,10 @@ shop_table = {
 }
 
 key_drop_data = {
-    'Hyrule Castle - Map Guard Key Drop': [0x140036, 0x140037, 'in Hyrule Castle', 'Small Key (Escape)'],
-    'Hyrule Castle - Boomerang Guard Key Drop': [0x140033, 0x140034, 'in Hyrule Castle', 'Small Key (Escape)'],
-    'Hyrule Castle - Key Rat Key Drop': [0x14000c, 0x14000d, 'in Hyrule Castle', 'Small Key (Escape)'],
-    'Hyrule Castle - Big Key Drop': [0x14003c, 0x14003d, 'in Hyrule Castle', 'Big Key (Escape)'],
+    'Hyrule Castle - Map Guard Key Drop': [0x140036, 0x140037, 'in Hyrule Castle', 'Small Key (Hyrule Castle)'],
+    'Hyrule Castle - Boomerang Guard Key Drop': [0x140033, 0x140034, 'in Hyrule Castle', 'Small Key (Hyrule Castle)'],
+    'Hyrule Castle - Key Rat Key Drop': [0x14000c, 0x14000d, 'in Hyrule Castle', 'Small Key (Hyrule Castle)'],
+    'Hyrule Castle - Big Key Drop': [0x14003c, 0x14003d, 'in Hyrule Castle', 'Big Key (Hyrule Castle)'],
     'Eastern Palace - Dark Square Pot Key': [0x14005a, 0x14005b, 'in Eastern Palace', 'Small Key (Eastern Palace)'],
     'Eastern Palace - Dark Eyegore Key Drop': [0x140048, 0x140049, 'in Eastern Palace', 'Small Key (Eastern Palace)'],
     'Desert Palace - Desert Tiles 1 Pot Key': [0x140030, 0x140031, 'in Desert Palace', 'Small Key (Desert Palace)'],

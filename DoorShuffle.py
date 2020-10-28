@@ -170,7 +170,7 @@ def vanilla_key_logic(world, player):
         builder.key_door_proposal = doors
         if player not in world.key_logic.keys():
             world.key_logic[player] = {}
-        analyze_dungeon(key_layout, world, player)
+        analyze_dungeon(builder, key_layout, world, player)
         world.key_logic[player][builder.name] = key_layout.key_logic
         log_key_logic(builder.name, key_layout.key_logic)
     if world.shuffle[player] == 'vanilla' and world.accessibility[player] == 'items' and world.keyshuffle[player] not in ['universal'] and not world.keydropshuffle[player]:
@@ -937,7 +937,7 @@ def cross_dungeon(world, player):
 def assign_cross_keys(dungeon_builders, world, player):
     logging.getLogger('').info(world.fish.translate("cli", "cli", "shuffling.keydoors"))
     start = time.process_time()
-    if world.retro[player]:
+    if world.keyshuffle[player] == "universal":
         remaining = 61 if world.keydropshuffle[player] else 29
     else:
         remaining = len(list(x for dgn in world.dungeons if dgn.player == player for x in dgn.small_keys))
