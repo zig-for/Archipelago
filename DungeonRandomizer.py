@@ -8,7 +8,7 @@ from source.classes.BabelFish import BabelFish
 
 from CLI import parse_cli, get_args_priority
 from Main import main, get_seed, EnemizerError, __version__
-from Rom import get_sprite_from_name
+from Rom import Sprite
 from Utils import is_bundled, close_console
 from Fill import FillError
 
@@ -37,12 +37,9 @@ def start():
     if not args.suppress_rom and not os.path.isfile(args.rom):
         input('Could not find valid base rom for patching at expected path %s. Please run with -h to see help for further information. \nPress Enter to exit.' % args.rom)
         sys.exit(1)
-    if any([sprite is not None and not os.path.isfile(sprite) and not get_sprite_from_name(sprite) for sprite in args.sprite.values()]):
-        if not args.jsonout:
-            input('Could not find link sprite sheet at given location. \nPress Enter to exit.')
-            sys.exit(1)
-        else:
-            raise IOError('Cannot find sprite file at %s' % args.sprite)
+    if any([sprite is not None and not os.path.isfile(sprite) and not Sprite.get_sprite_from_name(sprite) for sprite in args.sprite.values()]):
+        input('Could not find link sprite sheet at given location. \nPress Enter to exit.')
+        sys.exit(1)
 
     # set up logger
     loglevel = {'error': logging.ERROR, 'info': logging.INFO, 'warning': logging.WARNING, 'debug': logging.DEBUG}[args.loglevel]
