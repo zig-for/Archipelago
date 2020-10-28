@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = 'f06dfc47832858eae51b7c4b6d5fb835'
+RANDOMIZERBASEHASH = '2471e77d531ff9c4cd45d6fa311e42f9'
 
 import io
 import json
@@ -20,7 +20,7 @@ from typing import Optional
 from BaseClasses import CollectionState, ShopType, Region, Location, DoorType, RegionType
 from DoorShuffle import compass_data, DROptions, boss_indicator
 from Dungeons import dungeon_music_addresses
-from Regions import location_table
+from Regions import location_table, old_location_address_to_new_location_address
 from Text import MultiByteTextMapper, CompressedTextMapper, text_addresses, Credits, TextTable
 from Text import Uncle_texts, Ganon1_texts, TavernMan_texts, Sahasrahla2_texts, Triforce_texts, Blind_texts, \
     BombShop2_texts, junk_texts
@@ -94,8 +94,22 @@ class LocalRom(object):
         self.write_bytes(0x186140, [0] * 0x150)
         self.write_bytes(0x186140 + 0x150, itemplayertable)
         self.encrypt_range(0x186140 + 0x150, 168, key)
+        self.encrypt_range(0x186338, 56, key)
         self.encrypt_range(0x180000, 32, key)
         self.encrypt_range(0x180140, 32, key)
+        self.encrypt_range(0xEDA1, 8, key)
+        itemtable = []
+        locationtable = []
+        itemplayertable = []
+        for i in range(33):
+            locationtable.append(self.read_byte(0x140002 + (i*3)))
+            itemplayertable.append(self.read_byte(0x140003 + (i*3)))
+            itemtable.append(self.read_byte(0x140004 + (i*3)))
+            self.write_bytes(0x140002 + (i*3), [255, 255, 255])
+        self.write_bytes(0x140002, locationtable)
+        self.write_bytes(0x140076, itemtable)
+        self.write_bytes(0x14009E, itemplayertable)
+        self.encrypt_range(0x140076, 80, key)
 
     def write_to_file(self, file, hide_enemizer=False):
         with open(file, 'wb') as outfile:
@@ -651,7 +665,8 @@ def patch_rom(world, rom, player, team, enemized):
                         rom.write_byte(location.player_address, location.item.player)
                     else:
                         itemid = 0x5A
-            rom.write_byte(location.address, itemid)
+            location_address = old_location_address_to_new_location_address.get(location.address, location.address)
+            rom.write_byte(location_address, itemid)
         else:
             # crystals
             for address, value in zip(location.address, itemid):
@@ -1560,7 +1575,7 @@ def patch_rom(world, rom, player, team, enemized):
 
     write_strings(rom, world, player, team)
 
-    rom.write_byte(0x18636C, 1 if world.remote_items[player] else 0)
+    rom.write_byte(0x18637C, 1 if world.remote_items[player] else 0)
 
     # set rom name
     # 21 bytes
@@ -2532,8 +2547,8 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 
 # 24B118 and 20BB78
-compass_r_addr = 0x1231C2  # a9 90 24 8f 9a c7 7e
-compass_w_addr = 0x103b90  # e2 20 ad 0c 04 c9 00 d0
+compass_r_addr = 0x123bbb  # a9 90 24 8f 9a c7 7e
+compass_w_addr = 0x10411f  # e2 20 ad 0c 04 c9 00 d0
 
 
 def compass_code_good(rom):
