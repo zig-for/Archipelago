@@ -512,7 +512,7 @@ class Sprite(object):
 
     @staticmethod
     def default_link_sprite():
-        return get_sprite_from_name('Link')
+        return Sprite.get_sprite_from_name('Link')
 
     def decode8(self, pos):
         arr = [[0 for _ in range(8)] for _ in range(8)]
