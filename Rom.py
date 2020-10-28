@@ -15,7 +15,7 @@ import xxtea
 import concurrent.futures
 from typing import Optional
 
-from BaseClasses import CollectionState, ShopType, Region, Location, DoorType
+from BaseClasses import CollectionState, ShopType, Region, Location, DoorType, RegionType
 from DoorShuffle import compass_data, DROptions, boss_indicator
 from Dungeons import dungeon_music_addresses
 from Regions import location_table
@@ -1841,7 +1841,10 @@ def write_strings(rom, world, player, team):
         if ped_hint:
             hint = dest.pedestal_hint_text if dest.pedestal_hint_text else "unknown item"
         else:
-            hint = dest.hint_text if dest.hint_text else "something"
+            if isinstance(dest, Region) and dest.type == RegionType.Dungeon and dest.dungeon:
+                hint = dest.dungeon.name
+            else:
+                hint = dest.hint_text if dest.hint_text else "something"
         if dest.player != player:
             if ped_hint:
                 hint += f" for {world.player_names[dest.player][team]}!"
@@ -2609,12 +2612,12 @@ HintLocations = ['telepathic_tile_eastern_palace',
 InconvenientLocations = ['Spike Cave',
                          'Sahasrahla',
                          'Purple Chest',
-                         'Tower of Hera - Big Key Chest',
                          'Magic Bat']
 
 InconvenientDungeonLocations = ['Swamp Left',
                                 'Mire Left',
                                 'Eastern Palace - Big Key Chest',
+                                'Tower of Hera - Big Key Chest',
                                 'Thieves\' Town - Big Chest',
                                 'Ice Palace - Big Chest',
                                 'Ganons Tower - Big Chest']

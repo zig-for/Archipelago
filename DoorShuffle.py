@@ -159,39 +159,20 @@ def vanilla_key_logic(world, player):
         world.dungeon_layouts[player][builder.name] = builder
 
     add_inaccessible_doors(world, player)
-    entrances_map, potentials, connections = determine_entrance_list_vanilla(world, player)
-
-    enabled_entrances = {}
-    sector_queue = deque(builders)
-    last_key, loops = None, 0
-    while len(sector_queue) > 0:
-        builder = sector_queue.popleft()
-
-        split_dungeon = builder.name.startswith('Desert Palace') or builder.name.startswith('Skull Woods')
-        origin_list = list(entrances_map[builder.name])
-        find_enabled_origins(builder.sectors, enabled_entrances, origin_list, entrances_map, builder.name)
-        if len(origin_list) <= 0 or not pre_validate(builder, origin_list, split_dungeon, world, player):
-            if last_key == builder.name or loops > 1000:
-                origin_name = world.get_region(origin_list[0], player).entrances[0].parent_region.name if len(origin_list) > 0 else 'no origin'
-                raise Exception('Infinite loop detected for "%s" located at %s' % (builder.name, origin_name))
-            sector_queue.append(builder)
-            last_key = builder.name
-            loops += 1
-        else:
-            find_new_entrances(builder.master_sector, entrances_map, connections, potentials, enabled_entrances, world, player)
-            start_regions = convert_regions(origin_list, world, player)
-            doors = convert_key_doors(default_small_key_doors[builder.name], world, player)
-            key_layout = build_key_layout(builder, start_regions, doors, world, player)
-            valid = validate_key_layout(key_layout, world, player)
-            if not valid:
-                logging.getLogger('').warning('Vanilla key layout not valid %s', builder.name)
-            builder.key_door_proposal = doors
-            if player not in world.key_logic.keys():
-                world.key_logic[player] = {}
-            analyze_dungeon(builder, key_layout, world, player)
-            world.key_logic[player][builder.name] = key_layout.key_logic
-            log_key_logic(builder.name, key_layout.key_logic)
-            last_key = None
+    for builder in builders:
+        origin_list = find_accessible_entrances(world, player, default_dungeon_entrances[builder.name])
+        start_regions = convert_regions(origin_list, world, player)
+        doors = convert_key_doors(default_small_key_doors[builder.name], world, player)
+        key_layout = build_key_layout(builder, start_regions, doors, world, player)
+        valid = validate_key_layout(key_layout, world, player)
+        if not valid:
+            logging.getLogger('').warning('Vanilla key layout not valid %s', builder.name)
+        builder.key_door_proposal = doors
+        if player not in world.key_logic.keys():
+            world.key_logic[player] = {}
+        analyze_dungeon(key_layout, world, player)
+        world.key_logic[player][builder.name] = key_layout.key_logic
+        log_key_logic(builder.name, key_layout.key_logic)
     if world.shuffle[player] == 'vanilla' and world.accessibility[player] == 'items' and world.keyshuffle[player] not in ['universal'] and not world.keydropshuffle[player]:
         validate_vanilla_key_logic(world, player)
 
@@ -950,8 +931,7 @@ def cross_dungeon(world, player):
     eastfairies.palette = palette_map[world.get_region('Eastern Courtyard', player).dungeon.name]
     # other ones that could use programmatic treatment:  Skull Boss x29, Hera Fairies xa7, Ice Boss xde
 
-    if world.hints[player]:
-        refine_hints(dungeon_builders)
+    refine_hints(dungeon_builders)
 
 
 def assign_cross_keys(dungeon_builders, world, player):
@@ -1572,6 +1552,33 @@ def find_inaccessible_regions(world, player):
     logger.debug('Inaccessible Regions:')
     for r in world.inaccessible_regions[player]:
         logger.debug('%s', r)
+
+
+def find_accessible_entrances(world, player, entrances):
+    if world.mode[player] != 'inverted':
+        start_regions = ['Links House', 'Sanctuary']
+    else:
+        start_regions = ['Inverted Links House', 'Inverted Dark Sanctuary']
+    regs = convert_regions(start_regions, world, player)
+    visited_regions = set()
+    visited_entrances = []
+    queue = deque(regs)
+    while len(queue) > 0:
+        next_region = queue.popleft()
+        visited_regions.add(next_region)
+        if world.mode[player] == 'inverted' and next_region.name == 'Tower Agahnim 1':
+            connect = world.get_region('Hyrule Castle Ledge', player)
+            if connect not in queue and connect not in visited_regions:
+                queue.append(connect)
+        for ext in next_region.exits:
+            connect = ext.connected_region
+            if connect is None or ext.door and ext.door.blocked:
+                continue
+            if connect.name in entrances:
+                visited_entrances.append(connect.name)
+            elif connect and connect not in queue and connect not in visited_regions:
+                queue.append(connect)
+    return visited_entrances
 
 
 def valid_inaccessible_region(r):
