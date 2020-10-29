@@ -1553,7 +1553,7 @@ def patch_rom(world, rom, player, team, enemized):
         item_dungeon = hera_basement.item.name.split('(')[1][:-1]
         if item_dungeon == 'Escape':
             item_dungeon = 'Hyrule Castle'
-        is_small_key_this_dungeon = hera_basement.dungeon.name == item_dungeon
+        is_small_key_this_dungeon = hera_basement.parent_region.dungeon.name == item_dungeon
     if is_small_key_this_dungeon:
         rom.write_byte(0x4E3BB, 0xE4)
     else:
