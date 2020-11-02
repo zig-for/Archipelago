@@ -131,6 +131,10 @@
       "dungeonssimple"
     ]
   },
+  "countdown_start_time": {},
+  "red_clock_time": {},
+  "blue_clock_time": {},
+  "green_clock_time": {},
   "door_shuffle": {
     "choices": [
       "basic",
