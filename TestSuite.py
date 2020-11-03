@@ -44,13 +44,14 @@ def main(args=None):
                 task.mode = mode[0]
                 task_mapping.append(task)
 
-    test("Vanilla   ", "--shuffle vanilla")
-    test("Retro     ", "--retro --shuffle vanilla")
-    test("Keysanity ", "--shuffle vanilla --keydropshuffle --keysanity")
-    test("Simple    ", "--shuffle simple")
-    test("Full      ", "--shuffle full")
-    test("Crossed   ", "--shuffle crossed")
-    test("Insanity  ", "--shuffle insanity")
+    test("Vanilla        ", "--shuffle vanilla")
+    test("Retro          ", "--retro --shuffle vanilla")
+    test("Universal Keys ", "--keyshuffle universal --shuffle vanilla")
+    test("Keysanity      ", "--shuffle vanilla --keydropshuffle --keysanity")
+    test("Simple         ", "--shuffle simple")
+    test("Full           ", "--shuffle full")
+    test("Crossed        ", "--shuffle crossed")
+    test("Insanity       ", "--shuffle insanity")
 
     from tqdm import tqdm
     with tqdm(concurrent.futures.as_completed(task_mapping),
