@@ -11,7 +11,7 @@ from Dungeons import dungeon_regions, region_starts, standard_starts, split_regi
 from Dungeons import dungeon_bigs, dungeon_keys, dungeon_hints
 from Items import ItemFactory
 from RoomData import DoorKind, PairedDoor
-from DungeonGenerator import ExplorationState, convert_regions, generate_dungeon, pre_validate, determine_required_paths
+from DungeonGenerator import ExplorationState, convert_regions, generate_dungeon, pre_validate, determine_required_paths, drop_entrances
 from DungeonGenerator import create_dungeon_builders, split_dungeon_builder, simple_dungeon_builder, default_dungeon_entrances
 from DungeonGenerator import dungeon_portals, dungeon_drops
 from KeyDoorShuffle import analyze_dungeon, validate_vanilla_key_logic, build_key_layout, validate_key_layout
@@ -160,7 +160,7 @@ def vanilla_key_logic(world, player):
 
     add_inaccessible_doors(world, player)
     for builder in builders:
-        origin_list = find_accessible_entrances(world, player, default_dungeon_entrances[builder.name])
+        origin_list = find_accessible_entrances(world, player, builder)
         start_regions = convert_regions(origin_list, world, player)
         doors = convert_key_doors(default_small_key_doors[builder.name], world, player)
         key_layout = build_key_layout(builder, start_regions, doors, world, player)
@@ -474,15 +474,9 @@ def connect_portal_copy(portal, world, player):
     portal_entrance = world.get_entrance(portal.door.entrance.name, player)  # ensures I get the right one for copying
     target_exit = world.get_entrance(ext, player)
     entrance_region = portal_entrance.parent_region
-    copy_entrance = None
-    for e in portal_entrance.parent_region.entrances:
-        if e.parent_region.type in [RegionType.LightWorld, RegionType.DarkWorld] and e.parent_region.name != 'Menu':
-            copy_entrance = e
-            break
     entrance_region.exits.remove(portal_entrance)
     entrance_region.exits.append(target_exit)
     target_exit.parent_region = entrance_region
-    target_exit.connected_region = copy_entrance.parent_region
 
     placeholder = world.get_region(portal.name + ' Placeholder', player)
     world.regions.remove(placeholder)
@@ -694,8 +688,7 @@ def main_dungeon_generation(dungeon_builders, recombinant_builders, connections_
     combine_layouts(recombinant_builders, dungeon_builders, entrances_map)
     world.dungeon_layouts[player] = {}
     for builder in dungeon_builders.values():
-        find_enabled_origins([builder.master_sector], enabled_entrances, builder.layout_starts, entrances_map, builder.name)
-        builder.path_entrances = entrances_map[builder.name]
+        builder.entrance_list = builder.layout_starts = builder.path_entrances = find_accessible_entrances(world, player, builder)
     world.dungeon_layouts[player] = dungeon_builders
 
 
@@ -842,6 +835,7 @@ def cross_dungeon(world, player):
     for key in dungeon_regions.keys():
         all_regions += dungeon_regions[key]
     all_sectors.extend(convert_to_sectors(all_regions, world, player))
+    merge_sectors(all_sectors, world, player)
     entrances, splits = create_dungeon_entrances(world, player)
     dungeon_builders = create_dungeon_builders(all_sectors, connections_tuple, world, player, entrances, splits)
     for builder in dungeon_builders.values():
@@ -1083,6 +1077,30 @@ def convert_to_sectors(region_names, world, player):
         sector.outstanding_doors.extend(outstanding_doors)
         sectors.append(sector)
     return sectors
+
+
+def merge_sectors(all_sectors, world, player):
+    if world.mixed_travel[player] == 'force':
+        sectors_to_remove = {}
+        merge_sectors = {}
+        for sector in all_sectors:
+            r_set = sector.region_set()
+            if 'PoD Arena Ledge' in r_set:
+                sectors_to_remove['Arenahover'] = sector
+            elif 'PoD Big Chest Balcony' in r_set:
+                sectors_to_remove['Hammerjump'] = sector
+            elif 'Mire Chest View' in r_set:
+                sectors_to_remove['Mire BJ'] = sector
+            elif 'PoD Falling Bridge Ledge' in r_set:
+                merge_sectors['Hammerjump'] = sector
+            elif 'PoD Arena Bridge' in r_set:
+                merge_sectors['Arenahover'] = sector
+            elif 'Mire BK Chest Ledge' in r_set:
+                merge_sectors['Mire BJ'] = sector
+        for key, old_sector in sectors_to_remove.items():
+            merge_sectors[key].regions.extend(old_sector.regions)
+            merge_sectors[key].outstanding_doors.extend(old_sector.outstanding_doors)
+            all_sectors.remove(old_sector)
 
 
 # those with split region starts like Desert/Skull combine for key layouts
@@ -1554,14 +1572,26 @@ def find_inaccessible_regions(world, player):
         logger.debug('%s', r)
 
 
-def find_accessible_entrances(world, player, entrances):
-    if world.mode[player] != 'inverted':
+def find_accessible_entrances(world, player, builder):
+    entrances = [region.name for region in (portal.door.entrance.parent_region for portal in world.dungeon_portals[player]) if region.dungeon.name == builder.name]
+    entrances.extend(drop_entrances[builder.name])
+
+    if world.mode[player] == 'standard' and builder.name == 'Hyrule Castle':
+        start_regions = ['Hyrule Castle Courtyard']
+    elif world.mode[player] != 'inverted':
         start_regions = ['Links House', 'Sanctuary']
     else:
         start_regions = ['Inverted Links House', 'Inverted Dark Sanctuary']
     regs = convert_regions(start_regions, world, player)
     visited_regions = set()
     visited_entrances = []
+
+    # Add Sanctuary as an additional entrance in open mode, since you can save and quit to there
+    if world.mode[player] == 'open' and world.get_region('Sanctuary', player).dungeon.name == builder.name and 'Sanctuary' not in entrances:
+        entrances.append('Sanctuary')
+        visited_entrances.append('Sanctuary')
+        regs.remove(world.get_region('Sanctuary', player))
+
     queue = deque(regs)
     while len(queue) > 0:
         next_region = queue.popleft()
@@ -1574,7 +1604,7 @@ def find_accessible_entrances(world, player, entrances):
             connect = ext.connected_region
             if connect is None or ext.door and ext.door.blocked:
                 continue
-            if connect.name in entrances:
+            if connect.name in entrances and connect not in visited_entrances:
                 visited_entrances.append(connect.name)
             elif connect and connect not in queue and connect not in visited_regions:
                 queue.append(connect)
@@ -1706,6 +1736,7 @@ class DROptions(Flag):
     Town_Portal = 0x02  # If on, Players will start with mirror scroll
     Map_Info = 0x04
     Debug = 0x08
+    Rails = 0x10  # If on, draws rails
     Open_Desert_Wall = 0x80  # If on, pre opens the desert wall, no fire required
 
 

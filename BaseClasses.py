@@ -159,6 +159,7 @@ class World(object):
             set_player_attr('restrict_dungeon_item_on_boss', False)
 
             set_player_attr('keydropshuffle', False)
+            set_player_attr('mixed_travel', 'prevent')
 
     def secure(self):
         self.random = secrets.SystemRandom()
@@ -617,6 +618,8 @@ class CollectionState(object):
         if self.world.logic[player] == 'nologic':
             return True
         if self.world.keyshuffle[player] == "universal":
+            if self.world.mode[player] == 'standard' and self.world.doorShuffle[player] == 'vanilla' and item == 'Small Key (Hyrule Castle)':
+                return True  # Cannot access the shop until escape is finished.  This is safe because the key is manually placed in make_custom_item_pool
             return self.can_buy_unlimited('Small Key (Universal)', player)
         return self.prog_items[item, player] >= count
 

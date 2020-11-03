@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '57b4ba89eb2492a3a81b07c888cb4ecf'
+RANDOMIZERBASEHASH = 'ae0615bea72aa42358bdcfc021128725'
 
 import io
 import json
@@ -744,6 +744,10 @@ def patch_rom(world, rom, player, team, enemized):
         dr_flags |= DROptions.Map_Info
     if world.debug[player]:
         dr_flags |= DROptions.Debug
+    if world.doorShuffle[player] == 'crossed' and world.logic[player] != 'nologic'\
+       and world.mixed_travel[player] == 'prevent':
+        dr_flags |= DROptions.Rails
+
 
     # fix hc big key problems
     if world.doorShuffle[player] == 'crossed' or world.keydropshuffle[player]:
@@ -2525,7 +2529,7 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 
 # 24B118 and 20BB78
-compass_r_addr = 0x123bbb  # a9 90 24 8f 9a c7 7e
+compass_r_addr = 0x123d38  # a9 90 24 8f 9a c7 7e
 compass_w_addr = 0x10411f  # e2 20 ad 0c 04 c9 00 d0
 
 

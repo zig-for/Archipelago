@@ -591,7 +591,8 @@ def extract_data_from_jp_rom(rom):
     with open(rom, 'rb') as stream:
         rom_data = bytearray(stream.read())
 
-    rooms = [0x7b, 0x7c, 0x7d, 0x8b, 0x8c, 0x8d, 0x9b, 0x9c, 0x9d]
+    # rooms = [0x7b, 0x7c, 0x7d, 0x8b, 0x8c, 0x8d, 0x9b, 0x9c, 0x9d]
+    rooms = [0x1a, 0x2a, 0xd1]
     for room in rooms:
         b2idx = room*2
         b3idx = room*3
@@ -668,8 +669,8 @@ if __name__ == '__main__':
     # make_new_base2current()
     # read_entrance_data(old_rom=sys.argv[1])
     # room_palette_data(old_rom=sys.argv[1])
-    extract_data_from_us_rom(sys.argv[1])
-    # extract_data_from_jp_rom(sys.argv[1])
+    # extract_data_from_us_rom(sys.argv[1])
+    extract_data_from_jp_rom(sys.argv[1])
 
 
 def get_public_ipv4() -> str:
