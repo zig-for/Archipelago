@@ -53,6 +53,7 @@ if __name__ == "__main__":
         output_path = options["general_options"]["output_path"]
         enemizer_path = multi_mystery_options["enemizer_path"]
         player_files_path = multi_mystery_options["player_files_path"]
+        target_player_count = multi_mystery_options.get("players", 0)
         race = multi_mystery_options["race"]
         create_spoiler = multi_mystery_options["create_spoiler"]
         zip_roms = multi_mystery_options["zip_roms"]
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         player_name = multi_mystery_options["player_name"]
         take_first_working = multi_mystery_options["take_first_working"]
         meta_file_path = multi_mystery_options["meta_file_path"]
+        weights_file_path = multi_mystery_options.get("weights_file_path", "weights.yaml")
         teams = multi_mystery_options["teams"]
         rom_file = options["general_options"]["rom_file"]
         host = options["server_options"]["host"]
@@ -84,14 +86,9 @@ if __name__ == "__main__":
         os.makedirs(output_path, exist_ok=True)
         for file in os.listdir(player_files_path):
             lfile = file.lower()
-            if lfile.endswith(".yaml") and lfile != meta_file_path.lower():
+            if lfile.endswith(".yaml") and lfile != meta_file_path.lower() and lfile != weights_file_path.lower():
                 player_files.append(file)
                 print(f"Found player's file {file}.")
-        player_count = len(player_files)
-        if player_count == 0:
-            feedback(f"No player files found. Please put them in a {player_files_path} folder.")
-        else:
-            print(player_count, "Players found.")
 
         player_string = ""
         for i, file in enumerate(player_files, 1):
@@ -105,7 +102,20 @@ if __name__ == "__main__":
         else:
             basemysterycommand = f"py -{py_version} Mystery.py"  # source
 
-        command = f"{basemysterycommand} --multi {len(player_files)} {player_string} " \
+
+        weights_file_path = os.path.join(player_files_path, weights_file_path)
+        if os.path.exists(weights_file_path):
+            target_player_count = max(len(player_files), target_player_count)
+        else:
+            target_player_count = len(player_files)
+
+
+        if target_player_count == 0:
+            feedback(f"No player files found. Please put them in a {player_files_path} folder.")
+        else:
+            print(target_player_count, "Players found.")
+
+        command = f"{basemysterycommand} --multi {target_player_count} {player_string} " \
                   f"--rom \"{rom_file}\" --enemizercli \"{enemizer_path}\" " \
                   f"--teams {teams} "
 
@@ -123,6 +133,8 @@ if __name__ == "__main__":
             command += f" --loglevel {log_level}"
         if os.path.exists(os.path.join(player_files_path, meta_file_path)):
             command += f" --meta {os.path.join(player_files_path, meta_file_path)}"
+        if os.path.exists(weights_file_path):
+            command += f" --weights {weights_file_path}"
 
         print(command)
         import time
