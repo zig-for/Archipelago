@@ -1,4 +1,4 @@
-__author__ = "Berserker55" # you can find me on the ALTTP Randomizer Discord
+__author__ = "Berserker55"  # you can find me on discord.gg/8Z65BR2
 
 """
 This script launches a Multiplayer "Multiworld" Mystery Game
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         zip_spoiler = multi_mystery_options["zip_spoiler"]
         zip_multidata = multi_mystery_options["zip_multidata"]
         zip_format = multi_mystery_options["zip_format"]
-        #zip_password = multi_mystery_options["zip_password"] not at this time
+        # zip_password = multi_mystery_options["zip_password"] not at this time
         player_name = multi_mystery_options["player_name"]
         take_first_working = multi_mystery_options["take_first_working"]
         meta_file_path = multi_mystery_options["meta_file_path"]
@@ -72,7 +72,6 @@ if __name__ == "__main__":
         port = options["server_options"]["port"]
         log_output_path = multi_mystery_options["log_output_path"]
         log_level = multi_mystery_options["log_level"]
-
         py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
         if not os.path.exists(enemizer_path):
@@ -94,21 +93,18 @@ if __name__ == "__main__":
         for i, file in enumerate(player_files, 1):
             player_string += f"--p{i} \"{os.path.join(player_files_path, file)}\" "
 
-
         if os.path.exists("BerserkerMultiServer.exe"):
-            basemysterycommand = "BerserkerMystery.exe" #compiled windows
+            basemysterycommand = "BerserkerMystery.exe"  # compiled windows
         elif os.path.exists("BerserkerMultiServer"):
-            basemysterycommand = "BerserkerMystery" # compiled linux
+            basemysterycommand = "BerserkerMystery"  # compiled linux
         else:
             basemysterycommand = f"py -{py_version} Mystery.py"  # source
-
 
         weights_file_path = os.path.join(player_files_path, weights_file_path)
         if os.path.exists(weights_file_path):
             target_player_count = max(len(player_files), target_player_count)
         else:
             target_player_count = len(player_files)
-
 
         if target_player_count == 0:
             feedback(f"No player files found. Please put them in a {player_files_path} folder.")
@@ -148,7 +144,7 @@ if __name__ == "__main__":
                 if task.seedname in file:
                     return True
             return False
-        
+
         def copy_seed(task, destination: str):
             # seedname = None
             os.makedirs(destination, exist_ok=True)
@@ -235,7 +231,7 @@ if __name__ == "__main__":
             total_time = float(0)
             from tqdm import tqdm
             with tqdm(concurrent.futures.as_completed(task_mapping.values()),
-                      total=len(task_mapping), unit="seed(s)", 
+                      total=len(task_mapping), unit="seed(s)",
                       desc=(f"0.0% Success rate, " if keep_all_seeds else "") + f"Generating: {get_alive_threads()}") as progressbar:
                 for task in progressbar:
                     try:
@@ -339,9 +335,10 @@ if __name__ == "__main__":
 
         if any((zip_roms, zip_multidata, zip_spoiler, zip_diffs)):
             import zipfile
-            compression = {1 : zipfile.ZIP_DEFLATED,
-                           2 : zipfile.ZIP_LZMA,
-                           3 : zipfile.ZIP_BZIP2}[zip_format]
+
+            compression = {1: zipfile.ZIP_DEFLATED,
+                           2: zipfile.ZIP_LZMA,
+                           3: zipfile.ZIP_BZIP2}[zip_format]
 
             typical_zip_ending = {1: "zip",
                                   2: "7z",
@@ -412,7 +409,7 @@ if __name__ == "__main__":
                     baseservercommand = "BerserkerMultiServer"  # compiled linux
                 else:
                     baseservercommand = f"py -{py_version} MultiServer.py"  # source
-                #don't have a mac to test that. If you try to run compiled on mac, good luck.
+                # don't have a mac to test that. If you try to run compiled on mac, good luck.
 
                 subprocess.call(f"{baseservercommand} --multidata {os.path.join(output_path, multidataname)}")
     except:
