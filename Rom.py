@@ -1365,6 +1365,9 @@ def patch_rom(world, rom, player, team, enemized):
         rom.write_bytes(0x180080,
                         [50, 50, 70, 70])  # values to fill for Capacity Upgrades (Bomb5, Bomb10, Arrow5, Arrow10)
 
+    if world.mode[player] == 'standard' and world.doorShuffle[player] == 'crossed':
+        world.escape_assist[player].append('bombs')
+
     rom.write_byte(0x18004D, ((0x01 if 'arrows' in world.escape_assist[player] else 0x00) |
                               (0x02 if 'bombs' in world.escape_assist[player] else 0x00) |
                               (0x04 if 'magic' in world.escape_assist[player] else 0x00)))  # Escape assist
