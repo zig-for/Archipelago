@@ -514,7 +514,7 @@ class CollectionState(object):
                     new_crystal_state = crystal_state
                     for exit in new_region.exits:
                         door = exit.door
-                        if door is not None and door.crystal == CrystalBarrier.Either:
+                        if door is not None and door.crystal == CrystalBarrier.Either and door.entrance.can_reach(self):
                             new_crystal_state = CrystalBarrier.Either
                             break
                     if new_region in rrp:
@@ -525,7 +525,7 @@ class CollectionState(object):
                     for exit in new_region.exits:
                         door = exit.door
                         if door is not None and not door.blocked:
-                            door_crystal_state = new_crystal_state & (door.crystal or CrystalBarrier.Either)
+                            door_crystal_state = door.crystal if door.crystal else new_crystal_state
                             bc[exit] = door_crystal_state
                             queue.append((exit, door_crystal_state))
                         elif door is None:
@@ -2040,6 +2040,7 @@ class Spoiler(object):
                          'sprite_pool': self.world.sprite_pool,
                          'restrict_dungeon_item_on_boss': self.world.restrict_dungeon_item_on_boss,
                          'experimental': self.world.experimental,
+                         'keydropshuffle': self.world.keydropshuffle,
                          'debug': self.world.debug
                          }
 
@@ -2142,8 +2143,9 @@ class Spoiler(object):
                 outfile.write('Beemizer:                        %s\n' % self.metadata['beemizer'][player])
                 outfile.write('Pot shuffle                      %s\n' % ('Yes' if self.metadata['shufflepots'][player] else 'No'))
                 outfile.write('Prize shuffle                    %s\n' % self.metadata['shuffle_prizes'][player])
-                outfile.write('Experimental Doors:              %s\n' % ('Yes' if self.metadata['experimental'][player] else 'No'))
+                outfile.write('Experimental:              %s\n' % ('Yes' if self.metadata['experimental'][player] else 'No'))
                 outfile.write('Debug Mode:                      %s\n' % ('Yes' if self.metadata['debug'][player] else 'No'))
+                outfile.write('Key Drops shuffled:              %s\n' % ('Yes' if self.metadata['keydropshuffle'][player] else 'No'))
             if self.doors:
                 outfile.write('\n\nDoors:\n\n')
                 outfile.write('\n'.join(

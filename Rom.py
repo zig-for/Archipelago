@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = 'e74f6550501652b163fca0bed98e30f2'
+RANDOMIZERBASEHASH = 'd6c78fc86e19e9d9189192626b4b668d'
 
 import io
 import json
@@ -749,7 +749,7 @@ def patch_rom(world, rom, player, team, enemized):
         dr_flags |= DROptions.Rails
 
 
-    # fix hc big key problems
+    # fix hc big key problems (map and compass too)
     if world.doorShuffle[player] == 'crossed' or world.keydropshuffle[player]:
         rom.write_byte(0x151f1, 2)
         rom.write_byte(0x15270, 2)
@@ -828,8 +828,23 @@ def patch_rom(world, rom, player, team, enemized):
 
     write_custom_shops(rom, world, player)
 
+    def credits_digit(num):
+        # top: $54 is 1, 55 2, etc , so 57=4, 5C=9
+        # bot: $7A is 1, 7B is 2, etc so 7D=4, 82=9 (zero unknown...)
+        return 0x53+num, 0x79+num
+
+    # collection rate address: 238C37
+
     if world.keydropshuffle[player]:
         rom.write_byte(0x140000, 1)
+        mid_top, mid_bot = credits_digit(4)
+        last_top, last_bot = credits_digit(9)
+        # top half
+        rom.write_byte(0x118C53, mid_top)
+        rom.write_byte(0x118C54, last_top)
+        # bottom half
+        rom.write_byte(0x118C71, mid_bot)
+        rom.write_byte(0x118C72, last_bot)
 
     # patch medallion requirements
     if world.required_medallions[player][0] == 'Bombos':
@@ -1556,9 +1571,10 @@ def patch_rom(world, rom, player, team, enemized):
         rom.write_byte(0xFED31, 0x2A)  # preopen bombable exit
         rom.write_byte(0xFEE41, 0x2A)  # preopen bombable exit
 
-    for room in world.rooms:
-        if room.player == player and room.modified:
-            rom.write_bytes(room.address(), room.rom_data())
+    if world.doorShuffle[player] != 'vanilla' or world.keydropshuffle[player]:
+        for room in world.rooms:
+            if room.player == player and room.modified:
+                rom.write_bytes(room.address(), room.rom_data())
 
     write_strings(rom, world, player, team)
 
@@ -2530,11 +2546,18 @@ def patch_shuffled_dark_sanc(world, rom, player):
 
 def update_compasses(rom, world, player):
     layouts = world.dungeon_layouts[player]
+    provided_dungeon = False
     for name, builder in layouts.items():
         dungeon_id = compass_data[name][4]
         rom.write_byte(0x187000 + dungeon_id//2, builder.location_cnt)
         if builder.bk_provided:
+            if provided_dungeon:
+                logging.getLogger('').warning('Multiple dungeons have forced BKs! Compass code might need updating?')
             rom.write_byte(0x186FFF, dungeon_id)
+            provided_dungeon = True
+    if not provided_dungeon:
+        rom.write_byte(0x186FFF, 0xff)
+
 
 
 InconvenientDungeonEntrances = {'Turtle Rock': 'Turtle Rock Main',

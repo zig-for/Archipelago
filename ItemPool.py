@@ -5,7 +5,7 @@ from BaseClasses import Region, RegionType, ShopType, Location, TakeAny
 from Bosses import place_bosses
 from Dungeons import get_dungeon_item_pool
 from EntranceShuffle import connect_entrance
-from Fill import FillError, fill_restrictive
+from Fill import FillError, fill_restrictive, fast_fill
 from Items import ItemFactory
 
 import source.classes.constants as CONST
@@ -962,3 +962,21 @@ def make_custom_item_pool(world, player):
         logging.warning(f"Pool was filled up with {total_items_to_place - itemtotal} Nothing's for player {player}")
 
     return (pool, placed_items, precollected_items, clock_mode, treasure_hunt_count, treasure_hunt_icon)
+
+
+def fill_specific_items(world):
+    keypool = [item for item in world.itempool if item.smallkey]
+    cage = world.get_location('Tower of Hera - Basement Cage', 1)
+    c_dungeon = cage.parent_region.dungeon
+    key_item = next(x for x in keypool if c_dungeon.name in x.name or (c_dungeon.name == 'Hyrule Castle' and 'Escape' in x.name))
+    world.itempool.remove(key_item)
+    all_state = world.get_all_state(True)
+    fill_restrictive(world, all_state, [cage], [key_item])
+
+    # somaria = next(item for item in world.itempool if item.name == 'Cane of Somaria')
+    # shooter = world.get_location('Palace of Darkness - Shooter Room', 1)
+    # world.itempool.remove(somaria)
+    # all_state = world.get_all_state(True)
+    # fill_restrictive(world, all_state, [shooter], [somaria])
+
+

@@ -22,12 +22,12 @@ from RoomData import create_rooms
 from Rules import set_rules
 from Dungeons import create_dungeons, fill_dungeons, fill_dungeons_restrictive, dungeon_regions
 from Fill import distribute_items_restrictive, flood_items, balance_multiworld_progression
-from ItemPool import generate_itempool, difficulties, fill_prizes
+from ItemPool import generate_itempool, difficulties, fill_prizes, fill_specific_items
 from Utils import output_path, parse_player_names, get_options, __version__, _version_tuple, print_wiki_doors_by_region, print_wiki_doors_by_room
 from source.classes.BabelFish import BabelFish
 import Patch
 
-__dr_version__ = '0.2.0.7-u'
+__dr_version__ = '0.2.0.8-u'
 seeddigits = 20
 
 
@@ -181,6 +181,9 @@ def main(args, seed=None, fish=None):
     logger.info(world.fish.translate("cli","cli","placing.dungeon.prizes"))
 
     fill_prizes(world)
+
+    # used for debugging
+    # fill_specific_items(world)
 
     logger.info(world.fish.translate("cli","cli","placing.dungeon.items"))
 
