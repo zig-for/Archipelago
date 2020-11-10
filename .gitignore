@@ -43,3 +43,19 @@ resources/user/*
 
 venv
 test
+
+basic-1-errors.txt
+
+basic-2-errors.txt
+
+basic-3-errors.txt
+
+crossed-1-errors.txt
+
+crossed-2-errors.txt
+
+crossed-3-errors.txt
+
+success.txt
+
+vanilla-errors.txt
