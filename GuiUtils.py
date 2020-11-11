@@ -15,12 +15,12 @@ def set_icon(window):
 # some which may be platform specific, or depend on if the TCL library was compiled without
 # multithreading support. Therefore I will assume it is not thread safe to avoid any possible problems
 class BackgroundTask(object):
-    def __init__(self, window, code_to_run):
+    def __init__(self, window, code_to_run, *args):
         self.window = window
         self.queue = queue.Queue()
         self.running = True
         self.process_queue()
-        self.task = threading.Thread(target=code_to_run, args=(self,))
+        self.task = threading.Thread(target=code_to_run, args=(self, *args))
         self.task.start()
 
     def stop(self):
@@ -46,7 +46,7 @@ class BackgroundTask(object):
             self.window.after(100, self.process_queue)
 
 class BackgroundTaskProgress(BackgroundTask):
-    def __init__(self, parent, code_to_run, title):
+    def __init__(self, parent, code_to_run, title, *args):
         self.parent = parent
         self.window = tk.Toplevel(parent)
         self.window['padx'] = 5
@@ -66,7 +66,7 @@ class BackgroundTaskProgress(BackgroundTask):
 
         set_icon(self.window)
         self.window.focus()
-        super().__init__(self.window, code_to_run)
+        super().__init__(self.window, code_to_run, *args)
 
     #safe to call from worker thread
     def update_status(self, text):
