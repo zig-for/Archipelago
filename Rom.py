@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = 'cb0c5fc45a62da8a7af1bd131f19ba7e'
+RANDOMIZERBASEHASH = 'd6c78fc86e19e9d9189192626b4b668d'
 
 import io
 import json
@@ -828,12 +828,26 @@ def patch_rom(world, rom, player, team, enemized):
 
     write_custom_shops(rom, world, player)
 
+    def credits_digit(num):
+        # top: $54 is 1, 55 2, etc , so 57=4, 5C=9
+        # bot: $7A is 1, 7B is 2, etc so 7D=4, 82=9 (zero unknown...)
+        return 0x53+num, 0x79+num
+
     # collection rate address: 238C37
 
     if world.keydropshuffle[player]:
         rom.write_byte(0x140000, 1)
-        rom.write_byte(0x187010, 249)
-        rom.write_byte(0x187012, 25)
+        mid_top, mid_bot = credits_digit(4)
+        last_top, last_bot = credits_digit(9)
+        gt_top, gt_bot = credits_digit(5)
+        # top half
+        rom.write_byte(0x118C47, mid_top)
+        rom.write_byte(0x118C48, last_top)
+        rom.write_byte(0x118C6A, gt_top)
+        # bottom half
+        rom.write_byte(0x118C65, mid_bot)
+        rom.write_byte(0x118C66, last_bot)
+        rom.write_byte(0x118C88, gt_bot)
 
     # patch medallion requirements
     if world.required_medallions[player][0] == 'Bombos':
