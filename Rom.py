@@ -843,11 +843,11 @@ def patch_rom(world, rom, player, team, enemized):
         # top half
         rom.write_byte(0x118C47, mid_top)
         rom.write_byte(0x118C48, last_top)
-        rom.write_byte(0x118C6A, gt_top)
+        rom.write_byte(0x118B6A, gt_top)
         # bottom half
         rom.write_byte(0x118C65, mid_bot)
         rom.write_byte(0x118C66, last_bot)
-        rom.write_byte(0x118C88, gt_bot)
+        rom.write_byte(0x118B88, gt_bot)
 
     # patch medallion requirements
     if world.required_medallions[player][0] == 'Bombos':
