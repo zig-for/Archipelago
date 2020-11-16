@@ -160,6 +160,7 @@ class World(object):
 
             set_player_attr('keydropshuffle', False)
             set_player_attr('mixed_travel', 'prevent')
+            set_player_attr('force_fix', {'gt': False, 'sw': False, 'pod': False, 'tr': False});
 
     def secure(self):
         self.random = secrets.SystemRandom()
