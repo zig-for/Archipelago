@@ -21,6 +21,7 @@ from BaseClasses import CollectionState, ShopType, Region, Location, DoorType, R
 from DoorShuffle import compass_data, DROptions, boss_indicator
 from Dungeons import dungeon_music_addresses
 from Regions import location_table, old_location_address_to_new_location_address
+from RoomData import DoorKind
 from Text import MultiByteTextMapper, CompressedTextMapper, text_addresses, Credits, TextTable
 from Text import Uncle_texts, Ganon1_texts, TavernMan_texts, Sahasrahla2_texts, Triforce_texts, Blind_texts, \
     BombShop2_texts, junk_texts
@@ -1574,13 +1575,11 @@ def patch_rom(world, rom, player, team, enemized):
 
     # fix trock doors for reverse entrances
     if world.fix_trock_doors[player]:
+        # do this unconditionally
+        world.get_room(0x23, player).change(0, DoorKind.CaveEntrance)
+        world.get_room(0xd5, player).change(0, DoorKind.CaveEntrance)
         rom.write_byte(0xFED31, 0x0E)  # preopen bombable exit
         rom.write_byte(0xFEE41, 0x0E)  # preopen bombable exit
-        # included unconditionally in base2current
-        # rom.write_byte(0xFE465, 0x1E)  # remove small key door on backside of big key door
-    else:
-        rom.write_byte(0xFED31, 0x2A)  # preopen bombable exit
-        rom.write_byte(0xFEE41, 0x2A)  # preopen bombable exit
 
     if world.doorShuffle[player] != 'vanilla' or world.keydropshuffle[player]:
         for room in world.rooms:
