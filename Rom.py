@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 JAP10HASH = '03a63945398191337e896e5771f77173'
-RANDOMIZERBASEHASH = '2a5b69f54534f6560bfbc6b417986dac'
+RANDOMIZERBASEHASH = 'b613a213cec9d6241955a964c37ddd98'
 
 import io
 import json
@@ -20,6 +20,7 @@ from typing import Optional
 from BaseClasses import CollectionState, ShopType, Region, Location, DoorType, RegionType
 from DoorShuffle import compass_data, DROptions, boss_indicator
 from Dungeons import dungeon_music_addresses
+from KeyDoorShuffle import count_locations_exclude_logic
 from Regions import location_table, old_location_address_to_new_location_address
 from RoomData import DoorKind
 from Text import MultiByteTextMapper, CompressedTextMapper, text_addresses, Credits, TextTable
@@ -748,6 +749,8 @@ def patch_rom(world, rom, player, team, enemized):
     if world.doorShuffle[player] == 'crossed' and world.logic[player] != 'nologic'\
        and world.mixed_travel[player] == 'prevent':
         dr_flags |= DROptions.Rails
+    if world.standardize_palettes[player] == 'original':
+        dr_flags |= DROptions.OriginalPalettes
 
 
     # fix hc big key problems (map and compass too)
@@ -764,18 +767,22 @@ def patch_rom(world, rom, player, team, enemized):
         for name, layout in world.key_layout[player].items():
             offset = compass_data[name][4]//2
             if world.retro[player]:
-                rom.write_byte(0x13f02a+offset, layout.max_chests + layout.max_drops)
+                rom.write_byte(0x13f030+offset, layout.max_chests + layout.max_drops)
             else:
-                rom.write_byte(0x13f01c+offset, layout.max_chests + layout.max_drops)  # not currently used
-                rom.write_byte(0x13f02a+offset, layout.max_chests)
+                rom.write_byte(0x13f020+offset, layout.max_chests + layout.max_drops)  # not currently used
+                rom.write_byte(0x13f030+offset, layout.max_chests)
             builder = world.dungeon_layouts[player][name]
-            rom.write_byte(0x13f070+offset, builder.location_cnt % 10)
-            rom.write_byte(0x13f07e+offset, builder.location_cnt // 10)
+            rom.write_byte(0x13f080+offset, builder.location_cnt % 10)
+            rom.write_byte(0x13f090+offset, builder.location_cnt // 10)
+            rom.write_byte(0x13f0a0+offset, builder.location_cnt)
             bk_status = 1 if builder.bk_required else 0
             bk_status = 2 if builder.bk_provided else bk_status
-            rom.write_byte(0x13f038+offset*2, bk_status)
+            rom.write_byte(0x13f040+offset*2, bk_status)
         if player in world.sanc_portal.keys():
             rom.write_byte(0x159a6, world.sanc_portal[player].ent_offset)
+            sanc_region = world.sanc_portal[player].door.entrance.parent_region
+            if sanc_region.is_dark_world and not sanc_region.is_light_world:
+                rom.write_byte(0x13ff00, 1)
         for room in world.rooms:
             if room.player == player and room.palette is not None:
                 rom.write_byte(0x13f200+room.index, room.palette)
@@ -842,10 +849,10 @@ def patch_rom(world, rom, player, team, enemized):
         # bot: $7A is 1, 7B is 2, etc so 7D=4, 82=9 (zero unknown...)
         return 0x53+num, 0x79+num
 
-    # collection rate address: 238C37
-
     if world.keydropshuffle[player]:
         rom.write_byte(0x140000, 1)
+        rom.write_byte(0x187010, 249)  # dynamic credits
+        # collection rate address: 238C37
         mid_top, mid_bot = credits_digit(4)
         last_top, last_bot = credits_digit(9)
         gt_top, gt_bot = credits_digit(5)
@@ -857,6 +864,23 @@ def patch_rom(world, rom, player, team, enemized):
         rom.write_byte(0x118C65, mid_bot)
         rom.write_byte(0x118C66, last_bot)
         rom.write_byte(0x118B88, gt_bot)
+
+    if world.keydropshuffle[player] or world.doorShuffle[player] != 'vanilla':
+        gt = world.dungeon_layouts[player]['Ganons Tower']
+        gt_logic = world.key_logic[player]['Ganons Tower']
+        total = 0
+        for region in gt.master_sector.regions:
+            total += count_locations_exclude_logic(region.locations, gt_logic)
+        rom.write_byte(0x187012, total)  # dynamic credits
+        # gt big key address: 238B59
+        mid_top, mid_bot = credits_digit(total // 10)
+        last_top, last_bot = credits_digit(total % 10)
+        # top half
+        rom.write_byte(0x118B75, mid_top)
+        rom.write_byte(0x118B76, last_top)
+        # bottom half
+        rom.write_byte(0x118B93, mid_bot)
+        rom.write_byte(0x118B94, last_bot)
 
     # patch medallion requirements
     if world.required_medallions[player][0] == 'Bombos':
@@ -1424,7 +1448,21 @@ def patch_rom(world, rom, player, team, enemized):
     # c - enabled for inside compasses
     # s - enabled for inside small keys
     # block HC upstairs doors in rain state in standard mode
-    rom.write_byte(0x18008A, 0x01 if world.mode[player] == "standard" and world.shuffle[player] != 'vanilla' else 0x00)
+    prevent_rain = world.mode[player] == "standard" and world.shuffle[player] != 'vanilla'
+    rom.write_byte(0x18008A, 0x01 if prevent_rain else 0x00)
+    # block sanc door in rain state and the dungeon is not vanilla
+    rom.write_byte(0x13f0fa, 0x01 if world.mode[player] == "standard" and world.doorShuffle[player] != 'vanilla' else 0x00)
+
+    if prevent_rain:
+        portals = [world.get_portal('Hyrule Castle East', player), world.get_portal('Hyrule Castle West', player)]
+        for idx, portal in enumerate(portals):
+            x = idx*2
+            room_idx = portal.door.roomIndex
+            room = world.get_room(room_idx, player)
+            rom.write_byte(0x13f0f0+x, room_idx & 0xff)
+            rom.write_byte(0x13f0f1+x, (room_idx >> 8) & 0xff)
+            rom.write_byte(0x13f0f6+x, room.position(portal.door).value)
+            rom.write_byte(0x13f0f7+x, room.kind(portal.door).value)
 
     rom.write_byte(0x18016A, 0x10 | ((0x01 if world.keyshuffle[player] is True else 0x00)
                                      | (0x02 if world.compassshuffle[player] else 0x00)
@@ -1575,9 +1613,11 @@ def patch_rom(world, rom, player, team, enemized):
 
     # fix trock doors for reverse entrances
     if world.fix_trock_doors[player]:
-        # do this unconditionally
-        world.get_room(0x23, player).change(0, DoorKind.CaveEntrance)
-        world.get_room(0xd5, player).change(0, DoorKind.CaveEntrance)
+        if world.get_door('TR Lazy Eyes SE', player).entranceFlag:
+            world.get_room(0x23, player).change(0, DoorKind.CaveEntrance)
+        if world.get_door('TR Eye Bridge SW', player).entranceFlag:
+            world.get_room(0xd5, player).change(0, DoorKind.CaveEntrance)
+        # do this unconditionally - gets overwritten by RoomData in doorShufflemodes
         rom.write_byte(0xFED31, 0x0E)  # preopen bombable exit
         rom.write_byte(0xFEE41, 0x0E)  # preopen bombable exit
 

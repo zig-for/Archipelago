@@ -97,6 +97,12 @@
       "force"
     ]
   },
+  "standardize_palettes" : {
+    "choices": [
+      "standardize",
+      "original"
+    ]
+  },
   "timer": {
     "choices": [
       "none",

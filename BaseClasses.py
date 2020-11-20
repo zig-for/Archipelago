@@ -160,6 +160,7 @@ class World(object):
 
             set_player_attr('keydropshuffle', False)
             set_player_attr('mixed_travel', 'prevent')
+            set_player_attr('standardize_palettes', 'standardize')
             set_player_attr('force_fix', {'gt': False, 'sw': False, 'pod': False, 'tr': False});
 
     def secure(self):
@@ -185,6 +186,11 @@ class World(object):
     def initialize_doors(self, doors):
         for door in doors:
             self._door_cache[(door.name, door.player)] = door
+
+    def remove_door(self, door, player):
+        if (door, player) in self._door_cache.keys():
+            del self._door_cache[(door, player)]
+        self.doors.remove(door)
 
     def _recache(self):
         """Rebuild world cache"""
@@ -213,6 +219,10 @@ class World(object):
         except KeyError:
             self._recache()
             return self._entrance_cache[entrance, player]
+
+    def remove_entrance(self, entrance, player):
+        if (entrance, player) in self._entrance_cache.keys():
+            del self._entrance_cache[(entrance, player)]
 
     def get_location(self, location: str, player: int) -> Location:
         try:
@@ -920,6 +930,7 @@ class CollectionState(object):
 
 @unique
 class RegionType(Enum):
+    Menu = 0
     LightWorld = 1
     DarkWorld = 2
     Cave = 3  # Also includes Houses
@@ -1551,6 +1562,10 @@ class Portal(object):
         self.destination = False
         self.deadEnd = False
         self.light_world = False
+
+    def change_boss_exit(self, exit_idx):
+        self.default = False
+        self.boss_exit_idx = exit_idx
 
     def change_door(self, new_door):
         if new_door != self.door:
