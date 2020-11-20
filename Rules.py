@@ -143,6 +143,8 @@ def item_name(state, location, player):
 def locality_rules(world, player):
     if world.goal[player] in ["localtriforcehunt", "localganontriforcehunt"]:
         world.local_items[player].add('Triforce Piece')
+    if world.mode[player] == "standard":
+        world.local_items[player].add('Big Key (Hyrule Castle)')
     if world.local_items[player]:
         for location in world.get_locations():
             if location.player != player:
