@@ -855,15 +855,12 @@ def patch_rom(world, rom, player, team, enemized):
         # collection rate address: 238C37
         mid_top, mid_bot = credits_digit(4)
         last_top, last_bot = credits_digit(9)
-        gt_top, gt_bot = credits_digit(5)
         # top half
         rom.write_byte(0x118C47, mid_top)
         rom.write_byte(0x118C48, last_top)
-        rom.write_byte(0x118B6A, gt_top)
         # bottom half
         rom.write_byte(0x118C65, mid_bot)
         rom.write_byte(0x118C66, last_bot)
-        rom.write_byte(0x118B88, gt_bot)
 
     if world.keydropshuffle[player] or world.doorShuffle[player] != 'vanilla':
         gt = world.dungeon_layouts[player]['Ganons Tower']
@@ -876,11 +873,11 @@ def patch_rom(world, rom, player, team, enemized):
         mid_top, mid_bot = credits_digit(total // 10)
         last_top, last_bot = credits_digit(total % 10)
         # top half
-        rom.write_byte(0x118B75, mid_top)
-        rom.write_byte(0x118B76, last_top)
+        rom.write_byte(0x118B69, mid_top)
+        rom.write_byte(0x118B6A, last_top)
         # bottom half
-        rom.write_byte(0x118B93, mid_bot)
-        rom.write_byte(0x118B94, last_bot)
+        rom.write_byte(0x118B87, mid_bot)
+        rom.write_byte(0x118B88, last_bot)
 
     # patch medallion requirements
     if world.required_medallions[player][0] == 'Bombos':
