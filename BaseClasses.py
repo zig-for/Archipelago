@@ -261,6 +261,9 @@ class World(object):
                     return portal
             raise RuntimeError('No such portal %s for player %d' % (portal_name, player))
 
+    def get_portals(self, player):
+        return self.dungeon_portals[player]
+
     def check_for_door(self, doorname, player):
         if isinstance(doorname, Door):
             return doorname

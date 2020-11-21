@@ -345,10 +345,19 @@ def main(args, seed=None, fish=None):
             for player in range(1, world.players + 1):
                 rom_futures.append(pool.submit(_gen_rom, team, player))
 
+        region_to_entrance_lookup_table = {}
+        for player in range(1, world.players + 1):
+            for portal in world.get_portals(player):
+                region_to_entrance_lookup_table[(player, portal.door.entrance.parent_region.name)] = world.get_region(portal.name + ' Portal', player).exits[0].parent_region.entrances[0]
+                # logging.info(f"({player}, {portal.door.entrance.parent_region.name}) = {world.get_region(portal.name + ' Portal', player).exits[0].parent_region.entrances[0].name}")
+
         er_cache = {player: {} for player in range(1, world.players + 1)}
         def get_entrance_to_region(region: Region, regions_visited):
             if region in er_cache[region.player] and er_cache[region.player][region]:
                 return er_cache[region.player][region]
+            if (region.player, region.name) in region_to_entrance_lookup_table:
+                er_cache[region.player][region] = region_to_entrance_lookup_table[(region.player, region.name)]
+                return region_to_entrance_lookup_table[(region.player, region.name)]
             for entrance in region.entrances:
                 if entrance.parent_region.type in (RegionType.DarkWorld, RegionType.LightWorld):
                     er_cache[region.player][region] = entrance
