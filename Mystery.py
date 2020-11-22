@@ -325,6 +325,11 @@ def roll_settings(weights):
     ret.intensity = get_choice('intensity', weights, '2' if ret.experimental else '1')
     ret.keydropshuffle = get_choice('key_drop_shuffle', weights, False)
     ret.debug = get_choice('debug', weights, False)
+    standardize = get_choice('standardize_palettes', weights, 'standardize')
+    ret.standardize_palettes = {True: 'standardize',
+                                False: 'original',
+                                'standardize': 'standardize',
+                                'original': 'original'}.get(standardize, standardize)
 
     goal = get_choice('goals', weights, 'ganon')
     ret.goal = {'ganon': 'ganon',
