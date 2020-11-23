@@ -494,6 +494,17 @@ def roll_settings(weights):
 
     ret.local_items = ",".join(ret.local_items)
 
+    ret.non_local_items = set()
+    for item_name in weights.get('non_local_items', []):
+        items = item_name_groups.get(item_name, {item_name})
+        for item in items:
+            if item in item_table:
+                ret.non_local_items.add(item)
+            else:
+                raise Exception(f"Could not force item {item} to be world-non-local, as it was not recognized.")
+
+    ret.non_local_items = ",".join(ret.non_local_items)
+
     if 'rom' in weights:
         romweights = weights['rom']
 

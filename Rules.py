@@ -149,6 +149,10 @@ def locality_rules(world, player):
         for location in world.get_locations():
             if location.player != player:
                 forbid_items_for_player(location, world.local_items[player], player)
+    if world.non_local_items[player]:
+        for location in world.get_locations():
+            if location.player == player:
+                forbid_items_for_player(location, world.non_local_items[player], player)
 
     # we can s&q to the old man house after we rescue him. This may be somewhere completely different if caves are shuffled!
 

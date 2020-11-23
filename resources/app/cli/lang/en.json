@@ -276,6 +276,7 @@
     "startinventory": [ "Specifies a list of items that will be in your starting inventory (separated by commas). (default: %(default)s)" ],
     "usestartinventory": [ "Toggle usage of Starting Inventory." ],
     "local_items": [ "Specifies a list of items that will not spread across the multiworld (seperated by commas). (default: %(default)s)"],
+    "non_local_items": [ "Specifies a list of items that will spread across the multiworld (seperated by commas). (default: %(default)s)"],
     "custom": [ "Not supported." ],
     "customitemarray": [ "Not supported." ],
     "accessibility": [

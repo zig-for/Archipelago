@@ -250,6 +250,7 @@
     "type": "bool"
   },
   "local_items": {},
+  "non_local_items": {},
   "custom": {
     "type": "bool",
     "help": "suppress"

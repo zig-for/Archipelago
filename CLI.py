@@ -102,7 +102,7 @@ def parse_cli(argv, no_defaults=False):
                          'shuffle', 'door_shuffle', 'intensity', 'crystals_ganon', 'crystals_gt', 'open_pyramid',
                          'countdown_start_time', 'red_clock_time', 'blue_clock_time', 'green_clock_time',
                          'mapshuffle', 'compassshuffle', 'keyshuffle', 'bigkeyshuffle', 'startinventory',
-                         'local_items', 'retro', 'accessibility', 'hints', 'beemizer', 'experimental', 'debug', 'dungeon_counters',
+                         'local_items', 'non_local_items', 'retro', 'accessibility', 'hints', 'beemizer', 'experimental', 'debug', 'dungeon_counters',
                          'shufflebosses', 'enemy_shuffle', 'enemy_health', 'enemy_damage', 'shufflepots',
                          'ow_palettes', 'uw_palettes', 'sprite', 'disablemusic', 'quickswap', 'fastmenu', 'heartcolor',
                          'heartbeep',  "skip_progression_balancing", "triforce_pieces_available", "triforce_pieces_required",
