@@ -129,10 +129,6 @@ def main(args, seed=None, fish=None):
     logger.info('')
 
     for player in range(1, world.players + 1):
-        #pot shuffle can break logic on doorShuffle or keydropshuffle
-        world.shufflepots[player] = world.shufflepots[player] and \
-                                    (world.doorShuffle[player] == "vanilla" and not world.keydropshuffle[player])
-
         world.difficulty_requirements[player] = difficulties[world.difficulty[player]]
 
         for tok in filter(None, args.startinventory[player].split(',')):
