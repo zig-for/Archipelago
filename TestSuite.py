@@ -74,17 +74,14 @@ def main(args=None):
             progressbar.set_description(f"Success rate: {(alive/dead_or_alive)*100:.2f}% - {task.name}{task.mode}")
 
     def get_results(testname: str):
-        result = ""
+        result = testname
         for mode in ['Open', 'Std ', 'Inv ']:
             dead_or_alive = [task.success for task in task_mapping if task.name == testname and task.mode == mode]
             alive = [x for x in dead_or_alive if x]
-            success = f"{testname}{mode} Rate: {(len(alive) / len(dead_or_alive)) * 100:.2f}%"
-            successes.append(success)
-            print(success)
             result += f"{(len(alive)/len(dead_or_alive))*100:.2f}%\t"
         return result.strip()
 
-    results = []
+    results = ["Test Name      Open\tStd\tInv"]
     for t in tests.keys():
         results.append(get_results(t))
 
