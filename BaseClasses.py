@@ -9,8 +9,7 @@ from enum import Enum, unique
 try:
     from fast_enum import FastEnum
 except ImportError:
-    from enum import Flag
-    FastEnum = Flag
+    from enum import IntFlag as FastEnum
 
 
 from source.classes.BabelFish import BabelFish
@@ -138,6 +137,8 @@ class World(object):
             set_player_attr('escape_assist', [])
             set_player_attr('crystals_needed_for_ganon', 7)
             set_player_attr('crystals_needed_for_gt', 7)
+            set_player_attr('crystals_ganon_orig', {})
+            set_player_attr('crystals_gt_orig', {})
             set_player_attr('open_pyramid', False)
             set_player_attr('treasure_hunt_icon', 'Triforce Piece')
             set_player_attr('treasure_hunt_count', 0)
@@ -158,6 +159,8 @@ class World(object):
             set_player_attr('sprite_pool', [])
             set_player_attr('dark_room_logic', "lamp")
             set_player_attr('restrict_dungeon_item_on_boss', False)
+            set_player_attr('potshuffle', False)
+            set_player_attr('pot_contents', None)
 
             set_player_attr('keydropshuffle', False)
             set_player_attr('mixed_travel', 'prevent')
@@ -1726,6 +1729,15 @@ class Location(object):
                 return True
         return False
 
+    def gen_name(self):
+        name = self.name
+        world = self.parent_region.world if self.parent_region and self.parent_region.world else None
+        if self.parent_region.dungeon and world and world.doorShuffle[self.player] == 'crossed':
+            name += f' @ {self.parent_region.dungeon.name}'
+        if world and world.players > 1:
+            name += f' ({world.get_player_names(self.player)})'
+        return name
+
     def __str__(self):
         return str(self.__unicode__())
 
@@ -1947,25 +1959,25 @@ class Spoiler(object):
         listed_locations = set()
 
         lw_locations = [loc for loc in self.world.get_locations() if loc not in listed_locations and loc.parent_region and loc.parent_region.type == RegionType.LightWorld]
-        self.locations['Light World'] = OrderedDict([(str(location), str(location.item) if location.item is not None else 'Nothing') for location in lw_locations])
+        self.locations['Light World'] = OrderedDict([(location.gen_name(), str(location.item) if location.item is not None else 'Nothing') for location in lw_locations])
         listed_locations.update(lw_locations)
 
         dw_locations = [loc for loc in self.world.get_locations() if loc not in listed_locations and loc.parent_region and loc.parent_region.type == RegionType.DarkWorld]
-        self.locations['Dark World'] = OrderedDict([(str(location), str(location.item) if location.item is not None else 'Nothing') for location in dw_locations])
+        self.locations['Dark World'] = OrderedDict([(location.gen_name(), str(location.item) if location.item is not None else 'Nothing') for location in dw_locations])
         listed_locations.update(dw_locations)
 
         cave_locations = [loc for loc in self.world.get_locations() if loc not in listed_locations and loc.parent_region and loc.parent_region.type == RegionType.Cave]
-        self.locations['Caves'] = OrderedDict([(str(location), str(location.item) if location.item is not None else 'Nothing') for location in cave_locations])
+        self.locations['Caves'] = OrderedDict([(location.gen_name(), str(location.item) if location.item is not None else 'Nothing') for location in cave_locations])
         listed_locations.update(cave_locations)
 
         for dungeon in self.world.dungeons:
             dungeon_locations = [loc for loc in self.world.get_locations() if loc not in listed_locations and loc.parent_region and loc.parent_region.dungeon == dungeon]
-            self.locations[str(dungeon)] = OrderedDict([(str(location), str(location.item) if location.item is not None else 'Nothing') for location in dungeon_locations])
+            self.locations[str(dungeon)] = OrderedDict([(location.gen_name(), str(location.item) if location.item is not None else 'Nothing') for location in dungeon_locations])
             listed_locations.update(dungeon_locations)
 
         other_locations = [loc for loc in self.world.get_locations() if loc not in listed_locations]
         if other_locations:
-            self.locations['Other Locations'] = OrderedDict([(str(location), str(location.item) if location.item is not None else 'Nothing') for location in other_locations])
+            self.locations['Other Locations'] = OrderedDict([(location.gen_name(), str(location.item) if location.item is not None else 'Nothing') for location in other_locations])
             listed_locations.update(other_locations)
 
         self.shops = []
@@ -2131,8 +2143,10 @@ class Spoiler(object):
                 outfile.write('Entrance Shuffle:                %s\n' % self.metadata['shuffle'][player])
                 outfile.write('Door Shuffle:                    %s\n' % self.metadata['door_shuffle'][player])
                 outfile.write('Intensity:                       %s\n' % self.metadata['intensity'][player])
-                outfile.write('Crystals required for GT:        %s\n' % self.metadata['gt_crystals'][player])
-                outfile.write('Crystals required for Ganon:     %s\n' % self.metadata['ganon_crystals'][player])
+                addition = ' (Random)' if self.world.crystals_gt_orig[player] == 'random' else ''
+                outfile.write('Crystals required for GT:        %s\n' % (str(self.metadata['gt_crystals'][player]) + addition))
+                addition = ' (Random)' if self.world.crystals_ganon_orig[player] == 'random' else ''
+                outfile.write('Crystals required for Ganon:     %s\n' % (str(self.metadata['ganon_crystals'][player]) + addition))
                 outfile.write('Pyramid hole pre-opened:         %s\n' % (
                     'Yes' if self.metadata['open_pyramid'][player] else 'No'))
                 outfile.write('Accessibility:                   %s\n' % self.metadata['accessibility'][player])
@@ -2204,7 +2218,7 @@ class Spoiler(object):
             # locations: Change up location names; in the instance of a location with multiple sections, it'll try to translate the room name
             # items: Item names
             outfile.write('\n\nLocations:\n\n')
-            outfile.write('\n'.join(['%s: %s' % (self.world.fish.translate("meta","locations",location), self.world.fish.translate("meta","items",item)) for grouping in self.locations.values() for (location, item) in grouping.items()]))
+            outfile.write('\n'.join(['%s: %s' % (self.world.fish.translate("meta", "locations", location), self.world.fish.translate("meta", "items", item)) for grouping in self.locations.values() for (location, item) in grouping.items()]))
 
             # locations: Change up location names; in the instance of a location with multiple sections, it'll try to translate the room name
             # items: Item names
@@ -2255,3 +2269,48 @@ dungeon_names = [
     'Hyrule Castle', 'Eastern Palace', 'Desert Palace', 'Tower of Hera', 'Agahnims Tower', 'Palace of Darkness',
     'Swamp Palace', 'Skull Woods', 'Thieves Town', 'Ice Palace', 'Misery Mire', 'Turtle Rock', 'Ganons Tower'
 ]
+
+
+class PotItem(FastEnum):
+    Nothing = 0x0
+    OneRupee = 0x1
+    RockCrab = 0x2
+    Bee = 0x3
+    Random = 0x4
+    Bomb_0 = 0x5
+    Heart_0 = 0x6
+    FiveRupees = 0x7
+    Key = 0x8
+    FiveArrows = 0x9
+    Bomb = 0xA
+    Heart = 0xB
+    SmallMagic = 0xC
+    BigMagic = 0xD
+    Chicken = 0xE
+    GreenSoldier = 0xF
+    AliveRock = 0x10
+    BlueSoldier = 0x11
+    GroundBomb = 0x12
+    Heart_2 = 0x13
+    Fairy = 0x14
+    Heart_3 = 0x15
+    Hole = 0x80
+    Warp = 0x82
+    Staircase = 0x84
+    Bombable = 0x86
+    Switch = 0x88
+
+
+class PotFlags(FastEnum):
+    Normal = 0x0
+    NoSwitch = 0x1  # A switch should never go here
+    SwitchLogicChange = 0x2  # A switch can go here, but requires a logic change
+
+
+class Pot(object):
+    def __init__(self, x, y, item, room, flags = PotFlags.Normal):
+        self.x = x
+        self.y = y
+        self.item = item
+        self.room = room
+        self.flags = flags

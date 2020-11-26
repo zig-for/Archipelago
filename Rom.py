@@ -4,6 +4,7 @@ JAP10HASH = '03a63945398191337e896e5771f77173'
 RANDOMIZERBASEHASH = '36fcdff5838bda22628810da8fb17181'
 
 import io
+import itertools
 import json
 import hashlib
 import logging
@@ -17,7 +18,7 @@ import xxtea
 import concurrent.futures
 from typing import Optional
 
-from BaseClasses import CollectionState, ShopType, Region, Location, Door, DoorType, RegionType
+from BaseClasses import CollectionState, ShopType, Region, Location, Door, DoorType, RegionType, PotItem
 from DoorShuffle import compass_data, DROptions, boss_indicator
 from Dungeons import dungeon_music_addresses
 from KeyDoorShuffle import count_locations_exclude_logic
@@ -327,7 +328,7 @@ def patch_enemizer(world, player: int, rom: LocalRom, enemizercli):
         'GrayscaleMode': False,
         'GenerateSpoilers': False,
         'RandomizeLinkSpritePalette': False,
-        'RandomizePots': world.shufflepots[player],
+        'RandomizePots': False,
         'ShuffleMusic': False,
         'BootlegMagic': True,
         'CustomBosses': False,
@@ -686,6 +687,9 @@ def patch_rom(world, rom, player, team, enemized):
     if world.mapshuffle[player]:
         rom.write_byte(0x155C9, local_random.choice([0x11, 0x16]))  # Randomize GT music too with map shuffle
 
+    if world.pot_contents[player]:
+        write_pots_to_rom(rom, world.pot_contents[player])
+
     # patch entrance/exits/holes
     for region in world.regions:
         for exit in region.exits:
@@ -830,7 +834,6 @@ def patch_rom(world, rom, player, team, enemized):
             rom.write_byte(0x15aee + portal.exit_offset, portal.current_room())
             if portal.boss_exit_idx > -1:
                 rom.write_byte(0x7939 + portal.boss_exit_idx, portal.current_room())
-
 
     # fix exits, if not fixed during exit patching
     if world.fix_skullwoods_exit[player] and world.shuffle[player] == 'vanilla':
@@ -2867,3 +2870,29 @@ hash_alphabet = [
     "Lamp", "Hammer", "Shovel", "Flute", "Bug Net", "Book", "Bottle", "Potion", "Cane", "Cape", "Mirror", "Boots",
     "Gloves", "Flippers", "Pearl", "Shield", "Tunic", "Heart", "Map", "Compass", "Key"
 ]
+
+pot_item_room_table_lookup = 0xDB67
+
+###
+# Pointer to pot location and contents for each non-empty pot in a supertile
+# Format: [(x, y, item)] FF FF (Note: x,y are bit packed to include layer)
+pot_item_table = 0xDDE7
+pot_item_table_end = 0xE6B0
+
+def write_pots_to_rom(rom, pot_contents):
+    n = pot_item_table
+    rom.write_bytes(n, [0xFF,0xFF])
+    n += 2
+    for i in range(0x140):
+        if i in pot_contents:
+            pots = [pot for pot in pot_contents[i] if pot.item != PotItem.Nothing]
+            if len(pots) > 0:
+                rom.write_int16(pot_item_room_table_lookup + 2*i, n)
+                rom.write_bytes(n, itertools.chain(*((pot.x,pot.y,pot.item) for pot in pots)))
+                n += 3*len(pots) + 2
+                rom.write_bytes(n - 2, [0xFF,0xFF])
+            else:
+                rom.write_int16(pot_item_room_table_lookup + 2*i, n-2)
+        else:
+            rom.write_int16(pot_item_room_table_lookup + 2*i, n-2)
+    assert n <= pot_item_table_end
