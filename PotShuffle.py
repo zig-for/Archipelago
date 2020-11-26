@@ -275,8 +275,6 @@ vanilla_pots = {
 
 
 def shuffle_pots(world, player):
-    import random
-
     new_pot_contents = {}
 
     for supertile in vanilla_pots:
@@ -304,7 +302,7 @@ def shuffle_pots(world, player):
 
             available_pots = [pot for pot in available_pots if pot.item == PotItem.Nothing]
 
-            new_pot = random.choice(available_pots)
+            new_pot = world.random.choice(available_pots)
             new_pot.item = old_pot.item
             if world.retro[player] and new_pot.item == PotItem.FiveArrows:
                 new_pot.item = PotItem.FiveRupees

@@ -74,7 +74,7 @@ def main(args, seed=None, fish=None):
         for player in range(1, world.players + 1)}
     world.crystals_ganon_orig = args.crystals_ganon.copy()
     world.crystals_gt_orig = args.crystals_gt.copy()
-    world.open_pyramid = args.openpyramid.copy()
+    world.open_pyramid = args.open_pyramid.copy()
     world.boss_shuffle = args.shufflebosses.copy()
     world.enemy_shuffle = args.enemy_shuffle.copy()
     world.enemy_health = args.enemy_health.copy()
