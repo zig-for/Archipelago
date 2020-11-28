@@ -25,16 +25,18 @@ import threading
 import concurrent.futures
 import random
 import argparse
+import logging
 
 
 def feedback(text: str):
-    print(text)
+    logging.info(text)
     input("Press Enter to ignore and probably crash.")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(format='%(message)s', level=logging.INFO)
     try:
-        print(f"{__author__}'s MultiMystery Launcher")
+        logging.info(f"{__author__}'s MultiMystery Launcher")
         import ModuleUpdate
 
         ModuleUpdate.update()
@@ -53,7 +55,7 @@ if __name__ == "__main__":
         output_path = options["general_options"]["output_path"]
         enemizer_path = multi_mystery_options["enemizer_path"]
         player_files_path = multi_mystery_options["player_files_path"]
-        target_player_count = multi_mystery_options.get("players", 0)
+        target_player_count = multi_mystery_options["players"]
         race = multi_mystery_options["race"]
         create_spoiler = multi_mystery_options["create_spoiler"]
         zip_roms = multi_mystery_options["zip_roms"]
@@ -65,7 +67,7 @@ if __name__ == "__main__":
         player_name = multi_mystery_options["player_name"]
         take_first_working = multi_mystery_options["take_first_working"]
         meta_file_path = multi_mystery_options["meta_file_path"]
-        weights_file_path = multi_mystery_options.get("weights_file_path", "weights.yaml")
+        weights_file_path = multi_mystery_options["weights_file_path"]
         teams = multi_mystery_options["teams"]
         rom_file = options["general_options"]["rom_file"]
         host = options["server_options"]["host"]
@@ -87,7 +89,7 @@ if __name__ == "__main__":
             lfile = file.lower()
             if lfile.endswith(".yaml") and lfile != meta_file_path.lower() and lfile != weights_file_path.lower():
                 player_files.append(file)
-                print(f"Found player's file {file}.")
+                logging.info(f"Found player's file {file}.")
 
         player_string = ""
         for i, file in enumerate(player_files, 1):
@@ -109,7 +111,7 @@ if __name__ == "__main__":
         if target_player_count == 0:
             feedback(f"No player files found. Please put them in a {player_files_path} folder.")
         else:
-            print(target_player_count, "Players found.")
+            logging.info(f"{target_player_count} Players found.")
 
         command = f"{basemysterycommand} --multi {target_player_count} {player_string} " \
                   f"--rom \"{rom_file}\" --enemizercli \"{enemizer_path}\" " \
@@ -132,7 +134,7 @@ if __name__ == "__main__":
         if os.path.exists(weights_file_path):
             command += f" --weights {weights_file_path}"
 
-        print(command)
+        logging.info(command)
         import time
 
         start = time.perf_counter()
@@ -302,13 +304,13 @@ if __name__ == "__main__":
                 if not log_output_path:
                     input("No seed was successful. Press enter to get errors.")
                     for error in errors:
-                        print(error)
+                        logging.info(error)
                 else:
-                    print(f"Check {os.path.join(log_output_path,'Failure')} for errors.")
+                    logging.info(f"Check {os.path.join(log_output_path,'Failure')} for errors.")
                 sys.exit()
 
             if keep_all_seeds:
-                print(f"Took an average of {total_time/alive:.3f} to gen each seed. Min time: {min_time:.3f}, Max time: {max_time:.3f}")
+                logging.info(f"Took an average of {total_time/alive:.3f} to gen each seed. Min time: {min_time:.3f}, Max time: {max_time:.3f}")
 
             return task_mapping[task_id]
 
@@ -318,8 +320,7 @@ if __name__ == "__main__":
         task = get_working_seed()
         seedname = copy_seed(task, output_path)
 
-        print()
-        print(f"Took {time.perf_counter()-start:.3f} seconds to generate rom(s).")
+        logging.info(f"\nTook {time.perf_counter()-start:.3f} seconds to generate rom(s).")
         multidataname = f"BD_{seedname}.multidata"
         spoilername = f"BD_{seedname}_Spoiler.txt"
         romfilename = ""
@@ -350,17 +351,17 @@ if __name__ == "__main__":
             def pack_file(file: str):
                 with ziplock:
                     zf.write(os.path.join(output_path, file), file)
-                    print(f"Packed {file} into zipfile {zipname}")
+                    logging.info(f"Packed {file} into zipfile {zipname}")
 
 
             def remove_zipped_file(file: str):
                 os.remove(os.path.join(output_path, file))
-                print(f"Removed {file} which is now present in the zipfile")
+                logging.info(f"Removed {file} which is now present in the zipfile")
 
 
             zipname = os.path.join(output_path, f"BD_{seedname}.{typical_zip_ending}")
 
-            print(f"Creating zipfile {zipname}")
+            logging.info(f"Creating zipfile {zipname}")
             ipv4 = (host if host else get_public_ipv4()) + ":" + str(port)
 
 
