@@ -2,7 +2,6 @@ import argparse
 import copy
 import json
 import os
-import logging
 import textwrap
 import shlex
 import sys

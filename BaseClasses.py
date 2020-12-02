@@ -1567,6 +1567,7 @@ class Portal(object):
         self.boss_exit_idx = boss_exit_idx
         self.default = True
         self.destination = False
+        self.dependent = None
         self.deadEnd = False
         self.light_world = False
 
