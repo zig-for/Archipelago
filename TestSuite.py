@@ -3,6 +3,7 @@ import sys
 import multiprocessing
 import concurrent.futures
 import argparse
+import random
 from collections import OrderedDict
 
 cpu_threads = multiprocessing.cpu_count()
@@ -26,13 +27,13 @@ def main(args=None):
     def test(testname: str, command: str):
         tests[testname] = [command]
         for mode in [['Open', ''],
-                     ['Std ', ' --mode standard'],
-                     ['Inv ', ' --mode inverted']]:
+                     ['Std ', '--mode standard'],
+                     ['Inv ', '--mode inverted']]:
 
             basecommand = f"py -{py_version} DungeonRandomizer.py --door_shuffle {args.dr} --intensity {args.tense} --suppress_rom --suppress_spoiler"
 
             def gen_seed():
-                taskcommand = basecommand + " " + command + mode[1]
+                taskcommand = f"{basecommand} {command} {mode[1]} --seed {random.randint(0, pow(10, 20) - 1)}"
                 return subprocess.run(taskcommand, capture_output=True, shell=True, text=True)
 
             for x in range(1, max_attempts + 1):
@@ -88,6 +89,12 @@ def main(args=None):
 
     return successes, errors
 
+def get_seed(seed=None):
+    if seed is None:
+        random.seed(None)
+        return random.randint(0, pow(10, 20) - 1)
+    return seed
+
 
 if __name__ == "__main__":
     successes = []
@@ -96,12 +103,17 @@ if __name__ == "__main__":
     parser.add_argument('--count', default=0, type=lambda value: max(int(value), 0))
     parser.add_argument('--cpu_threads', default=cpu_threads, type=lambda value: max(int(value), 1))
     parser.add_argument('--help', default=False, action='store_true')
+    parser.add_argument('--seed')
 
     args = parser.parse_args()
 
     if args.help:
         parser.print_help()
         exit(0)
+
+    seed = get_seed(args.seed)
+    random.seed(seed)
+    print(f"All tests being run with seeds derived from {seed}")
 
     cpu_threads = args.cpu_threads
 
