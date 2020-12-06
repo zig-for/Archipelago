@@ -59,5 +59,7 @@ crossed-2-errors.txt
 crossed-3-errors.txt
 
 success.txt
+output/
+Output Logs/
 
 vanilla-errors.txt
