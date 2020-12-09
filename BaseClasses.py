@@ -1082,6 +1082,9 @@ class Dungeon(object):
                 ret += 1
         return ret
 
+    def __hash__(self):
+        return hash(f'{self.name} (Player {self.player})')
+
     def __eq__(self, other: Item) -> bool:
         return self.name == other.name and self.player == other.player
 
