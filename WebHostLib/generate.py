@@ -6,7 +6,7 @@ import json
 
 from flask import request, flash, redirect, url_for, session, render_template
 
-from EntranceRandomizer import parse_arguments
+from CLI import parse_cli as parse_arguments
 from Main import main as ERmain
 from Main import get_seed, seeddigits
 import pickle
@@ -116,7 +116,7 @@ def wait_seed(seed: UUID):
     elif generation.state == STATE_ERROR:
         import html
         return f"Generation failed, please retry. <br> {html.escape(generation.meta.decode())}"
-    return render_template("wait_seed.html", seed_id=seed_id)
+    return render_template("waitSeed.html", seed_id=seed_id)
 
 
 def upload_to_db(folder, owner, sid, race:bool):
