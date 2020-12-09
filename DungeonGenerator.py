@@ -226,7 +226,7 @@ def gen_dungeon_info(name, available_sectors, entrance_regions, all_regions, pro
     o_state_cache = {}
     for sector in available_sectors:
         for door in sector.outstanding_doors:
-            if not door.stonewall and door not in proposed_map.keys():
+            if door not in proposed_map.keys():
                 hanger_set.add(door)
                 bk_flag = group_flags[door_map[door]]
                 parent = door.entrance.parent_region
@@ -1271,7 +1271,7 @@ def create_dungeon_builders(all_sectors, connections_tuple, world, player,
         identify_destination_sectors(accessible_sectors, reverse_d_map, dungeon_map, connections,
                                      dungeon_entrances, split_dungeon_entrances)
         for name, builder in dungeon_map.items():
-            calc_allowance_and_dead_ends(builder, connections_tuple, world.dungeon_portals[player])
+            calc_allowance_and_dead_ends(builder, connections_tuple, world, player)
 
         if world.mode[player] == 'open' and world.shuffle[player] not in ['crossed', 'insanity']:
             sanc = find_sector('Sanctuary', candidate_sectors)
@@ -1318,7 +1318,7 @@ def create_dungeon_builders(all_sectors, connections_tuple, world, player,
                 # restart
                 raise NeutralizingException('Either free location/crystal assignment is already globally invalid')
             logger.info(world.fish.translate("cli", "cli", "balance.doors"))
-            builder_info = dungeon_entrances, split_dungeon_entrances, world, player
+            builder_info = dungeon_entrances, split_dungeon_entrances, connections_tuple, world, player
             assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info)
             # the rest
             assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info)
@@ -1376,35 +1376,44 @@ def identify_destination_sectors(accessible_sectors, reverse_d_map, dungeon_map,
                                 break
 
 
-def calc_allowance_and_dead_ends(builder, connections_tuple, portals):
+# todo: split version that adds allowance for potential entrances
+def calc_allowance_and_dead_ends(builder, connections_tuple, world, player):
+    portals = world.dungeon_portals[player]
     entrances_map, potentials, connections = connections_tuple
-    needed_connections = [x for x in builder.all_entrances if x not in entrances_map[builder.name]]
+    name = builder.name if not builder.split_flag else builder.name.rsplit(' ', 1)[0]
+    needed_connections = [x for x in builder.all_entrances if x not in entrances_map[name]]
     starting_allowance = 0
     used_sectors = set()
     destination_entrances = [x.door.entrance.parent_region.name for x in portals if x.destination]
-    for entrance in entrances_map[builder.name]:
+    dead_ends = [x.door.entrance.parent_region.name for x in portals if x.deadEnd]
+    for entrance in entrances_map[name]:
         sector = find_sector(entrance, builder.sectors)
-        outflow_target = 0 if entrance not in drop_entrances_allowance else 1
-        if sector not in used_sectors and sector.adj_outflow() > outflow_target:
-            if entrance not in destination_entrances:
-                starting_allowance += 1
-            else:
-                builder.branches -= 1
-            used_sectors.add(sector)
-        elif sector not in used_sectors:
-            if entrance in destination_entrances and sector.branches() > 0:
-                builder.branches -= 1
-            if entrance not in drop_entrances_allowance:
-                needed_connections.append(entrance)
+        if sector:
+            outflow_target = 0 if entrance not in drop_entrances_allowance else 1
+            if sector not in used_sectors and (sector.adj_outflow() > outflow_target or entrance in dead_ends):
+                if entrance not in destination_entrances:
+                    starting_allowance += 1
+                else:
+                    builder.branches -= 1
+                used_sectors.add(sector)
+            elif sector not in used_sectors:
+                if entrance in destination_entrances and sector.branches() > 0:
+                    builder.branches -= 1
+                if entrance not in drop_entrances_allowance:
+                    needed_connections.append(entrance)
     builder.allowance = starting_allowance
     for entrance in needed_connections:
         sector = find_sector(entrance, builder.sectors)
-        if sector not in used_sectors:  # ignore things on same sector
+        if sector and sector not in used_sectors:  # ignore things on same sector
             is_destination = entrance in destination_entrances
             connect_able = False
             if entrance in connections.keys():
                 enabling_region = connections[entrance]
-                connecting_entrances = [x for x in potentials[enabling_region] if x != entrance and x not in dead_entrances and x not in drop_entrances_allowance]
+                check_list = list(potentials[enabling_region])
+                if enabling_region.name in ['Desert Ledge', 'Desert Palace Entrance (North) Spot']:
+                    alternate = 'Desert Palace Entrance (North) Spot' if enabling_region.name == 'Desert Ledge' else 'Desert Ledge'
+                    check_list.extend(potentials[world.get_region(alternate, player)])
+                connecting_entrances = [x for x in check_list if x != entrance and x not in dead_entrances and x not in drop_entrances_allowance]
                 connect_able = len(connecting_entrances) > 0
             if is_destination and sector.branches() == 0:  #
                 builder.dead_ends += 1
@@ -1863,7 +1872,7 @@ def sum_polarity(sector_list):
 
 
 def assign_polarized_sectors(dungeon_map, polarized_sectors, global_pole, builder_info):
-    _, _, world, _ = builder_info
+    _, _, _, world, _ = builder_info
     # step 1: fix polarity connection issues
     unconnected_builders = identify_polarity_issues(dungeon_map)
     while len(unconnected_builders) > 0:
@@ -2634,7 +2643,7 @@ def valid_entrance(builder, sector_list, builder_info):
     if len(builder.sectors) == 0:
         is_dead_end = True
     else:
-        entrances, splits, world, player = builder_info
+        entrances, splits, c_tuple, world, player = builder_info
         if builder.name not in entrances.keys():
             name_parts = builder.name.rsplit(' ', 1)
             entrance_list = splits[name_parts[0]][name_parts[1]]
@@ -2647,8 +2656,8 @@ def valid_entrance(builder, sector_list, builder_info):
             for sector in entrances:
                 for region in entrance_list:
                     if region in sector.region_set():
-                        portal = next((x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == region))
-                        if not portal.deadEnd:
+                        portal = next((x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == region), None)
+                        if portal and not portal.deadEnd:
                             all_dead = False
                         break
                 if not all_dead:
@@ -2714,7 +2723,7 @@ def valid_polarized_assignment(builder, sector_list):
 
 
 def assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info):
-    _, _, world, _ = builder_info
+    _, _, _, world, _ = builder_info
     comb_w_replace = len(dungeon_map) ** len(neutral_sectors)
     combinations = None
     if comb_w_replace <= 1000:
@@ -2747,7 +2756,7 @@ def assign_the_rest(dungeon_map, neutral_sectors, global_pole, builder_info):
 
 
 def split_dungeon_builder(builder, split_list, builder_info):
-    _, _, world, _ = builder_info
+    _, _, _, world, _ = builder_info
     if builder.split_dungeon_map and len(builder.exception_list) == 0:
         for name, proposal in builder.valid_proposal.items():
             builder.split_dungeon_map[name].valid_proposal = proposal
@@ -2768,10 +2777,10 @@ def split_dungeon_builder(builder, split_list, builder_info):
                         continue
                     elif len(split_entrances) <= 0:
                         continue
-                    x, y, world, player = builder_info
+                    ents, splits, c_tuple, world, player = builder_info
                     r_name = split_entrances[0]
-                    p = next(x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == r_name)
-                    if not p.deadEnd:
+                    p = next((x for x in world.dungeon_portals[player] if x.door.entrance.parent_region.name == r_name), None)
+                    if p and not p.deadEnd:
                         candidates.append(name)
                 merge_keys = world.random.sample(candidates, merge_attempt+1) if len(candidates) >= merge_attempt+1 else []
             for name, split_entrances in split_list.items():
@@ -2785,6 +2794,7 @@ def split_dungeon_builder(builder, split_list, builder_info):
                         sub_builder.all_entrances.extend(split_entrances)
                 if key not in dungeon_map:
                     dungeon_map[key] = sub_builder = DungeonBuilder(key)
+                    sub_builder.split_flag = True
                     sub_builder.all_entrances = list(split_entrances)
                 for r_name in split_entrances:
                     assign_sector(find_sector(r_name, candidate_sectors), sub_builder, candidate_sectors, global_pole)
@@ -2802,7 +2812,9 @@ def split_dungeon_builder(builder, split_list, builder_info):
 
 
 def balance_split(candidate_sectors, dungeon_map, global_pole, builder_info):
-    _, _, world, _ = builder_info
+    dungeon_entrances, split_dungeon_entrances, connections_tuple, world, player = builder_info
+    for name, builder in dungeon_map.items():
+        calc_allowance_and_dead_ends(builder, connections_tuple, world, player)
     comb_w_replace = len(dungeon_map) ** len(candidate_sectors)
     if comb_w_replace <= 10000:
         combinations = list(itertools.product(dungeon_map.keys(), repeat=len(candidate_sectors)))
@@ -2941,12 +2953,13 @@ def check_for_forced_crystal_single(builder, candidate_sectors):
     for hook in builder_doors.keys():
         for door in builder_doors[hook].keys():
             opp = opposite_h_type(hook)
-            for d, sector in builder_doors[opp].items():
-                if d != door and (not sector.blue_barrier or sector.c_switch):
-                    return False
-            for d, sector in candidate_doors[opp].items():
-                if not sector.blue_barrier or sector.c_switch:
-                    return False
+            if opp in builder_doors.keys():
+                for d, sector in builder_doors[opp].items():
+                    if d != door and (not sector.blue_barrier or sector.c_switch):
+                        return False
+                for d, sector in candidate_doors[opp].items():
+                    if not sector.blue_barrier or sector.c_switch:
+                        return False
     return True
 
 
@@ -3221,7 +3234,7 @@ def identify_branching_issues(dungeon_map, builder_info):
 
 
 def check_for_valid_layout(builder, sector_list, builder_info):
-    dungeon_entrances, split_dungeon_entrances, world, player = builder_info
+    dungeon_entrances, split_dungeon_entrances, c_tuple, world, player = builder_info
     if builder.name in split_dungeon_entrances.keys():
         try:
             temp_builder = DungeonBuilder(builder.name)
