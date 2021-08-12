@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Dict, Set, Tuple, List, Optional
+from typing import Dict, Set, Tuple, List, Optional, Counter as CounterType
+from collections import Counter
 
 from BaseClasses import MultiWorld, Item, CollectionState, Location
 
@@ -88,6 +89,10 @@ class World(metaclass=AutoWorldRegister):
     # the client finds its own items in its own world.
     remote_items: bool = True
 
+    # fill in with itempool during create_items, item name -> count.
+    # Gets converted to Item instances using create_item before the fill steps into world.itempool
+    items: CounterType[str, int]
+
     # autoset on creation:
     world: MultiWorld
     player: int
@@ -102,6 +107,7 @@ class World(metaclass=AutoWorldRegister):
     def __init__(self, world: MultiWorld, player: int):
         self.world = world
         self.player = player
+        self.items = Counter()
 
     # overridable methods that get called by Main.py, sorted by execution order
     # can also be implemented as a classmethod and called "stage_<original_name",

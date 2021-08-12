@@ -41,7 +41,7 @@ class MultiWorld():
         self.dungeons = []
         self.regions = []
         self.shops = []
-        self.itempool = []
+        self.itempool = []  # item pool during fill
         self.seed = None
         self.seed_name: str = "Unavailable"
         self.precollected_items = []

@@ -208,6 +208,13 @@ def main(args, seed=None):
     for item in world.itempool:
         item.world = world
 
+    for player, player_world in world.worlds.items():
+        for name, count in player_world.items.items():
+            item = player_world.create_item(name)
+            item.world = world
+            for x in range(count):
+                world.itempool.append(item)
+
     distribute_planned(world)
 
     logger.info('Running Pre Main Fill.')

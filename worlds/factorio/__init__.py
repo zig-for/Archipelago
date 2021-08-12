@@ -45,18 +45,19 @@ class Factorio(World):
         self.world.random.shuffle(traps_wanted)
         for tech_name in base_tech_table:
             if traps_wanted and tech_name in useless_technologies:
-                self.world.itempool.append(self.create_item(traps_wanted.pop()))
+                self.items[traps_wanted.pop()] += 1
             elif skip_silo and tech_name == "rocket-silo":
                 pass
             else:
                 progressive_item_name = tech_to_progressive_lookup.get(tech_name, tech_name)
                 want_progressive = want_progressives[progressive_item_name]
                 item_name = progressive_item_name if want_progressive else tech_name
-                tech_item = self.create_item(item_name)
+
                 if tech_name in self.static_nodes:
+                    tech_item = self.create_item(item_name)
                     self.world.get_location(tech_name, player).place_locked_item(tech_item)
                 else:
-                    self.world.itempool.append(tech_item)
+                    self.items[item_name] += 1
         map_basic_settings = self.world.world_gen[player].value["basic"]
         if map_basic_settings.get("seed", None) is None:  # allow seed 0
             map_basic_settings["seed"] = self.world.slot_seeds[player].randint(0, 2 ** 32 - 1)  # 32 bit uint
