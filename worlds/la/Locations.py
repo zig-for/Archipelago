@@ -1,4 +1,6 @@
 from BaseClasses import Region, RegionType, Entrance, Location
+from worlds.AutoWorld import LogicMixin
+
 
 from .LADXR.logic import Logic as LAXDRLogic
 from .LADXR.settings import Settings as LADXRSettings
@@ -8,7 +10,7 @@ from .LADXR.checkMetadata import checkMetadataTable
 from .LADXR.locations.keyLocation import KeyLocation as LADXRKeyLocation
 from .Common import *
 from worlds.generic.Rules import add_rule, set_rule, add_item_rule
-from .Items import ladxr_item_to_la_item_name, links_awakening_items
+from .Items import ladxr_item_to_la_item_name, links_awakening_items, ItemName
 from .LADXR.itempool import ItemPool as LADXRItemPool
 
 links_awakening_dungeon_names = [
@@ -27,7 +29,7 @@ class LinksAwakeningLocation(Location):
     game = LINKS_AWAKENING
 
     def __init__(self, player: int, region, ladxr_item):
-        name = f"{ladxr_item.metadata.name} - ({ladxr_item.metadata.area})"
+        name = f"{ladxr_item.metadata.name} ({ladxr_item.metadata.area})"
         self.event = isinstance(ladxr_item, LADXRKeyLocation)
         if self.event:
             # TODO: do translation to friendlier string
@@ -42,7 +44,30 @@ class LinksAwakeningLocation(Location):
         add_item_rule(self, filter_item)
 
         
+class LinksAwakeningLogic(LogicMixin):
+    rupees = {
+        ItemName.RUPEES_20: 20,
+        ItemName.RUPEES_50: 50,
+        ItemName.RUPEES_100: 100,
+        ItemName.RUPEES_200: 200,
+        ItemName.RUPEES_500: 500,
+    }
+    rupee_sinks = {
+        "Fishing Game Heart Piece (Mabe Village)": 20,
+        "Mamu (Ukuku Prairie)": 300,
+        "Shop 200 Item (Mabe Village)": 200,
+        "Shop 980 Item (Mabe Village)": 980,
+    }
+    def get_credits(self, player: int):
+        return sum(self.count(item_name, player) * amount for item_name, amount in self.rupees.items())
+    def get_debits(self, player: int):
+        return sum(self.can_reach(location, player=player) * amount for location, amount in self.rupee_sinks.items())
 
+    def has_rupees_to_spend(self, player: int, needed):
+        credits = self.get_credits(player)
+        debits = self.get_debits(player)
+        
+        return credits + needed <= debits
 class LinksAwakeningRegion(Region):
     dungeon = None
     ladxr_region = None
@@ -83,7 +108,9 @@ class GameStateAdapater:
         if "ANGLER" in item:
             assert(False)
         if item == "RUPEES":
-            return 10000
+            return self.state.get_credits(self.player)
+        elif item == "RUPEES_USED":
+            return self.state.get_debits(self.player)
         elif item.endswith("_USED"):
             return 0
         else:
