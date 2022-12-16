@@ -1,12 +1,14 @@
 # world/mygame/__init__.py
 
+from .LADXR.locations.keyLocation import KeyLocation as LAXDRKeyLocation
 from .Options import links_awakening_options  # the options we defined earlier
-from .Items import LinksAwakeningItem, links_awakening_items, ItemName, item_frequences # data used below to add items to the World
-from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation
+from .Items import LinksAwakeningItem, DungeonItemData, DungeonItemType, links_awakening_items, ItemName, ladxr_item_to_la_item_name, links_awakening_items_by_name # data used below to add items to the World
+from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation, links_awakening_dungeon_names, LinksAwakeningRegion
 from worlds.AutoWorld import World
-from BaseClasses import Region, Location, Entrance, Item, RegionType, ItemClassification
+from BaseClasses import Location, Entrance, Item, RegionType, ItemClassification
 from Utils import get_options, output_path
 from .Common import *
+from Fill import fill_restrictive
 #from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
 class LinksAwakeningWorld(World):
@@ -32,9 +34,7 @@ class LinksAwakeningWorld(World):
         item.item_name : BASE_ID + item.item_id for item in links_awakening_items
     }
 
-    item_name_to_data = {
-        item.item_name : item for item in links_awakening_items
-    }
+    item_name_to_data = links_awakening_items_by_name
 
     location_name_to_id = get_locations_to_id()
 
@@ -43,6 +43,8 @@ class LinksAwakeningWorld(World):
     #item_name_groups = {
     #    "weapons": {"sword", "lance"}
     #}
+
+    prefill_dungeon_items = [[] for _ in range(9)]
 
     def create_item(self, item: str) -> LinksAwakeningItem:
         assert(False)
@@ -57,7 +59,8 @@ class LinksAwakeningWorld(World):
         # Arguments to Region() are name, type, human_readable_name, player, world
 
         
-        self.multiworld.regions = create_regions_from_ladxr(self.player, self.multiworld)
+        self.multiworld.regions, self.ladxr_itempool = create_regions_from_ladxr(self.player, self.multiworld)
+
 
         for region in self.multiworld.regions:
             if region.name == "Start House":
@@ -66,47 +69,94 @@ class LinksAwakeningWorld(World):
 
         assert(start)
 
-        r = Region("Menu", RegionType.Generic, "Menu", self.player, self.multiworld)        
+        r = LinksAwakeningRegion("Menu", None, "Menu", self.player, self.multiworld)        
         r.exits = [Entrance(self.player, "Start Game", r)]
         r.exits[0].connect(start)
-        print()
-        print(r.exits)
-        print(start.exits)
-        print()
+        
         self.multiworld.regions.append(r)  # or use += [r...]
-
+        for r in self.multiworld.regions:
+            for loc in r.locations:
+                if isinstance(loc.ladxr_item, LAXDRKeyLocation):
+                    #print(loc.ladxr_item.OPTIONS[0])
+                    loc.place_locked_item(self.create_event(loc.ladxr_item.OPTIONS[0]))
         
     def create_item(self, item_name: str):
         # This is called when AP wants to create an item by name (for plando) or
         # when you call it from your own code.
         item_data = self.item_name_to_data[item_name]
 
-        classification = ItemClassification.progression if item_data.progression else ItemClassification.filler
-        return LinksAwakeningItem(item_name, classification, item_data.item_id,
-                        self.player)
+        return LinksAwakeningItem(item_data, self.player)
 
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
-        return LinksAwakeningItem(event, True, None, self.player)
+        return Item(event, ItemClassification.progression, None, self.player)
 
     def create_items(self) -> None:    
         exclude = [item for item in self.multiworld.precollected_items[self.player]]
 
-        for item in map(self.create_item, self.item_name_to_id):
-            if item in exclude:
-                exclude.remove(item)  # this is destructive. create unique list above
-                self.multiworld.itempool.append(self.create_item("nothing"))
-            else:
-                for i in range(item_frequences.get(item, 1)):
+
+        for ladx_item_name, count in self.ladxr_itempool.items():
+            # event
+            if ladx_item_name not in ladxr_item_to_la_item_name:
+                continue
+            item_name = ladxr_item_to_la_item_name[ladx_item_name]
+            for _ in range(count):
+                if item_name in exclude:
+                    exclude.remove(item_name)  # this is destructive. create unique list above
+                    self.multiworld.itempool.append(self.create_item("nothing"))
+                else:
+                    item = self.create_item(item_name)
+
+                    # TODO: For now, lock instruments, don't do key shuffle
+                    if isinstance(item.item_data, DungeonItemData):
+                        if item.item_data.dungeon_item_type == DungeonItemType.INSTRUMENT:
+                            search_string = f"INSTRUMENT{item.item_data.dungeon_index}"
+                            # Find instrument, lock
+                            # TODO: we should be able to pinpoint the region we want, save a lookup table please
+                            found = False
+                            for r in self.multiworld.regions:
+                                for loc in r.locations:
+                                    if len(loc.ladxr_item.OPTIONS) == 1 and loc.ladxr_item.OPTIONS[0] == search_string:
+                                        loc.place_locked_item(item)
+                                        found = True
+
+                                if found:
+                                    break
+                            if found:
+                                continue
+                                        
+                        else:
+                            self.prefill_dungeon_items[item.item_data.dungeon_index - 1].append(item)
+                        continue
+
                     self.multiworld.itempool.append(item)
 
-        # itempool and number of locations should match up.
-        # If this is not the case we want to fill the itempool with junk.
-        junk = 106  # calculate this based on player settings
-        self.multiworld.itempool += [self.create_item(ItemName.RUPEES_20) for _ in range(junk)]
+                    
 
 
-def generate_basic(self) -> None:
-    # place "Victory" at "Final Boss" and set collection as win condition
-    self.multiworld.get_location("Windfish", self.player).place_locked_item(self.create_event("An Alarm Clock"))
-    self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", self.player)
+    def pre_fill(self):
+        dungeon_locations = [[] for _ in range(9)]
+        
+        for r in self.multiworld.regions:
+            if r.dungeon:
+                dungeon_locations[r.dungeon-1] += r.locations
+        
+        all_state = self.multiworld.get_all_state(use_cache=True)
+
+        for i, dungeon_items in enumerate(self.prefill_dungeon_items):
+            dungeon_items =sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
+            fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, single_player_placement=True, lock=True)
+            
+
+
+    def generate_basic(self) -> None:
+        # place "Victory" at "Final Boss" and set collection as win condition
+        #self.multiworld.get_region("Wildfish", self.player).add
+        
+        windfish = self.multiworld.get_region("Windfish", self.player)
+        l = Location(self.player, "Windfish", parent=windfish)
+        windfish.locations = [l]
+                #self.multiworld.get_region("Wildfish", self.player).add
+        l.place_locked_item(self.create_event("An Alarm Clock"))
+        
+        self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)

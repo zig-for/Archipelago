@@ -7,30 +7,62 @@ from .LADXR.logic.requirements import RequirementsSettings
 from .LADXR.checkMetadata import checkMetadataTable
 from .LADXR.locations.keyLocation import KeyLocation as LADXRKeyLocation
 from .Common import *
-from worlds.generic.Rules import add_rule, set_rule
-from .Items import ladxr_item_to_la_item_name
+from worlds.generic.Rules import add_rule, set_rule, add_item_rule
+from .Items import ladxr_item_to_la_item_name, links_awakening_items
+from .LADXR.itempool import ItemPool as LADXRItemPool
 
+links_awakening_dungeon_names = [
+    "Tail Cave",
+    "Bottle Grotto",
+    "Key Cavern",
+    "Angler's Tunnel",
+    "Catfish's Maw",
+    "Face Shrine",
+    "Eagle's Tower",
+    "Turtle Rock",
+    "Color Dungeon"
+]
+  
 class LinksAwakeningLocation(Location):  
     game = LINKS_AWAKENING
 
     def __init__(self, player: int, region, ladxr_item):
-        name = ladxr_item.metadata.name
+        name = f"{ladxr_item.metadata.name} - ({ladxr_item.metadata.area})"
         self.event = isinstance(ladxr_item, LADXRKeyLocation)
         if self.event:
             # TODO: do translation to friendlier string
             name = ladxr_item.OPTIONS[0]
-        super().__init__(player, ladxr_item.metadata.name)
+        super().__init__(player, name)
         self.parent_region = region
         self.ladxr_item = ladxr_item
+        def filter_item(item):
+            if item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS:
+                print(f"{self.name} = {item.name}")
+            return item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS
+        add_item_rule(self, filter_item)
+
+        
+
+class LinksAwakeningRegion(Region):
+    dungeon = None
+    ladxr_region = None
+    def __init__(self, name, ladxr_region, hint, player, world):
+        super().__init__(name, RegionType.Generic, hint, player, world)
+        if ladxr_region:
+            self.ladxr_region = ladxr_region
+            if ladxr_region.dungeon:
+                self.dungeon = ladxr_region.dungeon
+    
+
+
+
 
 
 def translate_item_name(item):
     if item in ladxr_item_to_la_item_name:
         return ladxr_item_to_la_item_name[item]
-    print(item)
+
     return item
-         
-#lambda name: ladxr_item_to_la_item_name[name]
 
 
 class GameStateAdapater:
@@ -38,17 +70,26 @@ class GameStateAdapater:
         self.state = state
         self.player = player
 
-    def __contains__(self, k):
-        return self.state.has(k, self.player)
+    def __contains__(self, item):
+        if item.endswith("_USED"):
+            return False
+        if item in ladxr_item_to_la_item_name:
+            item = ladxr_item_to_la_item_name[item]
+    
+        return self.state.has(item, self.player)
 
     def get(self, item, default):
+        # Hack - don't keep track of rupees for the moment
+        if "ANGLER" in item:
+            assert(False)
         if item == "RUPEES":
             return 10000
-        if item == "RUPEES_USED":
+        elif item.endswith("_USED"):
             return 0
+        else:
+            item = ladxr_item_to_la_item_name[item]
         return self.state.prog_items.get((item, self.player), default)
-    #def __getitem__(self, index):
-    #    assert(False)
+
 
 class LinksAwakeningEntrance(Entrance):
     def __init__(self, player: int, name, region, condition):
@@ -62,7 +103,7 @@ class LinksAwakeningEntrance(Entrance):
                 self.condition = condition
         elif condition:
             # rewrite condition
-            self.condition = condition.copyWithModifiedItemNames(translate_item_name)
+            self.condition = condition #.copyWithModifiedItemNames(translate_item_name)
         else:
             self.condition = None
 
@@ -72,17 +113,18 @@ class LinksAwakeningEntrance(Entrance):
             return state.has(self.condition, self.player)
         if self.condition is None:
             return True
+        
         return self.condition.test(GameStateAdapater(state, self.player))
         
 def generate_default_ladxr_logic():
     options =  LADXRSettings()
     world_setup = LADXRWorldSetup()
     import random
-    world_setup.randomize(options, random.Random())
+    rnd = random.Random()
+    world_setup.randomize(options, rnd)
     logic = LAXDRLogic(configuration_options=options, world_setup=world_setup)
-    
-    
-    return logic
+    itempool = LADXRItemPool(logic, options, rnd).toDict()
+    return logic, itempool
 
 def walk_ladxdr(f, n, walked=set()):
     if n in walked:
@@ -99,7 +141,8 @@ def ladxr_region_to_name(n):
     name = n.name
     if not name:
         if len(n.items) == 1:
-            name = str(n.items[0].metadata)
+            meta = n.items[0].metadata
+            name = f"{meta.name} ({meta.area})"
         elif n.dungeon:
             name = f"D{n.dungeon} Room"
         else:
@@ -109,7 +152,7 @@ def ladxr_region_to_name(n):
 
 def create_regions_from_ladxr(player, multiworld):
     # No options, yet
-    logic = generate_default_ladxr_logic()
+    logic, itempool = generate_default_ladxr_logic()
 
     tmp = set()
 
@@ -144,7 +187,7 @@ def create_regions_from_ladxr(player, multiworld):
         if index != 1:
             name += f" {index}"
         
-        r = Region(name=name, type_=RegionType.Generic, hint="", player=player, world=multiworld)
+        r = LinksAwakeningRegion(name=name, ladxr_region=l, hint="", player=player, world=multiworld)
         # TODO: if KeyLocation, add as Event instead
         r.locations = [LinksAwakeningLocation(player, r, i) for i in l.items]
         regions[l] = r
@@ -167,13 +210,14 @@ def create_regions_from_ladxr(player, multiworld):
         for connection_location, connection_condition in ladxr_location.simple_connections + ladxr_location.gated_connections:
             region_a = regions[ladxr_location]
             region_b = regions[connection_location]
-            # print(type(connection_condition))
-            # This name ain't gonna work for entrance rando, we need to cross reference with logic.world.overworld_entrance
+            # TODO: This name ain't gonna work for entrance rando, we need to cross reference with logic.world.overworld_entrance
             entrance = LinksAwakeningEntrance(player, f"{region_a.name} -> {region_b.name}", region_a, connection_condition)
             region_a.exits.append(entrance)
             entrance.connect(region_b)
-            pass
-    return list(regions.values())
+
+    
+
+    return list(regions.values()), itempool
 
 
 def get_locations_to_id():
@@ -196,7 +240,7 @@ def get_locations_to_id():
                 sub_id = int(sub_id)
             else:
                 sub_id = 1
-        name = str(v)
+        name = f"{v.name} ({v.area})"
         ret[name] = main_id + sub_id
 
     return ret

@@ -1,12 +1,11 @@
-from BaseClasses import Item
+from BaseClasses import Item, ItemClassification
 from . import Common
 import typing
-
+from enum import IntEnum
 from .LADXR.locations.constants import CHEST_ITEMS
 
 
 class ItemData(typing.NamedTuple):
-    #item_id: int
     item_name: str
     ladxr_id: str
     progression: bool
@@ -14,8 +13,32 @@ class ItemData(typing.NamedTuple):
     def item_id(self):
         return CHEST_ITEMS[self.ladxr_id]
 
+
+class DungeonItemType(IntEnum):
+    INSTRUMENT = 0
+    NIGHTMARE_KEY = 1
+    KEY = 2
+    STONE_BEAK = 3
+    MAP = 4
+    COMPASS = 5
+
+class DungeonItemData(ItemData):
+    @property
+    def dungeon_index(self):
+        return int(self.ladxr_id[-1])
+    
+    @property
+    def dungeon_item_type(self):
+        s = self.ladxr_id[:-1]
+        return DungeonItemType.__dict__[s]
+
 class LinksAwakeningItem(Item):
     game: str = Common.LINKS_AWAKENING
+
+    def __init__(self, item_data, player):
+        classification = ItemClassification.progression if item_data.progression else ItemClassification.filler
+        super().__init__(item_data.item_name, classification, item_data.item_id, player)
+        self.item_data = item_data
 
 # TODO: use _NAMES instead?
 class ItemName:
@@ -181,69 +204,69 @@ links_awakening_items = [
     ItemData(ItemName.RED_TUNIC, "RED_TUNIC", True),
     ItemData(ItemName.BLUE_TUNIC, "BLUE_TUNIC", True),
     ItemData(ItemName.HEART_CONTAINER, "HEART_CONTAINER", True),
-    ItemData(ItemName.BAD_HEART_CONTAINER, "BAD_HEART_CONTAINER", True),
+    #ItemData(ItemName.BAD_HEART_CONTAINER, "BAD_HEART_CONTAINER", True),
     ItemData(ItemName.TOADSTOOL, "TOADSTOOL", True),
-    ItemData(ItemName.KEY, "KEY", True),
-    ItemData(ItemName.KEY1, "KEY1", True),
-    ItemData(ItemName.KEY2, "KEY2", True),
-    ItemData(ItemName.KEY3, "KEY3", True),
-    ItemData(ItemName.KEY4, "KEY4", True),
-    ItemData(ItemName.KEY5, "KEY5", True),
-    ItemData(ItemName.KEY6, "KEY6", True),
-    ItemData(ItemName.KEY7, "KEY7", True),
-    ItemData(ItemName.KEY8, "KEY8", True),
-    ItemData(ItemName.KEY9, "KEY9", True),
-    ItemData(ItemName.NIGHTMARE_KEY, "NIGHTMARE_KEY", True),
-    ItemData(ItemName.NIGHTMARE_KEY1, "NIGHTMARE_KEY1", True),
-    ItemData(ItemName.NIGHTMARE_KEY2, "NIGHTMARE_KEY2", True),
-    ItemData(ItemName.NIGHTMARE_KEY3, "NIGHTMARE_KEY3", True),
-    ItemData(ItemName.NIGHTMARE_KEY4, "NIGHTMARE_KEY4", True),
-    ItemData(ItemName.NIGHTMARE_KEY5, "NIGHTMARE_KEY5", True),
-    ItemData(ItemName.NIGHTMARE_KEY6, "NIGHTMARE_KEY6", True),
-    ItemData(ItemName.NIGHTMARE_KEY7, "NIGHTMARE_KEY7", True),
-    ItemData(ItemName.NIGHTMARE_KEY8, "NIGHTMARE_KEY8", True),
-    ItemData(ItemName.NIGHTMARE_KEY9, "NIGHTMARE_KEY9", True),
-    ItemData(ItemName.MAP, "MAP", False),
-    ItemData(ItemName.MAP1, "MAP1", False),
-    ItemData(ItemName.MAP2, "MAP2", False),
-    ItemData(ItemName.MAP3, "MAP3", False),
-    ItemData(ItemName.MAP4, "MAP4", False),
-    ItemData(ItemName.MAP5, "MAP5", False),
-    ItemData(ItemName.MAP6, "MAP6", False),
-    ItemData(ItemName.MAP7, "MAP7", False),
-    ItemData(ItemName.MAP8, "MAP8", False),
-    ItemData(ItemName.MAP9, "MAP9", False),
-    ItemData(ItemName.COMPASS, "COMPASS", False),
-    ItemData(ItemName.COMPASS1, "COMPASS1", False),
-    ItemData(ItemName.COMPASS2, "COMPASS2", False),
-    ItemData(ItemName.COMPASS3, "COMPASS3", False),
-    ItemData(ItemName.COMPASS4, "COMPASS4", False),
-    ItemData(ItemName.COMPASS5, "COMPASS5", False),
-    ItemData(ItemName.COMPASS6, "COMPASS6", False),
-    ItemData(ItemName.COMPASS7, "COMPASS7", False),
-    ItemData(ItemName.COMPASS8, "COMPASS8", False),
-    ItemData(ItemName.COMPASS9, "COMPASS9", False),
-    ItemData(ItemName.STONE_BEAK, "STONE_BEAK", False),
-    ItemData(ItemName.STONE_BEAK1, "STONE_BEAK1", False),
-    ItemData(ItemName.STONE_BEAK2, "STONE_BEAK2", False),
-    ItemData(ItemName.STONE_BEAK3, "STONE_BEAK3", False),
-    ItemData(ItemName.STONE_BEAK4, "STONE_BEAK4", False),
-    ItemData(ItemName.STONE_BEAK5, "STONE_BEAK5", False),
-    ItemData(ItemName.STONE_BEAK6, "STONE_BEAK6", False),
-    ItemData(ItemName.STONE_BEAK7, "STONE_BEAK7", False),
-    ItemData(ItemName.STONE_BEAK8, "STONE_BEAK8", False),
-    ItemData(ItemName.STONE_BEAK9, "STONE_BEAK9", False),
+    #DungeonItemData(ItemName.KEY, "KEY", True),
+    DungeonItemData(ItemName.KEY1, "KEY1", True),
+    DungeonItemData(ItemName.KEY2, "KEY2", True),
+    DungeonItemData(ItemName.KEY3, "KEY3", True),
+    DungeonItemData(ItemName.KEY4, "KEY4", True),
+    DungeonItemData(ItemName.KEY5, "KEY5", True),
+    DungeonItemData(ItemName.KEY6, "KEY6", True),
+    DungeonItemData(ItemName.KEY7, "KEY7", True),
+    DungeonItemData(ItemName.KEY8, "KEY8", True),
+    DungeonItemData(ItemName.KEY9, "KEY9", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY, "NIGHTMARE_KEY", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY1, "NIGHTMARE_KEY1", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY2, "NIGHTMARE_KEY2", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY3, "NIGHTMARE_KEY3", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY4, "NIGHTMARE_KEY4", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY5, "NIGHTMARE_KEY5", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY6, "NIGHTMARE_KEY6", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY7, "NIGHTMARE_KEY7", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY8, "NIGHTMARE_KEY8", True),
+    DungeonItemData(ItemName.NIGHTMARE_KEY9, "NIGHTMARE_KEY9", True),
+    #DungeonItemData(ItemName.MAP, "MAP", False),
+    DungeonItemData(ItemName.MAP1, "MAP1", False),
+    DungeonItemData(ItemName.MAP2, "MAP2", False),
+    DungeonItemData(ItemName.MAP3, "MAP3", False),
+    DungeonItemData(ItemName.MAP4, "MAP4", False),
+    DungeonItemData(ItemName.MAP5, "MAP5", False),
+    DungeonItemData(ItemName.MAP6, "MAP6", False),
+    DungeonItemData(ItemName.MAP7, "MAP7", False),
+    DungeonItemData(ItemName.MAP8, "MAP8", False),
+    DungeonItemData(ItemName.MAP9, "MAP9", False),
+    #DungeonItemData(ItemName.COMPASS, "COMPASS", False),
+    DungeonItemData(ItemName.COMPASS1, "COMPASS1", False),
+    DungeonItemData(ItemName.COMPASS2, "COMPASS2", False),
+    DungeonItemData(ItemName.COMPASS3, "COMPASS3", False),
+    DungeonItemData(ItemName.COMPASS4, "COMPASS4", False),
+    DungeonItemData(ItemName.COMPASS5, "COMPASS5", False),
+    DungeonItemData(ItemName.COMPASS6, "COMPASS6", False),
+    DungeonItemData(ItemName.COMPASS7, "COMPASS7", False),
+    DungeonItemData(ItemName.COMPASS8, "COMPASS8", False),
+    DungeonItemData(ItemName.COMPASS9, "COMPASS9", False),
+    #DungeonItemData(ItemName.STONE_BEAK, "STONE_BEAK", False),
+    DungeonItemData(ItemName.STONE_BEAK1, "STONE_BEAK1", False),
+    DungeonItemData(ItemName.STONE_BEAK2, "STONE_BEAK2", False),
+    DungeonItemData(ItemName.STONE_BEAK3, "STONE_BEAK3", False),
+    DungeonItemData(ItemName.STONE_BEAK4, "STONE_BEAK4", False),
+    DungeonItemData(ItemName.STONE_BEAK5, "STONE_BEAK5", False),
+    DungeonItemData(ItemName.STONE_BEAK6, "STONE_BEAK6", False),
+    DungeonItemData(ItemName.STONE_BEAK7, "STONE_BEAK7", False),
+    DungeonItemData(ItemName.STONE_BEAK8, "STONE_BEAK8", False),
+    DungeonItemData(ItemName.STONE_BEAK9, "STONE_BEAK9", False),
     ItemData(ItemName.SONG1, "SONG1", True),
     ItemData(ItemName.SONG2, "SONG2", True),  # TODO
     ItemData(ItemName.SONG3, "SONG3", True),  # TODO
-    ItemData(ItemName.INSTRUMENT1, "INSTRUMENT1", True),
-    ItemData(ItemName.INSTRUMENT2, "INSTRUMENT2", True),
-    ItemData(ItemName.INSTRUMENT3, "INSTRUMENT3", True),
-    ItemData(ItemName.INSTRUMENT4, "INSTRUMENT4", True),
-    ItemData(ItemName.INSTRUMENT5, "INSTRUMENT5", True),
-    ItemData(ItemName.INSTRUMENT6, "INSTRUMENT6", True),
-    ItemData(ItemName.INSTRUMENT7, "INSTRUMENT7", True),
-    ItemData(ItemName.INSTRUMENT8, "INSTRUMENT8", True),
+    DungeonItemData(ItemName.INSTRUMENT1, "INSTRUMENT1", True),
+    DungeonItemData(ItemName.INSTRUMENT2, "INSTRUMENT2", True),
+    DungeonItemData(ItemName.INSTRUMENT3, "INSTRUMENT3", True),
+    DungeonItemData(ItemName.INSTRUMENT4, "INSTRUMENT4", True),
+    DungeonItemData(ItemName.INSTRUMENT5, "INSTRUMENT5", True),
+    DungeonItemData(ItemName.INSTRUMENT6, "INSTRUMENT6", True),
+    DungeonItemData(ItemName.INSTRUMENT7, "INSTRUMENT7", True),
+    DungeonItemData(ItemName.INSTRUMENT8, "INSTRUMENT8", True),
     ItemData(ItemName.TRADING_ITEM_YOSHI_DOLL, "TRADING_ITEM_YOSHI_DOLL", True),
     ItemData(ItemName.TRADING_ITEM_RIBBON, "TRADING_ITEM_RIBBON", True),
     ItemData(ItemName.TRADING_ITEM_DOG_FOOD, "TRADING_ITEM_DOG_FOOD", True),
@@ -264,17 +287,6 @@ ladxr_item_to_la_item_name = {
     item.ladxr_id: item.item_name for item in links_awakening_items
 }
 
-# TODO
-item_frequences = {
-    ItemName.KEY: 0,
-    ItemName.KEY1: 1,
-    ItemName.KEY2: 3,
-    ItemName.KEY3: 7,
-    ItemName.KEY4: 1,
-    ItemName.KEY5: 1,
-    ItemName.KEY6: 2,
-    ItemName.KEY7: 2,
-    ItemName.KEY8: 4,
-    ItemName.KEY9: 2,
-    ItemName.GOLD_LEAF: 5,
-}
+links_awakening_items_by_name = {
+        item.item_name : item for item in links_awakening_items
+    }
