@@ -2,11 +2,7 @@ from BaseClasses import Item
 from . import Common
 import typing
 
-import sys
-from os.path import dirname
-sys.path.append(dirname(__file__) + "/LADXR")
-
-from LADXR.locations.constants import CHEST_ITEMS
+from .LADXR.locations.constants import CHEST_ITEMS
 
 
 class ItemData(typing.NamedTuple):
@@ -143,7 +139,7 @@ class ItemName:
     TRADING_ITEM_MAGNIFYING_GLASS = "Trading Item Magnifying Glass"
 
 
-item_list = [
+links_awakening_items = [
     ItemData(ItemName.POWER_BRACELET, "POWER_BRACELET", True),
     ItemData(ItemName.SHIELD, "SHIELD", True),
     ItemData(ItemName.BOW, "BOW", True),
