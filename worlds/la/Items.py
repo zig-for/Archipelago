@@ -17,7 +17,7 @@ class ItemData(typing.NamedTuple):
 class LinksAwakeningItem(Item):
     game: str = Common.LINKS_AWAKENING
 
-
+# TODO: use _NAMES instead?
 class ItemName:
     POWER_BRACELET = "Power Bracelet"
     SHIELD = "Shield"
@@ -40,11 +40,11 @@ class ItemName:
     BIRD_KEY = "Bird Key"
     SLIME_KEY = "Slime Key"
     GOLD_LEAF = "Gold Leaf"
-    RUPEES_50 = "Rupees 50"
-    RUPEES_20 = "Rupees 20"
-    RUPEES_100 = "Rupees 100"
-    RUPEES_200 = "Rupees 200"
-    RUPEES_500 = "Rupees 500"
+    RUPEES_50 = "20 Rupees"
+    RUPEES_20 = "50 Rupees"
+    RUPEES_100 = "100 Rupees"
+    RUPEES_200 = "200 Rupees"
+    RUPEES_500 = "500 Rupees"
     SEASHELL = "Seashell"
     MESSAGE = "Message"
     GEL = "Gel"
@@ -260,16 +260,21 @@ links_awakening_items = [
     ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", True)
 ]
 
+ladxr_item_to_la_item_name = {
+    item.ladxr_id: item.item_name for item in links_awakening_items
+}
+
 # TODO
 item_frequences = {
-    ItemName.KEY: 1,
+    ItemName.KEY: 0,
     ItemName.KEY1: 1,
-    ItemName.KEY2: 1,
-    ItemName.KEY3: 1,
+    ItemName.KEY2: 3,
+    ItemName.KEY3: 7,
     ItemName.KEY4: 1,
     ItemName.KEY5: 1,
-    ItemName.KEY6: 1,
-    ItemName.KEY7: 1,
-    ItemName.KEY8: 1,
-    ItemName.KEY9: 1,
+    ItemName.KEY6: 2,
+    ItemName.KEY7: 2,
+    ItemName.KEY8: 4,
+    ItemName.KEY9: 2,
+    ItemName.GOLD_LEAF: 5,
 }

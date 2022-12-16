@@ -1,18 +1,19 @@
 # world/mygame/__init__.py
 
 from .Options import links_awakening_options  # the options we defined earlier
-from .Items import LinksAwakeningItem, links_awakening_items  # data used below to add items to the World
+from .Items import LinksAwakeningItem, links_awakening_items, ItemName, item_frequences # data used below to add items to the World
 from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation
 from worlds.AutoWorld import World
 from BaseClasses import Region, Location, Entrance, Item, RegionType, ItemClassification
 from Utils import get_options, output_path
 from .Common import *
+#from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
 class LinksAwakeningWorld(World):
     """Insert description of the world/game here."""
     game: str = LINKS_AWAKENING # name of the game/world
     option_definitions = links_awakening_options  # options the player can set
-    topology_present: bool = True  # show path to required location checks in spoiler
+    topology_present = True  # show path to required location checks in spoiler
 
     # data_version is used to signal that items, locations or their names
     # changed. Set this to 0 during development so other games' clients do not
@@ -35,7 +36,6 @@ class LinksAwakeningWorld(World):
         item.item_name : item for item in links_awakening_items
     }
 
-    
     location_name_to_id = get_locations_to_id()
 
     # Items can be grouped using their names to allow easy checking if any item
@@ -69,32 +69,44 @@ class LinksAwakeningWorld(World):
         r = Region("Menu", RegionType.Generic, "Menu", self.player, self.multiworld)        
         r.exits = [Entrance(self.player, "Start Game", r)]
         r.exits[0].connect(start)
+        print()
+        print(r.exits)
+        print(start.exits)
+        print()
         self.multiworld.regions.append(r)  # or use += [r...]
 
-def create_item(self, item_name: str):
-    # This is called when AP wants to create an item by name (for plando) or
-    # when you call it from your own code.
-    item_data = self.item_name_to_data[item_name]
+        
+    def create_item(self, item_name: str):
+        # This is called when AP wants to create an item by name (for plando) or
+        # when you call it from your own code.
+        item_data = self.item_name_to_data[item_name]
 
-    classification = ItemClassification.progression if item_data.progression else ItemClassification.filler
-    return LinksAwakeningItem(item_name, classification, item_data.item_id,
-                      self.player)
+        classification = ItemClassification.progression if item_data.progression else ItemClassification.filler
+        return LinksAwakeningItem(item_name, classification, item_data.item_id,
+                        self.player)
 
-def create_event(self, event: str):
-    # while we are at it, we can also add a helper to create events
-    return LinksAwakeningItem(event, True, None, self.player)
+    def create_event(self, event: str):
+        # while we are at it, we can also add a helper to create events
+        return LinksAwakeningItem(event, True, None, self.player)
 
-def create_items(self) -> None:    
-    exclude = [item for item in self.multiworld.precollected_items[self.player]]
+    def create_items(self) -> None:    
+        exclude = [item for item in self.multiworld.precollected_items[self.player]]
 
-    for item in map(self.create_item, links_awakening_items):
-        if item in exclude:
-            exclude.remove(item)  # this is destructive. create unique list above
-            self.multiworld.itempool.append(self.create_item("nothing"))
-        else:
-            self.multiworld.itempool.append(item)
+        for item in map(self.create_item, self.item_name_to_id):
+            if item in exclude:
+                exclude.remove(item)  # this is destructive. create unique list above
+                self.multiworld.itempool.append(self.create_item("nothing"))
+            else:
+                for i in range(item_frequences.get(item, 1)):
+                    self.multiworld.itempool.append(item)
 
-    # itempool and number of locations should match up.
-    # If this is not the case we want to fill the itempool with junk.
-    junk = 0  # calculate this based on player settings
-    self.multiworld.itempool += [self.create_item("nothing") for _ in range(junk)]
+        # itempool and number of locations should match up.
+        # If this is not the case we want to fill the itempool with junk.
+        junk = 106  # calculate this based on player settings
+        self.multiworld.itempool += [self.create_item(ItemName.RUPEES_20) for _ in range(junk)]
+
+
+def generate_basic(self) -> None:
+    # place "Victory" at "Final Boss" and set collection as win condition
+    self.multiworld.get_location("Windfish", self.player).place_locked_item(self.create_event("An Alarm Clock"))
+    self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", self.player)
