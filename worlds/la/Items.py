@@ -53,7 +53,7 @@ class ItemName:
     SHOVEL = "Shovel"
     MAGIC_POWDER = "Magic Powder"
     BOMB = "Bomb"
-    SWORD = "Sword"
+    SWORD = "Progressive Sword"
     FLIPPERS = "Flippers"
     MAGNIFYING_LENS = "Magnifying Lens"
     MEDICINE = "Medicine"
@@ -160,6 +160,8 @@ class ItemName:
     TRADING_ITEM_NECKLACE = "Trading Item Necklace"
     TRADING_ITEM_SCALE = "Trading Item Scale"
     TRADING_ITEM_MAGNIFYING_GLASS = "Trading Item Magnifying Glass"
+
+    ZOLSTORM = "Zolstorm"
 
 
 links_awakening_items = [
@@ -281,6 +283,8 @@ links_awakening_items = [
     ItemData(ItemName.TRADING_ITEM_NECKLACE, "TRADING_ITEM_NECKLACE", True),
     ItemData(ItemName.TRADING_ITEM_SCALE, "TRADING_ITEM_SCALE", True),
     ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", True)
+
+    # ItemData(ItemName.ZOLSTORM, "ZOLSTORM", True)
 ]
 
 ladxr_item_to_la_item_name = {

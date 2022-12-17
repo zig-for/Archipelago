@@ -1,6 +1,7 @@
 import time
 import socket
-
+from worlds.la.Items import ItemName, links_awakening_items_by_name
+from worlds.la.Common import BASE_ID as LABaseID
 from worlds.la.LADXR.checkMetadata import checkMetadataTable
 from worlds.la.Locations import get_locations_to_id, meta_to_name
 # kbranch you're a hero
@@ -112,7 +113,6 @@ class Tracker:
                 self.remaining_checks.remove(check)
                 cb(check)
                 break
-        
 
 class LAClientConstants():
     # Connector version
@@ -152,14 +152,22 @@ class LinksAwakeningClient():
     port = 55355
     
 
+    def msg(self, m):
+        print(m)
+        s = f"SHOW_MSG {m}\n"
+        self.send(s)
+
     def __init__(self, address="127.0.0.1", port=55355):
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
         print(f"Connected to Retroarch {self.get_retroarch_version()}")
+        self.msg("AP Client connected")
         print(self.read_memory(LAClientConstants.ROMGameID, 4))
         print(self.read_memory(LAClientConstants.ROMConnectorVersion, 1))
+
+        #self.recved_item_from_ap(links_awakening_items_by_name[ItemName.SWORD].item_id + LABaseID, 0)
 
     def send(self, b):
         if type(b) is str:
@@ -169,6 +177,34 @@ class LinksAwakeningClient():
     def recv(self):
         response, _ = self.socket.recvfrom(4096)
         return response
+
+    # TODO: this needs to be async and queueing
+    def recved_item_from_ap(self, item_id, from_player, index):
+        # TODO: the game breaks if you haven't talked to anyone before doing this
+        
+        next_index = self.read_memory(0xDB58)[0]
+        self.msg(f"Next index {next_index}")
+        if index != next_index:
+            return
+        next_index += 1
+        next_index = self.write_memory(0xDB58, [next_index])
+
+        # TODO: this needs to read and count current progressive item state
+        item_id -= LABaseID
+        
+        if from_player > 255:
+            from_player = 255
+
+        # 2. write
+        status = self.read_memory(LAClientConstants.wLinkStatusBits)[0]
+        while status & 1 == 1:
+            time.sleep(0.1)
+            status = self.read_memory(LAClientConstants.wLinkStatusBits)[0]
+            
+        self.write_memory(LAClientConstants.wLinkGiveItem, [item_id, from_player])
+        status |= 1
+        status = self.write_memory(LAClientConstants.wLinkStatusBits, [status])
+        
 
     def get_retroarch_version(self):
         self.send(b'VERSION\n')
@@ -187,7 +223,7 @@ class LinksAwakeningClient():
         # Ignore the address for now
 
         # TODO: transform to bytes
-        return splits[2]
+        return bytearray.fromhex(splits[2])
     
     def write_memory(self, address, bytes):
         command = "WRITE_CORE_MEMORY"
@@ -212,7 +248,7 @@ class LinksAwakeningClient():
         # TODO: wait for connection?
         
         def read_byte(b):
-            return int(self.read_memory(b), 16)
+            return self.read_memory(b)[0]
 
         self.tracker.readChecks(read_byte, cb)
         
@@ -235,7 +271,7 @@ if __name__ == '__main__':
         want_slot_data = True  # Can't use game specific slot_data
         #slot = 1
         la_task = None
-
+        client = LinksAwakeningClient()
         async def server_auth(self, password_requested: bool = False):
             if password_requested and not self.password:
                 await super(TextContext, self).server_auth(password_requested)
@@ -245,11 +281,13 @@ if __name__ == '__main__':
         def on_package(self, cmd: str, args: dict):
             if cmd == "Connected":
                 self.game = self.slot_info[self.slot].game
-
+            # TODO - use watcher_event
+            if cmd == "ReceivedItems":
+                for index, item in enumerate(args["items"], args["index"]):
+                    self.client.recved_item_from_ap(item.item, item.player, index)
         async def run_game_loop(self, cb):
-            client = LinksAwakeningClient()
             while True:
-                client.main_tick(cb)
+                self.client.main_tick(cb)
                 await asyncio.sleep(0.1)
     async def main(args):
         ctx = TextContext(args.connect, args.password)
