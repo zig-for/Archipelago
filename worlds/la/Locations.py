@@ -22,17 +22,48 @@ links_awakening_dungeon_names = [
     "Turtle Rock",
     "Color Dungeon"
 ]
-  
+
+def meta_to_name(meta):
+    return f"{meta.name} ({meta.area})"
+def get_locations_to_id():
+    ret = {
+
+    }
+
+    # Magic to generate unique ids
+    for s, v in checkMetadataTable.items():
+        if s == "None":
+            continue
+        splits = s.split("-")
+    
+        
+        main_id = int(splits[0], 16)
+        sub_id = 0
+        if len(splits) > 1:
+            sub_id = splits[1]
+            if sub_id.isnumeric():
+                sub_id = (int(sub_id) + 1) * 1000
+            else:
+                sub_id = 1000
+        name = f"{v.name} ({v.area})"
+        ret[name] = BASE_ID + main_id + sub_id
+
+    return ret
+locations_to_id = get_locations_to_id()
 class LinksAwakeningLocation(Location):  
     game = LINKS_AWAKENING
-
+    
     def __init__(self, player: int, region, ladxr_item):
-        name = f"{ladxr_item.metadata.name} ({ladxr_item.metadata.area})"
+        name = meta_to_name(ladxr_item.metadata)
         self.event = isinstance(ladxr_item, LADXRKeyLocation)
         if self.event:
             # TODO: do translation to friendlier string
             name = ladxr_item.OPTIONS[0]
-        super().__init__(player, name)
+        
+        address = None
+        if name not in ["ANGLER_KEYHOLE", "RAFT", "MEDICINE2", "CASTLE_BUTTON"]:
+            address = locations_to_id[name]
+        super().__init__(player, name, address)
         self.parent_region = region
         self.ladxr_item = ladxr_item
         def filter_item(item):
@@ -213,6 +244,7 @@ def create_regions_from_ladxr(player, multiworld, logic):
         
         r = LinksAwakeningRegion(name=name, ladxr_region=l, hint="", player=player, world=multiworld)
         # TODO: if KeyLocation, add as Event instead
+        # TODO: startlocation is too restrictive for multiworld
         r.locations = [LinksAwakeningLocation(player, r, i) for i in l.items]
         regions[l] = r
 
@@ -231,27 +263,3 @@ def create_regions_from_ladxr(player, multiworld, logic):
     return list(regions.values())
 
 
-def get_locations_to_id():
-    ret = {
-
-    }
-
-    # Magic to generate unique ids
-    for s, v in checkMetadataTable.items():
-        if s == "None":
-            continue
-        splits = s.split("-")
-    
-        
-        main_id = int(splits[0], 16)
-        sub_id = 0
-        if len(splits) > 1:
-            sub_id = splits[1]
-            if sub_id.isnumeric():
-                sub_id = int(sub_id)
-            else:
-                sub_id = 1
-        name = f"{v.name} ({v.area})"
-        ret[name] = main_id + sub_id
-
-    return ret

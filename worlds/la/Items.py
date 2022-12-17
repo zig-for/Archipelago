@@ -37,7 +37,7 @@ class LinksAwakeningItem(Item):
 
     def __init__(self, item_data, player):
         classification = ItemClassification.progression if item_data.progression else ItemClassification.filler
-        super().__init__(item_data.item_name, classification, item_data.item_id, player)
+        super().__init__(item_data.item_name, classification, Common.BASE_ID + item_data.item_id, player)
         self.item_data = item_data
 
 # TODO: use _NAMES instead?
