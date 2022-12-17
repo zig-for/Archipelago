@@ -9,6 +9,13 @@ from BaseClasses import Location, Entrance, Item, RegionType, ItemClassification
 from Utils import get_options, output_path
 from .Common import *
 from Fill import fill_restrictive
+import os
+from .LADXR.rom import ROM
+from .LADXR.logic import Logic as LAXDRLogic
+from .LADXR.settings import Settings as LADXRSettings
+from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
+from .LADXR.itempool import ItemPool as LADXRItemPool
+
 #from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
 class LinksAwakeningWorld(World):
@@ -46,6 +53,8 @@ class LinksAwakeningWorld(World):
 
     prefill_dungeon_items = [[] for _ in range(9)]
 
+
+
     def create_item(self, item: str) -> LinksAwakeningItem:
         assert(False)
 
@@ -53,13 +62,21 @@ class LinksAwakeningWorld(World):
         # assert(False)
         pass
 
+    def generate_default_ladxr_logic(self):
+        self.laxdr_options =  LADXRSettings()
+        world_setup = LADXRWorldSetup()
+        import random
+        rnd = random.Random()
+        world_setup.randomize(self.laxdr_options, rnd)
+        self.ladxr_logic = LAXDRLogic(configuration_options=self.laxdr_options, world_setup=world_setup)
+        self.ladxr_itempool = LADXRItemPool(self.ladxr_logic, self.laxdr_options, rnd).toDict()
 
     def create_regions(self) -> None:
         # Add regions to the multiworld. "Menu" is the required starting point.
         # Arguments to Region() are name, type, human_readable_name, player, world
 
-        
-        self.multiworld.regions, self.ladxr_itempool = create_regions_from_ladxr(self.player, self.multiworld)
+        self.generate_default_ladxr_logic()
+        self.multiworld.regions = create_regions_from_ladxr(self.player, self.multiworld, self.ladxr_logic)
 
 
         for region in self.multiworld.regions:
@@ -147,8 +164,15 @@ class LinksAwakeningWorld(World):
             dungeon_items =sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
             fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, single_player_placement=True, lock=True)
             
-
-
+    def post_fill(self):
+        # copy items back to locations
+        for r in self.multiworld.regions:
+            for loc in r.locations:
+                #loc.item.ladxr_item.item = loc.
+                if isinstance(loc, LinksAwakeningLocation):
+                    if isinstance(loc.item, LinksAwakeningItem):
+                        print(loc.item.item_data.ladxr_id)
+                        loc.ladxr_item.item = loc.item.item_data.ladxr_id
     def generate_basic(self) -> None:
         # place "Victory" at "Final Boss" and set collection as win condition
         #self.multiworld.get_region("Wildfish", self.player).add
@@ -160,3 +184,44 @@ class LinksAwakeningWorld(World):
         l.place_locked_item(self.create_event("An Alarm Clock"))
         
         self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
+
+
+
+
+
+    def generate_output(self, output_directory: str):
+        # How to generate the mod or ROM highly depends on the game
+        # if the mod is written in Lua, Jinja can be used to fill a template
+        # if the mod reads a json file, `json.dump()` can be used to generate that
+        # code below is a dummy
+        
+        # point to a ROM specified by the installation
+        #src = Utils.get_options()["mygame_options"]["rom_file"]
+        # or point to worlds/mygame/data/mod_template
+        #src = os.path.join(os.path.dirname(__file__), "data", "mod_template")
+        # generate output path
+
+        rom_path = "Legend of Zelda, The - Link's Awakening DX (USA, Europe) (SGB Enhanced).gbc"
+        out_name = f"AP-{self.multiworld.seed_name}-P{self.player}-{self.multiworld.player_name[self.player]}.gbc"
+        out_file = os.path.join(output_directory, out_name)
+
+        #out_file = os.path.join("D:\\dev\\Archipelago", out_name)
+        out_file = out_name
+        print(out_file)
+        from .LADXR import generator 
+
+        from .LADXR.main import get_parser
+        parser = get_parser()
+        args = parser.parse_args([rom_path, "-o", out_file, "--dump"])
+
+        seed = 1
+        import random
+        
+        
+
+        rom = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=random.Random())
+      
+        handle = open(out_file, "wb")
+        rom.save(handle, name="LADXR")
+        handle.close()
+        

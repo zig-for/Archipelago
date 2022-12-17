@@ -2,9 +2,7 @@ from BaseClasses import Region, RegionType, Entrance, Location
 from worlds.AutoWorld import LogicMixin
 
 
-from .LADXR.logic import Logic as LAXDRLogic
-from .LADXR.settings import Settings as LADXRSettings
-from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
+
 from .LADXR.logic.requirements import RequirementsSettings
 from .LADXR.checkMetadata import checkMetadataTable
 from .LADXR.locations.keyLocation import KeyLocation as LADXRKeyLocation
@@ -38,8 +36,8 @@ class LinksAwakeningLocation(Location):
         self.parent_region = region
         self.ladxr_item = ladxr_item
         def filter_item(item):
-            if item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS:
-                print(f"{self.name} = {item.name}")
+            #if item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS:
+            #   print(f"{self.name} = {item.name}")
             return item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS
         add_item_rule(self, filter_item)
 
@@ -177,9 +175,8 @@ def ladxr_region_to_name(n):
 
     return name
 
-def create_regions_from_ladxr(player, multiworld):
+def create_regions_from_ladxr(player, multiworld, logic):
     # No options, yet
-    logic, itempool = generate_default_ladxr_logic()
 
     tmp = set()
 
@@ -220,19 +217,6 @@ def create_regions_from_ladxr(player, multiworld):
         regions[l] = r
 
 
-    # Create connections
-
-    # 1. Loop over overworld overworld_entrance, generate connections, hook up inside/outside regions
-    # 2. Loop over all regions - if haven't created connection between two regions, create, hookup two regions
-    
-    # for name, laxdr_entrance in logic.world.overworld_entrance.items():
-    #     # TODO condition
-    #     region = regions[laxdr_entrance.location]
-    #     entrance = Entrance(player, name, region)
-    #     region.exits.append(entrance)
-    #     entrance.connect(regions[logic.world.indoor_location[name]])
-
-
     for ladxr_location in logic.location_list:
         for connection_location, connection_condition in ladxr_location.simple_connections + ladxr_location.gated_connections:
             region_a = regions[ladxr_location]
@@ -244,7 +228,7 @@ def create_regions_from_ladxr(player, multiworld):
 
     
 
-    return list(regions.values()), itempool
+    return list(regions.values())
 
 
 def get_locations_to_id():
