@@ -103,18 +103,24 @@ class Tracker:
 
     async def readChecks(self, read_byte_f, cb):
         for check in self.remaining_checks:
+            print(check.id)
             bytes = [await read_byte_f(check.address)]
+            if bytes[0] is None:
+                print("not ok")
+                return False
             
             if check.alternateAddress != None:
                 bytes.append(await read_byte_f(check.alternateAddress))
-    
+                if bytes[1] is None:
+                    print("not ok")
+                    return False
             check.set(bytes)
 
             if check.value:
                 self.remaining_checks.remove(check)
                 cb(check)
                 break
-
+        return True
 class LAClientConstants():
     # Connector version
     VERSION = 0x01
@@ -168,9 +174,12 @@ class LinksAwakeningClient():
         self.msg("AP Client connected")
         print(self.read_memory(LAClientConstants.ROMGameID, 4))
         print(self.read_memory(LAClientConstants.ROMConnectorVersion, 1))
-    
+        
+    tracker = None
 
-        #self.recved_item_from_ap(links_awakening_items_by_name[ItemName.SWORD].item_id + LABaseID, 0)
+    async def wait_and_init_tracker(self):
+        await self.wait_for_game_ready()
+        self.tracker = Tracker()
 
     def send(self, b):
         if type(b) is str:
@@ -218,7 +227,38 @@ class LinksAwakeningClient():
         select.select([self.socket], [], [])
         response_str, addr = self.socket.recvfrom(16)
         return response_str.rstrip()
+    
+    safety_address = 0xDB95 
+    min_safe_value=0xB
+    async def wait_for_game_ready(self):
+        check_value = 0
+        while not self.safety_is_safe(check_value):
+            check_value = (await self.async_read_memory(self.safety_address))[0]
+    def safety_is_safe(self, value):
+        #return 6 < value < 0x1A
+        return value in [0xB, 0xC]
+    
+    async def async_read_memory_safe(self, address, size=1):
+        # whenever we do a read for a check, we need to make sure that we aren't reading
+        # garbage memory values - we also need to protect against reading a value, then the emulator resetting
+        # 
+        # ...actually, we probably _only_ need the post check 
 
+        # Check before read
+        check_value = await self.async_read_memory(self.safety_address, size)
+
+        if not self.safety_is_safe(check_value[0]):
+            return None
+
+        # Do read
+        r = await self.async_read_memory(address, size)
+
+        # Check after read
+        check_value = await self.async_read_memory(self.safety_address, size)
+        if not self.safety_is_safe(check_value[0]):
+            return None
+        
+        return r
     def read_memory(self, address, size = 1):
         command = "READ_CORE_MEMORY"
         
@@ -238,7 +278,7 @@ class LinksAwakeningClient():
         
         self.send(f'{command} {hex(address)} {size}\n')
         response = await self.async_recv()
-        
+        response = response[:-1]
         splits = response.decode().split(" ", 2)
 
         assert(splits[0] == command)
@@ -260,16 +300,22 @@ class LinksAwakeningClient():
 
         if splits[2] == "-1":
             print(splits[3])
-
-    tracker = Tracker()
+    
+    
     async def main_tick(self, cb):
+        if not self.tracker:
+            await self.wait_and_init_tracker()
+
         async def read_byte(b):
-            mem = await self.async_read_memory(b)
+            mem = await self.async_read_memory_safe(b)
+            if mem is None:
+                return None
             return mem[0]
 
-        await self.tracker.readChecks(read_byte, cb)
-        
-
+        ok = await self.tracker.readChecks(read_byte, cb)
+        if not ok:
+            self.msg("Invalid game state detected, resetting tracker")
+            await self.wait_and_init_tracker()
         #time.sleep(1)
 import colorama
 import asyncio
@@ -312,7 +358,6 @@ if __name__ == '__main__':
             # TODO - use watcher_event
             if cmd == "ReceivedItems":
                 for index, item in enumerate(args["items"], args["index"]):
-                    #self.client.recved_item_from_ap(item.item, item.player, index)
                     print(item)
                     self.recvd_checks[index] = item
                 print(self.recvd_checks)
