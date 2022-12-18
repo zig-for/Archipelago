@@ -166,6 +166,7 @@ class LinksAwakeningClient():
         self.msg("AP Client connected")
         print(self.read_memory(LAClientConstants.ROMGameID, 4))
         print(self.read_memory(LAClientConstants.ROMConnectorVersion, 1))
+    
 
         #self.recved_item_from_ap(links_awakening_items_by_name[ItemName.SWORD].item_id + LABaseID, 0)
 

@@ -157,20 +157,25 @@ class LinksAwakeningWorld(World):
 
     def pre_fill(self):
         dungeon_locations = [[] for _ in range(9)]
-        
+        local_only_locations = []
         for r in self.multiworld.get_regions():
             if r.player != self.player:
                 continue
             if r.dungeon_index:
                 dungeon_locations[r.dungeon_index-1] += r.locations
-        
+            
+            for loc in r.locations:
+                if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only:
+                    local_only_locations.append(loc)
+                    
         all_state = self.multiworld.get_all_state(use_cache=True)
 
         for i, dungeon_items in enumerate(self.prefill_dungeon_items):
             dungeon_items = sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
-            r = fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
+            fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
 
-            
+        # Fill local only first
+        # fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
     def post_fill(self):
 
         print("post_fill")
@@ -181,9 +186,13 @@ class LinksAwakeningWorld(World):
                     if isinstance(loc.item, LinksAwakeningItem):
                         # sprint(loc.item.item_data.ladxr_id)
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
+                        #if loc.item.player != self.player:
+                        loc.ladxr_item.item_owner = loc.item.player
                     else:
                         loc.ladxr_item.item = "TRADING_ITEM_LETTER"
-                        loc.ladxr_item.world = 2
+                        loc.ladxr_item.item_owner = loc.item.player
+                    loc.ladxr_item.location_owner = self.player
+
     def generate_basic(self) -> None:
         # place "Victory" at "Final Boss" and set collection as win condition
         #self.multiworld.get_region("Wildfish", self.player).add

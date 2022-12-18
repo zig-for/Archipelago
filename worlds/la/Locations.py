@@ -1,4 +1,4 @@
-from BaseClasses import Region, RegionType, Entrance, Location
+from BaseClasses import Region, RegionType, Entrance, Location, LocationProgressType
 from worlds.AutoWorld import LogicMixin
 
 
@@ -70,11 +70,14 @@ class LinksAwakeningLocation(Location):
         self.parent_region = region
         self.ladxr_item = ladxr_item
         def filter_item(item):
-            #if item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS:
-            #   print(f"{self.name} = {item.name}")
+            if ladxr_item.local_only and item.player != player:
+                return False
             return item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS
         add_item_rule(self, filter_item)
 
+        # Fill local items first
+        if self.ladxr_item.local_only:
+            self.progress_type = LocationProgressType.PRIORITY
         
 class LinksAwakeningLogic(LogicMixin):
     rupees = {
@@ -110,10 +113,6 @@ class LinksAwakeningRegion(Region):
             if ladxr_region.dungeon:
                 self.dungeon_index = ladxr_region.dungeon
     
-
-
-
-
 
 def translate_item_name(item):
     if item in ladxr_item_to_la_item_name:
