@@ -267,7 +267,7 @@ if __name__ == '__main__':
     class TextContext(CommonContext):
         tags = {"AP"}
         game = "Links Awakening"  # empty matches any game since 0.3.2
-        items_handling = 0b111  # receive all items for /received
+        items_handling = 0b101  # receive all items for /received
         want_slot_data = True  # Can't use game specific slot_data
         #slot = 1
         la_task = None
@@ -286,6 +286,8 @@ if __name__ == '__main__':
                 for index, item in enumerate(args["items"], args["index"]):
                     self.client.recved_item_from_ap(item.item, item.player, index)
         async def run_game_loop(self, cb):
+            # TODO: wait for connection :X
+            await asyncio.sleep(10)
             while True:
                 self.client.main_tick(cb)
                 await asyncio.sleep(0.1)
@@ -298,6 +300,7 @@ if __name__ == '__main__':
         def on_item_get(check):
             meta = checkMetadataTable[check.id]
             name = meta_to_name(meta)
+            print(name)
             ap_id = item_id_lookup[name]
             message = [{"cmd": 'LocationChecks', "locations": [ap_id]}]
             print(message)

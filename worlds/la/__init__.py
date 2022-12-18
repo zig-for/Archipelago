@@ -177,6 +177,11 @@ class LinksAwakeningWorld(World):
                     if isinstance(loc.item, LinksAwakeningItem):
                         # sprint(loc.item.item_data.ladxr_id)
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
+                    else:
+                        print(loc.name)
+                        print(loc.item)
+                        loc.ladxr_item.item = "TRADING_ITEM_LETTER"
+                        loc.ladxr_item.world = 2
     def generate_basic(self) -> None:
         # place "Victory" at "Final Boss" and set collection as win condition
         #self.multiworld.get_region("Wildfish", self.player).add
