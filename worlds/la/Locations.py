@@ -11,6 +11,8 @@ from worlds.generic.Rules import add_rule, set_rule, add_item_rule
 from .Items import ladxr_item_to_la_item_name, links_awakening_items, ItemName
 from .LADXR.itempool import ItemPool as LADXRItemPool
 
+prefilled_events = ["ANGLER_KEYHOLE", "RAFT", "MEDICINE2", "CASTLE_BUTTON"]
+
 links_awakening_dungeon_names = [
     "Tail Cave",
     "Bottle Grotto",
@@ -55,13 +57,14 @@ class LinksAwakeningLocation(Location):
     
     def __init__(self, player: int, region, ladxr_item):
         name = meta_to_name(ladxr_item.metadata)
-        self.event = isinstance(ladxr_item, LADXRKeyLocation)
+        
+        self.event = ladxr_item.OPTIONS[0] in prefilled_events
         if self.event:
             # TODO: do translation to friendlier string
             name = ladxr_item.OPTIONS[0]
         
         address = None
-        if name not in ["ANGLER_KEYHOLE", "RAFT", "MEDICINE2", "CASTLE_BUTTON"]:
+        if not self.event:
             address = locations_to_id[name]
         super().__init__(player, name, address)
         self.parent_region = region
@@ -98,14 +101,14 @@ class LinksAwakeningLogic(LogicMixin):
         
         return credits + needed <= debits
 class LinksAwakeningRegion(Region):
-    dungeon = None
+    dungeon_index = None
     ladxr_region = None
     def __init__(self, name, ladxr_region, hint, player, world):
         super().__init__(name, RegionType.Generic, hint, player, world)
         if ladxr_region:
             self.ladxr_region = ladxr_region
             if ladxr_region.dungeon:
-                self.dungeon = ladxr_region.dungeon
+                self.dungeon_index = ladxr_region.dungeon
     
 
 
