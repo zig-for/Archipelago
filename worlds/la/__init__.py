@@ -51,7 +51,7 @@ class LinksAwakeningWorld(World):
     #    "weapons": {"sword", "lance"}
     #}
 
-    prefill_dungeon_items = [[] for _ in range(9)]
+    prefill_dungeon_items = None
 
 
 
@@ -92,10 +92,11 @@ class LinksAwakeningWorld(World):
         r.exits[0].connect(start)
         
         self.multiworld.regions.append(r)  # or use += [r...]
-        for region in self.multiworld.get_regions(self.player):
+        for region in self.multiworld.get_regions():
+            if region.player != self.player:
+                continue
             for loc in r.locations:
                 if loc.event:
-                    print(loc.name)
                     loc.place_locked_item(self.create_item(loc.ladxr_item.OPTIONS[0]))
         
     def create_item(self, item_name: str):
@@ -111,8 +112,9 @@ class LinksAwakeningWorld(World):
 
     def create_items(self) -> None:    
         exclude = [item for item in self.multiworld.precollected_items[self.player]]
-
-
+        print("Create items")
+        print(self.prefill_dungeon_items)
+        self.prefill_dungeon_items = [[] for _ in range(9)]
         for ladx_item_name, count in self.ladxr_itempool.items():
             # event
             if ladx_item_name not in ladxr_item_to_la_item_name:
@@ -127,7 +129,6 @@ class LinksAwakeningWorld(World):
 
                     # TODO: For now, lock instruments, don't do key shuffle
                     if isinstance(item.item_data, DungeonItemData):
-                        print(item.name)
                         if item.item_data.dungeon_item_type == DungeonItemType.INSTRUMENT:
                             search_string = f"INSTRUMENT{item.item_data.dungeon_index}"
                             # Find instrument, lock
@@ -157,15 +158,18 @@ class LinksAwakeningWorld(World):
     def pre_fill(self):
         dungeon_locations = [[] for _ in range(9)]
         
-        for r in self.multiworld.get_regions(self.player):
+        for r in self.multiworld.get_regions():
+            if r.player != self.player:
+                continue
             if r.dungeon_index:
                 dungeon_locations[r.dungeon_index-1] += r.locations
         
         all_state = self.multiworld.get_all_state(use_cache=True)
 
         for i, dungeon_items in enumerate(self.prefill_dungeon_items):
-            dungeon_items =sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
-            fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, single_player_placement=True, lock=True)
+            dungeon_items = sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
+            r = fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
+
             
     def post_fill(self):
 
@@ -178,8 +182,6 @@ class LinksAwakeningWorld(World):
                         # sprint(loc.item.item_data.ladxr_id)
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
                     else:
-                        print(loc.name)
-                        print(loc.item)
                         loc.ladxr_item.item = "TRADING_ITEM_LETTER"
                         loc.ladxr_item.world = 2
     def generate_basic(self) -> None:
@@ -191,15 +193,15 @@ class LinksAwakeningWorld(World):
         windfish.locations = [l]
                 
         l.place_locked_item(self.create_event("An Alarm Clock"))
-        #l.place_locked_item(self.create_event("An Alarm Clock"))
         
-        #self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
+        self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
         
         regions = self.multiworld.get_regions(self.player)
         for region in regions:
+            if region.player != self.player:
+                continue
             for location in region.locations:
                 if location.name in prefilled_events:
-                    print(location.name)
                     location.place_locked_item(self.create_event(location.name))
                     
 
