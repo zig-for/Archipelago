@@ -4,6 +4,7 @@ from worlds.la.Items import ItemName, links_awakening_items_by_name
 from worlds.la.Common import BASE_ID as LABaseID
 from worlds.la.LADXR.checkMetadata import checkMetadataTable
 from worlds.la.Locations import get_locations_to_id, meta_to_name
+import select
 # kbranch you're a hero
 # https://github.com/kbranch/Magpie/blob/master/autotracking/checks.py
 class Check:
@@ -100,13 +101,13 @@ class Tracker:
             self.all_checks.append(Check(check, address, mask, alternateAddresses[check] if check in alternateAddresses else None))
             self.remaining_checks = [check for check in self.all_checks]
 
-    def readChecks(self, read_byte_f,  cb):
+    async def readChecks(self, read_byte_f, cb):
         for check in self.remaining_checks:
-            bytes = [read_byte_f(check.address)]
+            bytes = [await read_byte_f(check.address)]
             
             if check.alternateAddress != None:
-                bytes.append(read_byte_f(check.alternateAddress))
-
+                bytes.append(await read_byte_f(check.alternateAddress))
+    
             check.set(bytes)
 
             if check.value:
@@ -144,6 +145,7 @@ for data in checkMetadataTable:
         all_check_addresses[int(data, 16)] = checkMetadataTable[data]
 
 
+wRecvIndex = 0xDB58
 
 
 class LinksAwakeningClient():
@@ -161,7 +163,7 @@ class LinksAwakeningClient():
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        
+        self.socket.setblocking(False) 
         print(f"Connected to Retroarch {self.get_retroarch_version()}")
         self.msg("AP Client connected")
         print(self.read_memory(LAClientConstants.ROMGameID, 4))
@@ -176,19 +178,23 @@ class LinksAwakeningClient():
         self.socket.sendto(b, (self.address, self.port))
 
     def recv(self):
+        select.select([self.socket], [], [])
         response, _ = self.socket.recvfrom(4096)
         return response
-
+    async def async_recv(self):
+        response = await asyncio.get_event_loop().sock_recv(self.socket, 4096)
+        return response
     # TODO: this needs to be async and queueing
     def recved_item_from_ap(self, item_id, from_player, index):
         # TODO: the game breaks if you haven't talked to anyone before doing this
         
-        next_index = self.read_memory(0xDB58)[0]
-        self.msg(f"Next index {next_index}")
+        next_index = self.read_memory(wRecvIndex)[0]
+        
         if index != next_index:
+            print("bailing")
             return
         next_index += 1
-        next_index = self.write_memory(0xDB58, [next_index])
+        next_index = self.write_memory(wRecvIndex, [next_index])
 
         # TODO: this needs to read and count current progressive item state
         item_id -= LABaseID
@@ -201,7 +207,7 @@ class LinksAwakeningClient():
         while status & 1 == 1:
             time.sleep(0.1)
             status = self.read_memory(LAClientConstants.wLinkStatusBits)[0]
-            
+        print(from_player)
         self.write_memory(LAClientConstants.wLinkGiveItem, [item_id, from_player])
         status |= 1
         status = self.write_memory(LAClientConstants.wLinkStatusBits, [status])
@@ -209,6 +215,7 @@ class LinksAwakeningClient():
 
     def get_retroarch_version(self):
         self.send(b'VERSION\n')
+        select.select([self.socket], [], [])
         response_str, addr = self.socket.recvfrom(16)
         return response_str.rstrip()
 
@@ -226,11 +233,25 @@ class LinksAwakeningClient():
         # TODO: transform to bytes
         return bytearray.fromhex(splits[2])
     
+    async def async_read_memory(self, address, size = 1):
+        command = "READ_CORE_MEMORY"
+        
+        self.send(f'{command} {hex(address)} {size}\n')
+        response = await self.async_recv()
+        
+        splits = response.decode().split(" ", 2)
+
+        assert(splits[0] == command)
+        # Ignore the address for now
+
+        # TODO: transform to bytes
+        return bytearray.fromhex(splits[2])
+
     def write_memory(self, address, bytes):
         command = "WRITE_CORE_MEMORY"
         
         self.send(f'{command} {hex(address)} {" ".join(hex(b) for b in bytes)}')
-
+        select.select([self.socket], [], [])
         response, _ = self.socket.recvfrom(4096)
         
         splits = response.decode().split(" ", 3)
@@ -239,19 +260,14 @@ class LinksAwakeningClient():
 
         if splits[2] == "-1":
             print(splits[3])
+
     tracker = Tracker()
-    def main_tick(self, cb):
-        # TODO: check for garbage
-        #if int(self.read_memory(LAClientConstants.wLinkStatusBits), 16) != 0:
-        #    return
+    async def main_tick(self, cb):
+        async def read_byte(b):
+            mem = await self.async_read_memory(b)
+            return mem[0]
 
-        
-        # TODO: wait for connection?
-        
-        def read_byte(b):
-            return self.read_memory(b)[0]
-
-        self.tracker.readChecks(read_byte, cb)
+        await self.tracker.readChecks(read_byte, cb)
         
 
         #time.sleep(1)
@@ -265,7 +281,7 @@ from CommonClient import CommonContext
 if __name__ == '__main__':
     # Text Mode to use !hint and such with games that have no text entry
 
-    class TextContext(CommonContext):
+    class LinksAwakeningContext(CommonContext):
         tags = {"AP"}
         game = "Links Awakening"  # empty matches any game since 0.3.2
         items_handling = 0b101  # receive all items for /received
@@ -273,9 +289,20 @@ if __name__ == '__main__':
         #slot = 1
         la_task = None
         client = LinksAwakeningClient()
+        found_checks = []
+        last_resend = time.time()
+        recvd_checks = {}
+        async def send_checks(self):
+            message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
+            await self.send_msgs(message)
+
+        def found_check(self, item_id):
+            self.found_checks.append(item_id)
+            asyncio.create_task(self.send_checks())
+
         async def server_auth(self, password_requested: bool = False):
             if password_requested and not self.password:
-                await super(TextContext, self).server_auth(password_requested)
+                await super(LinksAwakeningContext, self).server_auth(password_requested)
             await self.get_username()
             await self.send_connect()
 
@@ -285,27 +312,40 @@ if __name__ == '__main__':
             # TODO - use watcher_event
             if cmd == "ReceivedItems":
                 for index, item in enumerate(args["items"], args["index"]):
+                    #self.client.recved_item_from_ap(item.item, item.player, index)
+                    print(item)
+                    self.recvd_checks[index] = item
+                print(self.recvd_checks)
+                index = self.client.read_memory(wRecvIndex)[0]
+                while index in self.recvd_checks:
+                    item = self.recvd_checks[index]
                     self.client.recved_item_from_ap(item.item, item.player, index)
-        async def run_game_loop(self, cb):
+                    index += 1
+
+        async def run_game_loop(self, item_get_cb):
             # TODO: wait for connection :X
-            await asyncio.sleep(10)
+            # await asyncio.sleep(10)
             while True:
-                self.client.main_tick(cb)
+                await self.client.main_tick(item_get_cb)
                 await asyncio.sleep(0.1)
+                now = time.time()
+                if self.last_resend + 5.0 < now:
+                    self.last_resend = now
+                    await self.send_checks()
+
     async def main(args):
-        ctx = TextContext(args.connect, args.password)
+        ctx = LinksAwakeningContext(args.connect, args.password)
         ctx.auth = args.name
         ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
         item_id_lookup = get_locations_to_id()
+
         def on_item_get(check):
             meta = checkMetadataTable[check.id]
             name = meta_to_name(meta)
             print(name)
             ap_id = item_id_lookup[name]
-            message = [{"cmd": 'LocationChecks', "locations": [ap_id]}]
-            print(message)
-            asyncio.create_task(ctx.send_msgs(message))
+            ctx.found_check(ap_id)
             
         ctx.la_task = asyncio.create_task(ctx.run_game_loop(on_item_get))
         if gui_enabled:
@@ -328,8 +368,7 @@ if __name__ == '__main__':
         if url.password:
             args.password = urllib.parse.unquote(url.password)
 
-    colorama.init()
-
+    colorama.init()    
     asyncio.run(main(args))
     colorama.deinit()
 
