@@ -103,7 +103,6 @@ class Tracker:
 
     async def readChecks(self, read_byte_f, cb):
         for check in self.remaining_checks:
-            print(check.id)
             bytes = [await read_byte_f(check.address)]
             if bytes[0] is None:
                 print("not ok")
@@ -235,8 +234,10 @@ class LinksAwakeningClient():
         while not self.safety_is_safe(check_value):
             check_value = (await self.async_read_memory(self.safety_address))[0]
     def safety_is_safe(self, value):
-        #return 6 < value < 0x1A
-        return value in [0xB, 0xC]
+        #if not 6 <= value < 0x1A:
+        #    print(value)
+        return 6 <= value < 0x1A
+        #return value in [0xB, 0xC]
     
     async def async_read_memory_safe(self, address, size=1):
         # whenever we do a read for a check, we need to make sure that we aren't reading
@@ -323,8 +324,10 @@ import urllib
 from CommonClient import gui_enabled, logger, get_base_parser, ClientCommandProcessor, \
     CommonContext, server_loop
 from CommonClient import CommonContext
+import Utils
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
+    Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
     # Text Mode to use !hint and such with games that have no text entry
 
     class LinksAwakeningContext(CommonContext):
@@ -345,6 +348,7 @@ if __name__ == '__main__':
         def found_check(self, item_id):
             self.found_checks.append(item_id)
             asyncio.create_task(self.send_checks())
+            
 
         async def server_auth(self, password_requested: bool = False):
             if password_requested and not self.password:
@@ -368,8 +372,6 @@ if __name__ == '__main__':
                     index += 1
 
         async def run_game_loop(self, item_get_cb):
-            # TODO: wait for connection :X
-            # await asyncio.sleep(10)
             while True:
                 await self.client.main_tick(item_get_cb)
                 await asyncio.sleep(0.1)
