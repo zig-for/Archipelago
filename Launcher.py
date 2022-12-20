@@ -133,6 +133,7 @@ components: Iterable[Component] = (
     # SNI
     Component('SNI Client', 'SNIClient',
               file_identifier=SuffixIdentifier('.apz3', '.apm3', '.apsoe', '.aplttp', '.apsm', '.apsmz3', '.apdkc3', '.apsmw')),
+    Component('Links Awakening Client', 'LinksAwakeningClient'),
     Component('LttP Adjuster', 'LttPAdjuster'),
     # Factorio
     Component('Factorio Client', 'FactorioClient'),

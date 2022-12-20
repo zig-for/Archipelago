@@ -1,4 +1,5 @@
 import time
+import logging
 import socket
 from worlds.la.Items import ItemName, links_awakening_items_by_name
 from worlds.la.Common import BASE_ID as LABaseID
@@ -197,7 +198,7 @@ class LinksAwakeningClient():
         # TODO: the game breaks if you haven't talked to anyone before doing this
         
         next_index = self.read_memory(wRecvIndex)[0]
-        
+        print(f"next index was {next_index}")
         if index != next_index:
             print("bailing")
             return
@@ -361,11 +362,12 @@ if __name__ == '__main__':
                 self.game = self.slot_info[self.slot].game
             # TODO - use watcher_event
             if cmd == "ReceivedItems":
+                logging.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
                 for index, item in enumerate(args["items"], args["index"]):
-                    print(item)
                     self.recvd_checks[index] = item
-                print(self.recvd_checks)
+                logging.info(f"{self.recvd_checks}")
                 index = self.client.read_memory(wRecvIndex)[0]
+                logging.info(f"Playing back from {index}")
                 while index in self.recvd_checks:
                     item = self.recvd_checks[index]
                     self.client.recved_item_from_ap(item.item, item.player, index)
