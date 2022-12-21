@@ -186,8 +186,8 @@ links_awakening_items = [
     ItemData(ItemName.BIRD_KEY, "BIRD_KEY", True),
     ItemData(ItemName.SLIME_KEY, "SLIME_KEY", True),
     ItemData(ItemName.GOLD_LEAF, "GOLD_LEAF", True),
+    ItemData(ItemName.RUPEES_20, "RUPEES_20", True), # not marking 20/50 as progression to give generator an easier time
     ItemData(ItemName.RUPEES_50, "RUPEES_50", True),
-    ItemData(ItemName.RUPEES_20, "RUPEES_20", True),
     ItemData(ItemName.RUPEES_100, "RUPEES_100", True),
     ItemData(ItemName.RUPEES_200, "RUPEES_200", True),
     ItemData(ItemName.RUPEES_500, "RUPEES_500", True),
@@ -195,17 +195,17 @@ links_awakening_items = [
     ItemData(ItemName.MESSAGE, "MESSAGE", True),
     ItemData(ItemName.GEL, "GEL", True),
     ItemData(ItemName.BOOMERANG, "BOOMERANG", True),
-    ItemData(ItemName.HEART_PIECE, "HEART_PIECE", True),
+    ItemData(ItemName.HEART_PIECE, "HEART_PIECE", False),
     ItemData(ItemName.BOWWOW, "BOWWOW", True),
-    ItemData(ItemName.ARROWS_10, "ARROWS_10", True),
+    ItemData(ItemName.ARROWS_10, "ARROWS_10", False),
     ItemData(ItemName.SINGLE_ARROW, "SINGLE_ARROW", False),
     ItemData(ItemName.ROOSTER, "ROOSTER", True),
     ItemData(ItemName.MAX_POWDER_UPGRADE, "MAX_POWDER_UPGRADE", False),
     ItemData(ItemName.MAX_BOMBS_UPGRADE, "MAX_BOMBS_UPGRADE", False),
     ItemData(ItemName.MAX_ARROWS_UPGRADE, "MAX_ARROWS_UPGRADE", False),
-    ItemData(ItemName.RED_TUNIC, "RED_TUNIC", True),
-    ItemData(ItemName.BLUE_TUNIC, "BLUE_TUNIC", True),
-    ItemData(ItemName.HEART_CONTAINER, "HEART_CONTAINER", True),
+    ItemData(ItemName.RED_TUNIC, "RED_TUNIC", False),
+    ItemData(ItemName.BLUE_TUNIC, "BLUE_TUNIC", False),
+    ItemData(ItemName.HEART_CONTAINER, "HEART_CONTAINER", False),
     #ItemData(ItemName.BAD_HEART_CONTAINER, "BAD_HEART_CONTAINER", True),
     ItemData(ItemName.TOADSTOOL, "TOADSTOOL", True),
     #DungeonItemData(ItemName.KEY, "KEY", True),
@@ -259,7 +259,7 @@ links_awakening_items = [
     DungeonItemData(ItemName.STONE_BEAK8, "STONE_BEAK8", False),
     DungeonItemData(ItemName.STONE_BEAK9, "STONE_BEAK9", False),
     ItemData(ItemName.SONG1, "SONG1", True),
-    ItemData(ItemName.SONG2, "SONG2", True),  # TODO
+    ItemData(ItemName.SONG2, "SONG2", False),
     ItemData(ItemName.SONG3, "SONG3", True),  # TODO
     DungeonItemData(ItemName.INSTRUMENT1, "INSTRUMENT1", True),
     DungeonItemData(ItemName.INSTRUMENT2, "INSTRUMENT2", True),
@@ -283,8 +283,6 @@ links_awakening_items = [
     ItemData(ItemName.TRADING_ITEM_NECKLACE, "TRADING_ITEM_NECKLACE", True),
     ItemData(ItemName.TRADING_ITEM_SCALE, "TRADING_ITEM_SCALE", True),
     ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", True)
-
-    # ItemData(ItemName.ZOLSTORM, "ZOLSTORM", True)
 ]
 
 ladxr_item_to_la_item_name = {

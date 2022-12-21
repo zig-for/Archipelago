@@ -1,6 +1,7 @@
 # world/mygame/__init__.py
 
 from .LADXR.locations.keyLocation import KeyLocation as LAXDRKeyLocation
+from .LADXR.locations.tradeSequence import TradeSequenceItem
 from .Options import links_awakening_options  # the options we defined earlier
 from .Items import LinksAwakeningItem, DungeonItemData, DungeonItemType, links_awakening_items, ItemName, ladxr_item_to_la_item_name, links_awakening_items_by_name # data used below to add items to the World
 from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation, links_awakening_dungeon_names, LinksAwakeningRegion, prefilled_events
@@ -15,7 +16,7 @@ from .LADXR.logic import Logic as LAXDRLogic
 from .LADXR.settings import Settings as LADXRSettings
 from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
 from .LADXR.itempool import ItemPool as LADXRItemPool
-
+from Utils import get_options
 #from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
 class LinksAwakeningWorld(World):
@@ -63,7 +64,20 @@ class LinksAwakeningWorld(World):
         pass
 
     def generate_default_ladxr_logic(self):
-        self.laxdr_options =  LADXRSettings()
+        options = {
+            option: getattr(self.multiworld, option)[self.player] for option in self.option_definitions
+        }
+        self.laxdr_options = LADXRSettings()
+        for option in options.values():
+            name, value = option.to_ladxr_option(options)
+            if value == "true":
+                value = 1
+            elif value == "false":
+                value = 0
+                
+            if name:
+                self.laxdr_options.set( f"{name}={value}")
+        self.laxdr_options.validate()
         world_setup = LADXRWorldSetup()
         import random
         rnd = random.Random()
@@ -74,8 +88,8 @@ class LinksAwakeningWorld(World):
     def create_regions(self) -> None:
         # Add regions to the multiworld. "Menu" is the required starting point.
         # Arguments to Region() are name, type, human_readable_name, player, world
-
         self.generate_default_ladxr_logic()
+
         regions = create_regions_from_ladxr(self.player, self.multiworld, self.ladxr_logic)
         self.multiworld.regions += regions
 
@@ -115,6 +129,7 @@ class LinksAwakeningWorld(World):
         print("Create items")
         print(self.prefill_dungeon_items)
         self.prefill_dungeon_items = [[] for _ in range(9)]
+        self.trade_items = []
         for ladx_item_name, count in self.ladxr_itempool.items():
             # event
             if ladx_item_name not in ladxr_item_to_la_item_name:
@@ -128,6 +143,9 @@ class LinksAwakeningWorld(World):
                     item = self.create_item(item_name)
 
                     # TODO: For now, lock instruments, don't do key shuffle
+                    if not self.multiworld.tradequest[self.player] and ladx_item_name.startswith("TRADING_"):
+                        self.trade_items.append(item)
+                        continue
                     if isinstance(item.item_data, DungeonItemData):
                         if item.item_data.dungeon_item_type == DungeonItemType.INSTRUMENT:
                             search_string = f"INSTRUMENT{item.item_data.dungeon_index}"
@@ -158,6 +176,8 @@ class LinksAwakeningWorld(World):
     def pre_fill(self):
         dungeon_locations = [[] for _ in range(9)]
         local_only_locations = []
+        all_state = self.multiworld.get_all_state(use_cache=True)
+
         for r in self.multiworld.get_regions():
             if r.player != self.player:
                 continue
@@ -167,8 +187,8 @@ class LinksAwakeningWorld(World):
             for loc in r.locations:
                 if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only:
                     local_only_locations.append(loc)
-                    
-        all_state = self.multiworld.get_all_state(use_cache=True)
+                if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
+                    fill_restrictive(self.multiworld, all_state, [loc], self.trade_items, lock=True)
 
         for i, dungeon_items in enumerate(self.prefill_dungeon_items):
             dungeon_items = sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
@@ -184,13 +204,15 @@ class LinksAwakeningWorld(World):
             for loc in r.locations:
                 if isinstance(loc, LinksAwakeningLocation):
                     if isinstance(loc.item, LinksAwakeningItem):
-                        # sprint(loc.item.item_data.ladxr_id)
+
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
-                        #if loc.item.player != self.player:
-                        loc.ladxr_item.item_owner = loc.item.player
+
                     else:
                         loc.ladxr_item.item = "TRADING_ITEM_LETTER"
+                    if loc.item:
                         loc.ladxr_item.item_owner = loc.item.player
+                    else:
+                        loc.ladxr_item.item_owner = self.player
                     loc.ladxr_item.location_owner = self.player
 
     def generate_basic(self) -> None:

@@ -121,7 +121,7 @@ class Tracker:
                 cb(check)
                 break
         return True
-class LAClientConstants():
+class LAClientConstants:
     # Connector version
     VERSION = 0x01
     #
@@ -151,7 +151,7 @@ for data in checkMetadataTable:
         all_check_addresses[int(data, 16)] = checkMetadataTable[data]
 
 
-wRecvIndex = 0xDB58
+wRecvIndex = LAClientConstants.wLinkSendShopItem # 0xDB58
 
 
 class LinksAwakeningClient():
@@ -202,10 +202,9 @@ class LinksAwakeningClient():
         if index != next_index:
             print("bailing")
             return
-        next_index += 1
-        next_index = self.write_memory(wRecvIndex, [next_index])
 
-        # TODO: this needs to read and count current progressive item state
+
+        # TODO: this needs to read and count current progressive item state??
         item_id -= LABaseID
         
         if from_player > 255:
@@ -216,10 +215,12 @@ class LinksAwakeningClient():
         while status & 1 == 1:
             time.sleep(0.1)
             status = self.read_memory(LAClientConstants.wLinkStatusBits)[0]
-        print(from_player)
+        
+        next_index += 1
         self.write_memory(LAClientConstants.wLinkGiveItem, [item_id, from_player])
         status |= 1
         status = self.write_memory(LAClientConstants.wLinkStatusBits, [status])
+        self.write_memory(wRecvIndex, [next_index])
         
 
     def get_retroarch_version(self):

@@ -3,7 +3,14 @@ from Options import Choice, Option, Toggle, DefaultOnToggle, Range
 
 DefaultOffToggle = Toggle
 
-class Logic(Choice):
+class LADXROption:
+    def to_ladxr_option(self, all_options):
+        if not self.ladxr_name:
+            return None, None
+        
+        return (self.ladxr_name, self.name_lookup[self.value].replace("_", ""))
+
+class Logic(Choice, LADXROption):
     """Affects where items are allowed to be placed.
     [Casual] Same as normal, except that a few more complex options are removed, like removing bushes with powder and killing enemies with powder or bombs.
     [Normal] playable without using any tricks or glitches. Requires nothing to be done outside of normal item usage.
@@ -11,14 +18,17 @@ class Logic(Choice):
     [Glitched] Advanced glitches and techniques may be required, but extremely difficult or tedious tricks are not required. Examples include Bomb Triggers, Super Jumps and Jesus Jumps.
     [Hell] Obscure and hard techniques may be required. Examples include featherless jumping with boots and/or hookshot, sequential pit buffers and unclipped superjumps. Things in here can be extremely hard to do or very time consuming."""
     display_name = "Logic"
-    casual = 0
-    normal = 1
-    hard = 2
-    glitched = 3
-    hell = 4
+    ladxr_name = "logic"
+    option_casual = 0
+    option_normal = 1
+    option_hard = 2
+    option_glitched = 3
+    option_hell = 4
     
-    default = normal
-    
+    default = option_normal
+
+class TradeQuest(DefaultOnToggle, LADXROption):
+    ladxr_name = "tradequest"
 #            Setting('forwardfactor', 'Main', 'F', 'Forward Factor', default=0.0,
 #                description="Forward item weight adjustment factor, lower values generate more rear heavy seeds while higher values generate front heavy seeds. Default is 0.5."),
 #            Setting('accessibility', 'Main', 'A', 'Accessibility', options=[('all', 'a', '100% Locations'), ('goal', 'g', 'Beatable')], default='all',
@@ -88,9 +98,32 @@ class BossShuffle(Choice):
     default = none
 
 
-class Goal(Choice):
-    todo = 0
-    default = todo
+class Goal(Choice, LADXROption):
+    display_name = "Goal"
+    ladxr_name = "goal"
+    option_instruments = 1
+    option_seashells = 2
+    option_open = 3
+    default = "instruments"
+
+    def to_ladxr_option(self, all_options):
+
+        if self.value == self.option_instruments:
+            return ("goal", all_options["instrument_count"])
+        else:
+            return LADXROption.to_ladxr_option(self, all_options)
+
+class InstrumentCount(Range, LADXROption):
+    ladxr_name = None
+    range_start = 0
+    range_end = 8
+    default = 8
+
+#class SeashellCount(Range):
+#    range_start = 0
+#    range_end = 20
+#    default = 20
+
 #             Setting('goal', 'Gameplay', 'G', 'Goal', options=[('8', '8', '8 instruments'), ('7', '7', '7 instruments'), ('6', '6', '6 instruments'),
 #                                                          ('5', '5', '5 instruments'), ('4', '4', '4 instruments'), ('3', '3', '3 instruments'),
 #                                                          ('2', '2', '2 instruments'), ('1', '1', '1 instrument'), ('0', '0', 'No instruments'),
@@ -144,15 +177,19 @@ class Bowwow(Choice):
     swordless = 2
     default = normal
 
-class Overworld(Choice):
+class Overworld(Choice, LADXROption):
     """
     [Dungeon Dive] Create a different overworld where all the dungeons are directly accessible and almost no chests are located in the overworld.
-    [No dungeons] All dungeons only consist of a boss fight and a instrument reward. Rest of the dungeon is removed.
+    [Tiny dungeons] All dungeons only consist of a boss fight and a instrument reward. Rest of the dungeon is removed.
     """
-    normal = 0
-    dungeon_dive = 1
-    tiny_dungeons = 2
-    default = normal
+    display_name = "Overworld"
+    ladxr_name = "overworld"
+    option_normal = 0
+    option_dungeon_dive = 1
+    option_no_dungeons = 2
+    # option_shuffled = 3
+    default = option_normal
+
 # Ugh, this will change what 'progression' means??
 #Setting('owlstatues', 'Special', 'o', 'Owl statues', options=[('', '', 'Never'), ('dungeon', 'D', 'In dungeons'), ('overworld', 'O', 'On the overworld'), ('both', 'B', 'Dungeons and Overworld')], default='',
 #    description='Replaces the hints from owl statues with additional randomized items'),
@@ -189,14 +226,29 @@ class Overworld(Choice):
 # [Disable] no music in the whole game""",
 #                 aesthetic=True),
 
+class LinkPalette(Choice, LADXROption):
+    display_name = "Links Palette"
+    ladxr_name = "linkspalette"
+    option_normal = -1
+    option_green = 0
+    option_yellow = 1
+    option_red = 2
+    option_a = 3
+    option_b = 4
+    option_c = 5
+    option_d = 6
+    default = option_normal
+
+    def to_ladxr_option(self, all_options):
+        return self.ladxr_name, str(self.value)
 
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
-    # 'logic': Logic,
+    'logic': Logic,
     # 'heartpiece': DefaultOnToggle, # description='Includes heart pieces in the item pool'),                
     # 'seashells': DefaultOnToggle, # description='Randomizes the secret sea shells hiding in the ground/trees. (chest are always randomized)'),                
     # 'heartcontainers': DefaultOnToggle, # description='Includes boss heart container drops in the item pool'),                
     # 'instruments': DefaultOffToggle, # description='Instruments are placed on random locations, dungeon goal will just contain a random item.'),                
-    # 'tradequest': DefaultOnToggle, # description='Trade quest items are randomized, each NPC takes its normal trade quest item, but gives a random item'),                
+    'tradequest': TradeQuest, # description='Trade quest items are randomized, each NPC takes its normal trade quest item, but gives a random item'),                
     # 'witch': DefaultOnToggle, # description='Adds both the toadstool and the reward for giving the toadstool to the witch to the item pool'),                
     # 'rooster': DefaultOnToggle, # description='Adds the rooster to the item pool. Without this option, the rooster spot is still a check giving an item. But you will never find the rooster. Any rooster spot is accessible without rooster by other means.'),                
     # 'boomerang': Boomerang,
@@ -206,8 +258,10 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'entranceshuffle': EntranceShuffle,
     # 'bossshuffle': BossShuffle,
     # 'minibossshuffle': BossShuffle,
-    # 'goal': Goal,
+    'goal': Goal,
+    'instrument_count': InstrumentCount,
     # 'itempool': ItemPool,
     # 'bowwow': Bowwow,
     # 'overworld': Overworld,
+    'link_palette': LinkPalette,
 }

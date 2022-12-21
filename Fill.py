@@ -657,8 +657,6 @@ def balance_multiworld_progression(world: MultiWorld) -> None:
 
             for location in sphere_locations:
                 if location.event:
-                    if not location.item:
-                        print(location.name)
                     state.collect(location.item, True, location)
             checked_locations |= sphere_locations
 
