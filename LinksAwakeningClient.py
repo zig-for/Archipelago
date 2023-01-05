@@ -1,11 +1,23 @@
-import time
+import asyncio
 import logging
+import select
 import socket
-from worlds.la.Items import ItemName, links_awakening_items_by_name
+import time
+import urllib
+from datetime import datetime
+
+import colorama
+
+import Utils
+from CommonClient import (ClientCommandProcessor, CommonContext,
+                          get_base_parser, gui_enabled, logger, server_loop)
 from worlds.la.Common import BASE_ID as LABaseID
+from worlds.la.Items import ItemName, links_awakening_items_by_name
 from worlds.la.LADXR.checkMetadata import checkMetadataTable
 from worlds.la.Locations import get_locations_to_id, meta_to_name
-import select
+
+SAFETY_ADDRESS = 0xDB95 
+
 # kbranch you're a hero
 # https://github.com/kbranch/Magpie/blob/master/autotracking/checks.py
 class Check:
@@ -35,10 +47,13 @@ class Check:
             #if self.diff != 0:
             #    print(f'Found {self.id}: {"+" if self.diff > 0 else ""}{self.diff}')
 
+
+
 class Tracker:
-    def __init__(self):
-        self.all_checks = []
-        
+    all_checks = []
+
+    def __init__(self, gameboy):
+        self.gameboy = gameboy
         maskOverrides = {
             '0x106': 0x20,
             '0x12B': 0x20,
@@ -87,6 +102,8 @@ class Tracker:
         # in no dungeons boss shuffle, the d3 boss in d7 set 0x20 in fascade's room (0x1BC)
         # after beating evil eagile in D6, 0x1BC is now 0xAC (other things may have happened in between)
         # entered d3, slime eye flag had already been set (0x15A 0x20). after killing angler fish, bits 0x0C were set
+        lowest_check = 0xffff
+        highest_check = 0
 
         for check in [x for x in checkMetadataTable if x not in blacklist]:
             room = check.split('-')[0]
@@ -94,33 +111,39 @@ class Tracker:
             address = addressOverrides[check] if check in addressOverrides else 0xD800 + int(room, 16)
             
             if 'Trade' in check or 'Owl' in check:
-                mask = 0x20
+                    mask = 0x20
 
             if check in maskOverrides:
                 mask = maskOverrides[check]
             
+            lowest_check = min(lowest_check, address)
+            highest_check = max(highest_check, address)
+            if check in alternateAddresses:
+                lowest_check = min(lowest_check, alternateAddresses[check])
+                highest_check = max(highest_check, alternateAddresses[check])
+
             self.all_checks.append(Check(check, address, mask, alternateAddresses[check] if check in alternateAddresses else None))
             self.remaining_checks = [check for check in self.all_checks]
+        self.gameboy.set_cache_limits(lowest_check, highest_check - lowest_check + 1)
 
+        
     async def readChecks(self, read_byte_f, cb):
         for check in self.remaining_checks:
-            bytes = [await read_byte_f(check.address)]
-            if bytes[0] is None:
-                print("not ok")
+
+            addresses = [check.address]
+            if check.alternateAddress:
+                addresses.append(check.alternateAddress)
+            bytes = await self.gameboy.read_memory_cache(addresses)
+            if not bytes:
                 return False
-            
-            if check.alternateAddress != None:
-                bytes.append(await read_byte_f(check.alternateAddress))
-                if bytes[1] is None:
-                    print("not ok")
-                    return False
-            check.set(bytes)
+            check.set(list(bytes.values()))
 
             if check.value:
                 self.remaining_checks.remove(check)
                 cb(check)
                 break
         return True
+
 class LAClientConstants:
     # Connector version
     VERSION = 0x01
@@ -141,8 +164,10 @@ class LAClientConstants:
     wLinkSendItemRoomLow = 0xDDFB # RO
     wLinkSendItemTarget = 0xDDFC # RO
     wLinkSendItemItem = 0xDDFD # RO
-    wLinkSendShopItem = 0xDDFE # RO, which item to send (1 based, order of the shop items)
+    # wLinkSendShopItem = 0xDDFE # RO, which item to send (1 based, order of the shop items)
     wLinkSendShopTarget = 0xDDFF # RO, which player to send to, but it's just the X position of the NPC used, so 0x18 is player 0
+
+    wRecvIndex = 0xDDFE # 0xDB58
 
 all_check_addresses = {}
 
@@ -150,37 +175,33 @@ for data in checkMetadataTable:
     if "-" not in data and data != "None":
         all_check_addresses[int(data, 16)] = checkMetadataTable[data]
 
+was_safe = False
+def safety_is_safe(value):
+    is_safe = 6 <= value <= 12 
+    global was_safe
+    if was_safe and not is_safe:
+        print(f"Invalid safety byte {hex(value)} detected, will reset tracker.")
+        print("If reached during normal gameplay (and not via a reset) please report!")
 
-wRecvIndex = LAClientConstants.wLinkSendShopItem # 0xDB58
+    was_safe = is_safe
+    return is_safe
 
-
-class LinksAwakeningClient():
+class RAGameboy():
+    cache = []
+    cache_start = 0
+    cache_size = 0
+    last_cache_read = None
     socket = None
-    address = "127.0.0.1"
-    port = 55355
-    
-
-    def msg(self, m):
-        print(m)
-        s = f"SHOW_MSG {m}\n"
-        self.send(s)
-
-    def __init__(self, address="127.0.0.1", port=55355):
+    def __init__(self, address, port) -> None:
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.setblocking(False) 
-        print(f"Connected to Retroarch {self.get_retroarch_version()}")
-        self.msg("AP Client connected")
-        print(self.read_memory(LAClientConstants.ROMGameID, 4))
-        print(self.read_memory(LAClientConstants.ROMConnectorVersion, 1))
-        
-    tracker = None
+        self.socket.setblocking(False)
+        assert(self.socket)
 
-    async def wait_and_init_tracker(self):
-        await self.wait_for_game_ready()
-        self.tracker = Tracker()
-
+    def set_cache_limits(self, cache_start, cache_size):
+        self.cache_start = cache_start
+        self.cache_size = cache_size
     def send(self, b):
         if type(b) is str:
             b = b.encode('ascii')
@@ -190,57 +211,53 @@ class LinksAwakeningClient():
         select.select([self.socket], [], [])
         response, _ = self.socket.recvfrom(4096)
         return response
+
     async def async_recv(self):
         response = await asyncio.get_event_loop().sock_recv(self.socket, 4096)
         return response
-    # TODO: this needs to be async and queueing
-    def recved_item_from_ap(self, item_id, from_player, index):
-        # TODO: the game breaks if you haven't talked to anyone before doing this
-        
-        next_index = self.read_memory(wRecvIndex)[0]
-        print(f"next index was {next_index}")
-        if index != next_index:
-            print("bailing")
+
+
+    # We're sadly unable to update the whole cache at once 
+    # as RetroArch only gives back some number of bytes at a time
+    # So instead read as big as chunks at a time as we can manage
+    async def update_cache(self):
+        # First read the safety address - if it's invalid, bail
+        self.cache = []
+        async def check_safety():
+            check_value = await self.async_read_memory(SAFETY_ADDRESS, 1)
+
+            if not safety_is_safe(check_value[0]):
+                return False
+            return True
+
+        if not await check_safety():
             return
 
+        cache = []
+        remaining_size = self.cache_size
+        while remaining_size:
+            block = await self.async_read_memory(self.cache_start + len(cache), remaining_size)
+            remaining_size -= len(block)
+            cache += block
 
-        # TODO: this needs to read and count current progressive item state??
-        item_id -= LABaseID
-        
-        if from_player > 255:
-            from_player = 255
+        if not await check_safety():
+            return
 
-        # 2. write
-        status = self.read_memory(LAClientConstants.wLinkStatusBits)[0]
-        while status & 1 == 1:
-            time.sleep(0.1)
-            status = self.read_memory(LAClientConstants.wLinkStatusBits)[0]
-        
-        next_index += 1
-        self.write_memory(LAClientConstants.wLinkGiveItem, [item_id, from_player])
-        status |= 1
-        status = self.write_memory(LAClientConstants.wLinkStatusBits, [status])
-        self.write_memory(wRecvIndex, [next_index])
-        
+        self.cache = cache
+        self.last_cache_read = time.time()
 
-    def get_retroarch_version(self):
-        self.send(b'VERSION\n')
-        select.select([self.socket], [], [])
-        response_str, addr = self.socket.recvfrom(16)
-        return response_str.rstrip()
-    
-    safety_address = 0xDB95 
-    min_safe_value=0xB
-    async def wait_for_game_ready(self):
-        check_value = 0
-        while not self.safety_is_safe(check_value):
-            check_value = (await self.async_read_memory(self.safety_address))[0]
-    def safety_is_safe(self, value):
-        #if not 6 <= value < 0x1A:
-        #    print(value)
-        return 6 <= value < 0x1A
-        #return value in [0xB, 0xC]
-    
+    async def read_memory_cache(self, addresses):
+        # TODO: can we just update once per frame?
+        if not self.last_cache_read or self.last_cache_read + 0.1 < time.time():
+            await self.update_cache()
+        if not self.cache:
+            return None
+        assert(len(self.cache) == self.cache_size)
+        for address in addresses:
+            assert self.cache_start <= address <= self.cache_start + self.cache_size
+        r = {address: self.cache[address - self.cache_start] for address in addresses}
+        return r
+
     async def async_read_memory_safe(self, address, size=1):
         # whenever we do a read for a check, we need to make sure that we aren't reading
         # garbage memory values - we also need to protect against reading a value, then the emulator resetting
@@ -248,17 +265,17 @@ class LinksAwakeningClient():
         # ...actually, we probably _only_ need the post check 
 
         # Check before read
-        check_value = await self.async_read_memory(self.safety_address, size)
+        check_value = await self.async_read_memory(SAFETY_ADDRESS, 1)
 
-        if not self.safety_is_safe(check_value[0]):
+        if not safety_is_safe(check_value[0]):
             return None
 
         # Do read
         r = await self.async_read_memory(address, size)
 
         # Check after read
-        check_value = await self.async_read_memory(self.safety_address, size)
-        if not self.safety_is_safe(check_value[0]):
+        check_value = await self.async_read_memory(SAFETY_ADDRESS, 1)
+        if not safety_is_safe(check_value[0]):
             return None
         
         return r
@@ -303,6 +320,76 @@ class LinksAwakeningClient():
 
         if splits[2] == "-1":
             print(splits[3])
+
+
+
+class LinksAwakeningClient():
+    socket = None
+    gameboy = None
+    tracker = None
+
+    def msg(self, m):
+        print(m)
+        s = f"SHOW_MSG {m}\n"
+        self.gameboy.send(s)
+
+    def __init__(self, address="127.0.0.1", port=55355):
+        self.gameboy = RAGameboy(address, port)
+        print(f"Connected to Retroarch {self.get_retroarch_version()}")
+        self.msg("AP Client connected")
+        print(self.gameboy.read_memory(LAClientConstants.ROMGameID, 4))
+        print(self.gameboy.read_memory(LAClientConstants.ROMConnectorVersion, 1))
+        
+
+    async def wait_and_init_tracker(self):
+        await self.wait_for_game_ready()
+        self.tracker = Tracker(self.gameboy)
+
+    
+    # TODO: this needs to be async and queueing
+    def recved_item_from_ap(self, item_id, from_player, index):
+        # TODO: the game breaks if you haven't talked to anyone before doing this
+        
+        next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
+        print(f"next index was {next_index}")
+        if index != next_index:
+            return
+
+
+        # TODO: this needs to read and count current progressive item state??
+        item_id -= LABaseID
+        
+        if from_player > 255:
+            from_player = 255
+
+        # 2. write
+        status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
+        while status & 1 == 1:
+            time.sleep(0.1)
+            status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
+        
+        next_index += 1
+        self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [item_id, from_player])
+        status |= 1
+        status = self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [status])
+        self.gameboy.write_memory(LAClientConstants.wRecvIndex, [next_index]) 
+        
+
+    def get_retroarch_version(self):
+        self.gameboy.send(b'VERSION\n')
+        select.select([self.gameboy.socket], [], [])
+        response_str, addr = self.gameboy.socket.recvfrom(16)
+        return response_str.rstrip()
+    
+    safety_address = 0xDB95 
+    min_safe_value=0xB
+    async def wait_for_game_ready(self):
+        check_value = 0
+        while not safety_is_safe(check_value):
+            check_value = (await self.gameboy.async_read_memory(SAFETY_ADDRESS))[0]
+
+    
+   
     
     
     async def main_tick(self, cb):
@@ -317,16 +404,16 @@ class LinksAwakeningClient():
 
         ok = await self.tracker.readChecks(read_byte, cb)
         if not ok:
-            self.msg("Invalid game state detected, resetting tracker")
             await self.wait_and_init_tracker()
-        #time.sleep(1)
-import colorama
-import asyncio
-import urllib
-from CommonClient import gui_enabled, logger, get_base_parser, ClientCommandProcessor, \
-    CommonContext, server_loop
-from CommonClient import CommonContext
-import Utils
+
+
+def create_task_log_exception(awaitable) -> asyncio.Task:
+    async def _log_exception(awaitable):
+        try:
+            return await awaitable
+        except Exception as e:
+            logger.exception(e)
+    return asyncio.create_task(_log_exception(awaitable))
 
 if __name__ == '__main__':    
     Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
@@ -367,7 +454,7 @@ if __name__ == '__main__':
                 for index, item in enumerate(args["items"], args["index"]):
                     self.recvd_checks[index] = item
                 logging.info(f"{self.recvd_checks}")
-                index = self.client.read_memory(wRecvIndex)[0]
+                index = self.client.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
                 logging.info(f"Playing back from {index}")
                 while index in self.recvd_checks:
                     item = self.recvd_checks[index]
@@ -397,7 +484,7 @@ if __name__ == '__main__':
             ap_id = item_id_lookup[name]
             ctx.found_check(ap_id)
             
-        ctx.la_task = asyncio.create_task(ctx.run_game_loop(on_item_get))
+        ctx.la_task = create_task_log_exception(ctx.run_game_loop(on_item_get))
         if gui_enabled:
             ctx.run_gui()
         ctx.run_cli()

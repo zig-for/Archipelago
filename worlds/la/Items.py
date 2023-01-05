@@ -191,7 +191,7 @@ links_awakening_items = [
     ItemData(ItemName.RUPEES_500, "RUPEES_500", ItemClassification.progression_skip_balancing),
     ItemData(ItemName.SEASHELL, "SEASHELL", ItemClassification.progression),
     ItemData(ItemName.MESSAGE, "MESSAGE", ItemClassification.progression),
-    ItemData(ItemName.GEL, "GEL", ItemClassification.progression),
+    ItemData(ItemName.GEL, "GEL", ItemClassification.trap),
     ItemData(ItemName.BOOMERANG, "BOOMERANG", ItemClassification.progression),
     ItemData(ItemName.HEART_PIECE, "HEART_PIECE", ItemClassification.filler),
     ItemData(ItemName.BOWWOW, "BOWWOW", ItemClassification.progression),
@@ -288,5 +288,5 @@ ladxr_item_to_la_item_name = {
 }
 
 links_awakening_items_by_name = {
-        item.item_name : item for item in links_awakening_items
-    }
+    item.item_name : item for item in links_awakening_items
+}
