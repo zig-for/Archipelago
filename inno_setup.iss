@@ -65,7 +65,7 @@ Name: "generator/pkmn_r"; Description: "Pokemon Red ROM Setup"; Types: full host
 Name: "generator/pkmn_b"; Description: "Pokemon Blue ROM Setup"; Types: full hosting
 Name: "server";           Description: "Server"; Types: full hosting
 Name: "client";           Description: "Clients"; Types: full playing
-Name: "client/la";        Description: "Links Awakening Client"; Types: full playing
+Name: "client/la";        Description: "Links Awakening DX Client"; Types: full playing
 Name: "client/sni";       Description: "SNI Client"; Types: full playing
 Name: "client/sni/lttp";  Description: "SNI Client - A Link to the Past Patch Setup"; Types: full playing; Flags: disablenouninstallwarning
 Name: "client/sni/sm";    Description: "SNI Client - Super Metroid Patch Setup"; Types: full playing; Flags: disablenouninstallwarning

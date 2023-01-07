@@ -11,10 +11,10 @@ import colorama
 import Utils
 from CommonClient import (ClientCommandProcessor, CommonContext,
                           get_base_parser, gui_enabled, logger, server_loop)
-from worlds.la.Common import BASE_ID as LABaseID
-from worlds.la.Items import ItemName, links_awakening_items_by_name
-from worlds.la.LADXR.checkMetadata import checkMetadataTable
-from worlds.la.Locations import get_locations_to_id, meta_to_name
+from worlds.ladx.Common import BASE_ID as LABaseID
+from worlds.ladx.Items import ItemName, links_awakening_items_by_name
+from worlds.ladx.LADXR.checkMetadata import checkMetadataTable
+from worlds.ladx.Locations import get_locations_to_id, meta_to_name
 
 SAFETY_ADDRESS = 0xDB95 
 
