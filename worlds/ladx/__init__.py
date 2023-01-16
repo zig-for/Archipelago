@@ -217,8 +217,9 @@ class LinksAwakeningWorld(World):
 
     def generate_basic(self) -> None:
         # place "Victory" at "Final Boss" and set collection as win condition
-        #self.multiworld.get_region("Wildfish", self.player).add
         
+        # TODO: we should probably priority fill the starter item
+
         windfish = self.multiworld.get_region("Windfish", self.player)
         l = Location(self.player, "Windfish", parent=windfish)
         windfish.locations = [l]

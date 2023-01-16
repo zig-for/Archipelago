@@ -78,7 +78,14 @@ class LinksAwakeningLocation(Location):
         # Fill local items first
         if self.ladxr_item.local_only:
             self.progress_type = LocationProgressType.PRIORITY
-        
+
+def has_free_weapon(state: "CollectionState", player: int) -> bool:
+    return state.has("Progressive Sword", player) or state.has("Magic Rod", player) or state.has("Boomerang", player) or state.has("Hookshot", player)
+
+# If the player has access to farm enough rupees to afford a game, we assume that they can keep beating the game
+def can_farm_rupees(state: "CollectionState", player: int) -> bool:
+    return has_free_weapon(state, player) and (state.can_reach("Trendy Game (Mabe Village)", "Location", player) or state.has("RAFT", player=player))
+
 class LinksAwakeningLogic(LogicMixin):
     rupees = {
         ItemName.RUPEES_20: 20,
@@ -87,22 +94,13 @@ class LinksAwakeningLogic(LogicMixin):
         ItemName.RUPEES_200: 200,
         ItemName.RUPEES_500: 500,
     }
-    rupee_sinks = {
-        "Fishing Game Heart Piece (Mabe Village)": 20,
-        "Mamu (Ukuku Prairie)": 300,
-        "Shop 200 Item (Mabe Village)": 200,
-        "Shop 980 Item (Mabe Village)": 980,
-    }
-    def get_credits(self, player: int):
-        return sum(self.count(item_name, player) * amount for item_name, amount in self.rupees.items())
-    def get_debits(self, player: int):
-        return sum(self.can_reach(location, player=player) * amount for location, amount in self.rupee_sinks.items())
 
-    def has_rupees_to_spend(self, player: int, needed):
-        credits = self.get_credits(player)
-        debits = self.get_debits(player)
-        
-        return credits + needed <= debits
+    def get_credits(self, player: int):
+        if can_farm_rupees(self, player):
+            return 999999999
+        return sum(self.count(item_name, player) * amount for item_name, amount in self.rupees.items())
+
+
 class LinksAwakeningRegion(Region):
     dungeon_index = None
     ladxr_region = None
@@ -140,8 +138,6 @@ class GameStateAdapater:
             assert(False)
         if item == "RUPEES":
             return self.state.get_credits(self.player)
-        elif item == "RUPEES_USED":
-            return self.state.get_debits(self.player)
         elif item.endswith("_USED"):
             return 0
         else:
@@ -233,8 +229,6 @@ def create_regions_from_ladxr(player, multiworld, logic):
 
     regions = {}
 
-    
-
     # Create regions
     for l in logic.location_list:
         # Temporarily uniqueify the name, until all regions are named
@@ -250,7 +244,6 @@ def create_regions_from_ladxr(player, multiworld, logic):
         r.locations = [LinksAwakeningLocation(player, r, i) for i in l.items]
         regions[l] = r
 
-
     for ladxr_location in logic.location_list:
         for connection_location, connection_condition in ladxr_location.simple_connections + ladxr_location.gated_connections:
             region_a = regions[ladxr_location]
@@ -260,6 +253,7 @@ def create_regions_from_ladxr(player, multiworld, logic):
             region_a.exits.append(entrance)
             entrance.connect(region_b)
 
+                
     
 
     return list(regions.values())

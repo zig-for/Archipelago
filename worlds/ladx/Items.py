@@ -9,6 +9,8 @@ class ItemData(typing.NamedTuple):
     item_name: str
     ladxr_id: str
     classification: ItemClassification
+    mark_only_first_progression: bool = False
+    created_for_players = set()
     @property
     def item_id(self):
         return CHEST_ITEMS[self.ladxr_id]
@@ -36,6 +38,12 @@ class LinksAwakeningItem(Item):
     game: str = Common.LINKS_AWAKENING
 
     def __init__(self, item_data, player):
+        classfication = item_data.classification
+        if item_data.mark_only_first_progression:
+            if player in item_data.created_for_players:
+                classfication = ItemClassification.filler
+            else:
+                item_data.created_for_players.add(player)
         super().__init__(item_data.item_name, item_data.classification, Common.BASE_ID + item_data.item_id, player)
         self.item_data = item_data
 
@@ -172,24 +180,24 @@ links_awakening_items = [
     ItemData(ItemName.OCARINA, "OCARINA", ItemClassification.progression),
     ItemData(ItemName.FEATHER, "FEATHER", ItemClassification.progression),
     ItemData(ItemName.SHOVEL, "SHOVEL", ItemClassification.progression),
-    ItemData(ItemName.MAGIC_POWDER, "MAGIC_POWDER", ItemClassification.progression),
-    ItemData(ItemName.BOMB, "BOMB", ItemClassification.progression),
+    ItemData(ItemName.MAGIC_POWDER, "MAGIC_POWDER", ItemClassification.progression, True),
+    ItemData(ItemName.BOMB, "BOMB", ItemClassification.progression, True),
     ItemData(ItemName.SWORD, "SWORD", ItemClassification.progression),
     ItemData(ItemName.FLIPPERS, "FLIPPERS", ItemClassification.progression),
     ItemData(ItemName.MAGNIFYING_LENS, "MAGNIFYING_LENS", ItemClassification.progression),
-    ItemData(ItemName.MEDICINE, "MEDICINE", ItemClassification.progression),
+    ItemData(ItemName.MEDICINE, "MEDICINE", ItemClassification.useful),
     ItemData(ItemName.TAIL_KEY, "TAIL_KEY", ItemClassification.progression),
     ItemData(ItemName.ANGLER_KEY, "ANGLER_KEY", ItemClassification.progression),
     ItemData(ItemName.FACE_KEY, "FACE_KEY", ItemClassification.progression),
     ItemData(ItemName.BIRD_KEY, "BIRD_KEY", ItemClassification.progression),
     ItemData(ItemName.SLIME_KEY, "SLIME_KEY", ItemClassification.progression),
     ItemData(ItemName.GOLD_LEAF, "GOLD_LEAF", ItemClassification.progression),
-    ItemData(ItemName.RUPEES_20, "RUPEES_20", ItemClassification.progression_skip_balancing),
-    ItemData(ItemName.RUPEES_50, "RUPEES_50", ItemClassification.progression_skip_balancing),
+    ItemData(ItemName.RUPEES_20, "RUPEES_20", ItemClassification.filler),
+    ItemData(ItemName.RUPEES_50, "RUPEES_50", ItemClassification.filler),
     ItemData(ItemName.RUPEES_100, "RUPEES_100", ItemClassification.progression_skip_balancing),
     ItemData(ItemName.RUPEES_200, "RUPEES_200", ItemClassification.progression_skip_balancing),
     ItemData(ItemName.RUPEES_500, "RUPEES_500", ItemClassification.progression_skip_balancing),
-    ItemData(ItemName.SEASHELL, "SEASHELL", ItemClassification.progression),
+    ItemData(ItemName.SEASHELL, "SEASHELL", ItemClassification.progression_skip_balancing),
     ItemData(ItemName.MESSAGE, "MESSAGE", ItemClassification.progression),
     ItemData(ItemName.GEL, "GEL", ItemClassification.trap),
     ItemData(ItemName.BOOMERANG, "BOOMERANG", ItemClassification.progression),
@@ -257,7 +265,7 @@ links_awakening_items = [
     DungeonItemData(ItemName.STONE_BEAK8, "STONE_BEAK8", ItemClassification.filler),
     DungeonItemData(ItemName.STONE_BEAK9, "STONE_BEAK9", ItemClassification.filler),
     ItemData(ItemName.SONG1, "SONG1", ItemClassification.progression),
-    ItemData(ItemName.SONG2, "SONG2", ItemClassification.filler),
+    ItemData(ItemName.SONG2, "SONG2", ItemClassification.useful),
     ItemData(ItemName.SONG3, "SONG3", ItemClassification.progression),  # TODO
     DungeonItemData(ItemName.INSTRUMENT1, "INSTRUMENT1", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT2, "INSTRUMENT2", ItemClassification.progression),
