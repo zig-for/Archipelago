@@ -170,16 +170,6 @@ class LinksAwakeningEntrance(Entrance):
         
         return self.condition.test(GameStateAdapater(state, self.player))
         
-def generate_default_ladxr_logic():
-    options =  LADXRSettings()
-    world_setup = LADXRWorldSetup()
-    import random
-    rnd = random.Random()
-    world_setup.randomize(options, rnd)
-    logic = LAXDRLogic(configuration_options=options, world_setup=world_setup)
-    itempool = LADXRItemPool(logic, options, rnd).toDict()
-    return logic, itempool
-
 def walk_ladxdr(f, n, walked=set()):
     if n in walked:
         return

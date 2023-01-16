@@ -85,6 +85,7 @@ class LinksAwakeningWorld(World):
         self.ladxr_logic = LAXDRLogic(configuration_options=self.laxdr_options, world_setup=world_setup)
         self.ladxr_itempool = LADXRItemPool(self.ladxr_logic, self.laxdr_options, rnd).toDict()
 
+
     def create_regions(self) -> None:
         # Add regions to the multiworld. "Menu" is the required starting point.
         # Arguments to Region() are name, type, human_readable_name, player, world
@@ -126,8 +127,6 @@ class LinksAwakeningWorld(World):
 
     def create_items(self) -> None:    
         exclude = [item for item in self.multiworld.precollected_items[self.player]]
-        print("Create items")
-        print(self.prefill_dungeon_items)
         self.prefill_dungeon_items = [[] for _ in range(9)]
         self.trade_items = []
         for ladx_item_name, count in self.ladxr_itempool.items():
@@ -169,14 +168,18 @@ class LinksAwakeningWorld(World):
                         continue
 
                     self.multiworld.itempool.append(item)
-
                     
-
 
     def pre_fill(self):
         dungeon_locations = [[] for _ in range(9)]
         local_only_locations = []
         all_state = self.multiworld.get_all_state(use_cache=True)
+        
+        # For now, special case first item
+        fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)], self.multiworld.itempool, lock=True)
+        bracelet = next(x for x in self.multiworld.itempool if x.name == "Power Bracelet")
+        self.multiworld.itempool.remove(bracelet)
+        fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Armos Knight (Southern Face Shrine)", self.player)], [bracelet], lock=True)
 
         for r in self.multiworld.get_regions():
             if r.player != self.player:
@@ -193,7 +196,7 @@ class LinksAwakeningWorld(World):
         for i, dungeon_items in enumerate(self.prefill_dungeon_items):
             dungeon_items = sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
             fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
-
+        
         # Fill local only first
         # fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
     def post_fill(self):
@@ -264,12 +267,9 @@ class LinksAwakeningWorld(World):
         parser = get_parser()
         args = parser.parse_args([rom_path, "-o", out_file, "--dump"])
 
-        seed = 1
-        import random
-        
-        
+        name_for_rom = self.multiworld.player_name[self.player]
 
-        rom = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=random.Random())
+        rom = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=self.multiworld.random, player_name=name_for_rom, player_id = self.player)
       
         handle = open(out_file, "wb")
         rom.save(handle, name="LADXR")

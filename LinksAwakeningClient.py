@@ -291,6 +291,7 @@ class RAGameboy():
         # Ignore the address for now
 
         # TODO: transform to bytes
+        print(splits)
         return bytearray.fromhex(splits[2])
     
     async def async_read_memory(self, address, size = 1):
@@ -337,6 +338,8 @@ class LinksAwakeningClient():
         self.gameboy = RAGameboy(address, port)
         print(f"Connected to Retroarch {self.get_retroarch_version()}")
         self.msg("AP Client connected")
+        for i in range(1, 1024):
+            print(self.gameboy.read_memory(i * 1024, 1024))
         print(self.gameboy.read_memory(LAClientConstants.ROMGameID, 4))
         print(self.gameboy.read_memory(LAClientConstants.ROMConnectorVersion, 1))
         
@@ -421,7 +424,7 @@ if __name__ == '__main__':
 
     class LinksAwakeningContext(CommonContext):
         tags = {"AP"}
-        game = "Links Awakening"  # empty matches any game since 0.3.2
+        game = "Links Awakening DX"  # empty matches any game since 0.3.2
         items_handling = 0b101  # receive all items for /received
         want_slot_data = True  # Can't use game specific slot_data
         #slot = 1
