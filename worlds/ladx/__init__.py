@@ -178,12 +178,19 @@ class LinksAwakeningWorld(World):
         all_state = self.multiworld.get_all_state(use_cache=True)
         
         # For now, special case first item
-        fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)], self.multiworld.itempool, lock=True)
-
+        start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
+        # TODO: for now, tail key doesn't work - will need to walk the pool one more time and ensure a weapon is sphere 2
+        possible_start_items = [item for item in self.multiworld.itempool if item.player == self.player and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS and "KEY" not in item.item_data.ladxr_id]
+        start_item = self.multiworld.random.choice(possible_start_items)
+        self.multiworld.itempool.remove(start_item)
+        start_loc.place_locked_item(start_item)
+        
         # Test code
         # bracelet = next(x for x in self.multiworld.itempool if x.name == "Power Bracelet")
         # self.multiworld.itempool.remove(bracelet)
         # fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Armos Knight (Southern Face Shrine)", self.player)], [bracelet], lock=True)
+
+        # TODO: shuffle!
 
         for r in self.multiworld.get_regions():
             if r.player != self.player:
@@ -192,17 +199,21 @@ class LinksAwakeningWorld(World):
                 dungeon_locations[r.dungeon_index-1] += r.locations
             
             for loc in r.locations:
-                if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only:
+                if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only and not loc.item:
                     local_only_locations.append(loc)
                 if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
+                    # each item only fits one place, but this is easier
                     fill_restrictive(self.multiworld, all_state, [loc], self.trade_items, lock=True)
 
         for i, dungeon_items in enumerate(self.prefill_dungeon_items):
             dungeon_items = sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
+            self.multiworld.random.shuffle(dungeon_locations[i])
             fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
         
         # Fill local only first
-        # fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
+        self.multiworld.random.shuffle(local_only_locations)
+        fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
+
     def post_fill(self):
 
         print("post_fill")
