@@ -7,7 +7,7 @@ import urllib
 from datetime import datetime
 
 import colorama
-
+from worlds.ladx import LADXDeltaPatch
 import Utils
 from CommonClient import (ClientCommandProcessor, CommonContext,
                           get_base_parser, gui_enabled, logger, server_loop)
@@ -481,7 +481,31 @@ class LinksAwakeningContext(CommonContext):
                 self.last_resend = now
                 await self.send_checks()
 
-async def main(args):
+async def main():
+    parser = get_base_parser(description="Link's Awakening Client.")
+    parser.add_argument("--url", help="Archipelago connection url")
+
+    parser.add_argument('diff_file', default="", type=str, nargs="?",
+                        help='Path to a .apladx Archipelago Binary Patch file')
+    args = parser.parse_args()
+    print(args)
+
+
+    if args.diff_file:
+        import Patch
+        logger.info("patch file was supplied - creating rom...")
+        meta, rom_file = Patch.create_rom_file(args.diff_file)
+        if "server" in meta:
+            args.url = meta["server"]
+        logger.info(f"wrote rom file to {rom_file}")
+
+    if args.url:
+        url = urllib.parse.urlparse(args.url)
+        args.connect = url.netloc
+        if url.password:
+            args.password = urllib.parse.unquote(url.password)
+
+
     ctx = LinksAwakeningContext(args.connect, args.password)
     
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
@@ -506,18 +530,9 @@ async def main(args):
 if __name__ == '__main__':    
     Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
 
-    parser = get_base_parser(description="Link's Awakening Client.")
-    parser.add_argument("url", nargs="?", help="Archipelago connection url")
-    args = parser.parse_args()
-
-    if args.url:
-        url = urllib.parse.urlparse(args.url)
-        args.connect = url.netloc
-        if url.password:
-            args.password = urllib.parse.unquote(url.password)
 
     colorama.init()    
-    asyncio.run(main(args))
+    asyncio.run(main())
     colorama.deinit()
 
 
