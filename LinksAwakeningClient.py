@@ -341,7 +341,7 @@ class LinksAwakeningClient():
         self.msg("AP Client connected")
         #for i in range(1, 1024):
         #    print(self.gameboy.read_memory(i * 1024, 1024))
-        IMMEDIATELY_SEND_ITEM_TEST = True
+        IMMEDIATELY_SEND_ITEM_TEST = False
         if IMMEDIATELY_SEND_ITEM_TEST:
             self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [3, 100])
             self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [1])
