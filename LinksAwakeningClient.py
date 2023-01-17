@@ -328,6 +328,7 @@ class LinksAwakeningClient():
     socket = None
     gameboy = None
     tracker = None
+    auth = None
 
     def msg(self, m):
         print(m)
@@ -340,9 +341,16 @@ class LinksAwakeningClient():
         self.msg("AP Client connected")
         #for i in range(1, 1024):
         #    print(self.gameboy.read_memory(i * 1024, 1024))
-        self.auth = binascii.hexlify(self.gameboy.read_memory(0x0134, 12)).decode()
-        print(self.auth)
+        self.reset_auth()
+
+    def reset_auth(self):
+
+        auth = binascii.hexlify(self.gameboy.read_memory(0x0134, 12)).decode()
+
+        if self.auth:
+            assert(auth == self.auth)
         
+        self.auth = auth
         
 
     async def wait_and_init_tracker(self):
@@ -479,8 +487,7 @@ if __name__ == '__main__':
 
     async def main(args):
         ctx = LinksAwakeningContext(args.connect, args.password)
-        if args.name:
-            ctx.auth = args.name
+        
         ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
         item_id_lookup = get_locations_to_id()
@@ -500,16 +507,13 @@ if __name__ == '__main__':
         await ctx.exit_event.wait()
         await ctx.shutdown()
 
-    parser = get_base_parser(description="Gameless Archipelago Client, for text interfacing.")
-    parser.add_argument('--name', default=None, help="Slot Name to connect as.")
+    parser = get_base_parser(description="Link's Awakening Client.")
     parser.add_argument("url", nargs="?", help="Archipelago connection url")
     args = parser.parse_args()
 
     if args.url:
         url = urllib.parse.urlparse(args.url)
         args.connect = url.netloc
-        if url.username:
-            args.name = urllib.parse.unquote(url.username)
         if url.password:
             args.password = urllib.parse.unquote(url.password)
 
