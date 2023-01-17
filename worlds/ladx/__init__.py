@@ -179,9 +179,11 @@ class LinksAwakeningWorld(World):
         
         # For now, special case first item
         fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)], self.multiworld.itempool, lock=True)
-        bracelet = next(x for x in self.multiworld.itempool if x.name == "Power Bracelet")
-        self.multiworld.itempool.remove(bracelet)
-        fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Armos Knight (Southern Face Shrine)", self.player)], [bracelet], lock=True)
+
+        # Test code
+        # bracelet = next(x for x in self.multiworld.itempool if x.name == "Power Bracelet")
+        # self.multiworld.itempool.remove(bracelet)
+        # fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Armos Knight (Southern Face Shrine)", self.player)], [bracelet], lock=True)
 
         for r in self.multiworld.get_regions():
             if r.player != self.player:
@@ -274,12 +276,20 @@ class LinksAwakeningWorld(World):
 
         name_for_rom = self.multiworld.player_name[self.player]
 
-        rom, gameid = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=self.multiworld.random, player_name=name_for_rom, player_id = self.player)
+        all_names = [self.multiworld.player_name[i + 1] for i in range(len(self.multiworld.player_name))]
+        rom = generator.generateRom(
+            args,
+            self.laxdr_options,
+            bytes.fromhex(self.multiworld.seed_name),
+            self.ladxr_logic,
+            rnd=self.multiworld.random,
+            player_name=name_for_rom,
+            player_names=all_names,
+            player_id = self.player)
       
         handle = open(rompath, "wb")
         rom.save(handle, name="LADXR")
         handle.close()
-        
         patch = LADXDeltaPatch(os.path.splitext(rompath)[0]+LADXDeltaPatch.patch_file_ending, player=self.player,
                                 player_name=self.multiworld.player_name[self.player], patched_path=rompath)
         patch.write()

@@ -341,7 +341,13 @@ class LinksAwakeningClient():
         self.msg("AP Client connected")
         #for i in range(1, 1024):
         #    print(self.gameboy.read_memory(i * 1024, 1024))
+        IMMEDIATELY_SEND_ITEM_TEST = True
+        if IMMEDIATELY_SEND_ITEM_TEST:
+            self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [3, 100])
+            self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [1])
+
         self.reset_auth()
+
 
     def reset_auth(self):
 
@@ -371,8 +377,10 @@ class LinksAwakeningClient():
         # TODO: this needs to read and count current progressive item state??
         item_id -= LABaseID
         
-        if from_player > 255:
-            from_player = 255
+        # The player name table only goes up to 100, so don't go past that
+        # Even if it didn't, the remote player _index_ byte is just a byte, so 255 max
+        if from_player > 100:
+            from_player = 100
 
         # 2. write
         status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
