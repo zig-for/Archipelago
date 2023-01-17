@@ -18,6 +18,7 @@ from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
 from .LADXR.itempool import ItemPool as LADXRItemPool
 from Utils import get_options
 import binascii
+from .Rom import LADXDeltaPatch
 #from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
 class LinksAwakeningWorld(World):
@@ -259,6 +260,9 @@ class LinksAwakeningWorld(World):
         out_name = f"AP-{self.multiworld.seed_name}-P{self.player}-{self.multiworld.player_name[self.player]}.gbc"
         out_file = os.path.join(output_directory, out_name)
 
+        rompath = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.gbc")
+
+
         #out_file = os.path.join("D:\\dev\\Archipelago", out_name)
         out_file = out_name
         print(out_file)
@@ -272,10 +276,15 @@ class LinksAwakeningWorld(World):
 
         rom, gameid = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=self.multiworld.random, player_name=name_for_rom, player_id = self.player)
       
-        handle = open(out_file, "wb")
+        handle = open(rompath, "wb")
         rom.save(handle, name="LADXR")
         handle.close()
-    
+        
+        patch = LADXDeltaPatch(os.path.splitext(rompath)[0]+LADXDeltaPatch.patch_file_ending, player=self.player,
+                                player_name=self.multiworld.player_name[self.player], patched_path=rompath)
+        patch.write()
+        # os.unlink(rompath)
+
     def generate_multi_key(self):
         return bytes.fromhex(self.multiworld.seed_name) + self.player.to_bytes(2, 'big')
 

@@ -427,85 +427,84 @@ def create_task_log_exception(awaitable) -> asyncio.Task:
             logger.exception(e)
     return asyncio.create_task(_log_exception(awaitable))
 
+class LinksAwakeningContext(CommonContext):
+    tags = {"AP"}
+    game = "Links Awakening DX"  # empty matches any game since 0.3.2
+    items_handling = 0b101  # receive all items for /received
+    want_slot_data = True  # Can't use game specific slot_data
+    #slot = 1
+    la_task = None
+    client = LinksAwakeningClient()
+    # TODO: this needs to re-read on reset
+    found_checks = []
+    last_resend = time.time()
+    recvd_checks = {}
+    async def send_checks(self):
+        message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
+        await self.send_msgs(message)
+
+    def found_check(self, item_id):
+        self.found_checks.append(item_id)
+        asyncio.create_task(self.send_checks())
+        
+
+    async def server_auth(self, password_requested: bool = False):
+        if password_requested and not self.password:
+            await super(LinksAwakeningContext, self).server_auth(password_requested)
+        self.auth = self.client.auth
+        print(self.auth)
+        await self.get_username()
+        await self.send_connect()
+
+    def on_package(self, cmd: str, args: dict):
+        if cmd == "Connected":
+            self.game = self.slot_info[self.slot].game
+        # TODO - use watcher_event
+        if cmd == "ReceivedItems":
+            logging.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
+            for index, item in enumerate(args["items"], args["index"]):
+                self.recvd_checks[index] = item
+            logging.info(f"{self.recvd_checks}")
+            index = self.client.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
+            logging.info(f"Playing back from {index}")
+            while index in self.recvd_checks:
+                item = self.recvd_checks[index]
+                self.client.recved_item_from_ap(item.item, item.player, index)
+                index += 1
+
+    async def run_game_loop(self, item_get_cb):
+        while True:
+            await self.client.main_tick(item_get_cb)
+            await asyncio.sleep(0.1)
+            now = time.time()
+            if self.last_resend + 5.0 < now:
+                self.last_resend = now
+                await self.send_checks()
+
+async def main(args):
+    ctx = LinksAwakeningContext(args.connect, args.password)
+    
+    ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
+
+    item_id_lookup = get_locations_to_id()
+
+    def on_item_get(check):
+        meta = checkMetadataTable[check.id]
+        name = meta_to_name(meta)
+        print(name)
+        ap_id = item_id_lookup[name]
+        ctx.found_check(ap_id)
+        
+    ctx.la_task = create_task_log_exception(ctx.run_game_loop(on_item_get))
+    if gui_enabled:
+        ctx.run_gui()
+    ctx.run_cli()
+
+    await ctx.exit_event.wait()
+    await ctx.shutdown()
+
 if __name__ == '__main__':    
     Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
-    # Text Mode to use !hint and such with games that have no text entry
-
-    class LinksAwakeningContext(CommonContext):
-        tags = {"AP"}
-        game = "Links Awakening DX"  # empty matches any game since 0.3.2
-        items_handling = 0b101  # receive all items for /received
-        want_slot_data = True  # Can't use game specific slot_data
-        #slot = 1
-        la_task = None
-        client = LinksAwakeningClient()
-        # TODO: this needs to re-read on reset
-        found_checks = []
-        last_resend = time.time()
-        recvd_checks = {}
-        async def send_checks(self):
-            message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
-            await self.send_msgs(message)
-
-        def found_check(self, item_id):
-            self.found_checks.append(item_id)
-            asyncio.create_task(self.send_checks())
-            
-
-        async def server_auth(self, password_requested: bool = False):
-            if password_requested and not self.password:
-                await super(LinksAwakeningContext, self).server_auth(password_requested)
-            self.auth = self.client.auth
-            print(self.auth)
-            await self.get_username()
-            await self.send_connect()
-
-        def on_package(self, cmd: str, args: dict):
-            if cmd == "Connected":
-                self.game = self.slot_info[self.slot].game
-            # TODO - use watcher_event
-            if cmd == "ReceivedItems":
-                logging.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
-                for index, item in enumerate(args["items"], args["index"]):
-                    self.recvd_checks[index] = item
-                logging.info(f"{self.recvd_checks}")
-                index = self.client.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
-                logging.info(f"Playing back from {index}")
-                while index in self.recvd_checks:
-                    item = self.recvd_checks[index]
-                    self.client.recved_item_from_ap(item.item, item.player, index)
-                    index += 1
-
-        async def run_game_loop(self, item_get_cb):
-            while True:
-                await self.client.main_tick(item_get_cb)
-                await asyncio.sleep(0.1)
-                now = time.time()
-                if self.last_resend + 5.0 < now:
-                    self.last_resend = now
-                    await self.send_checks()
-
-    async def main(args):
-        ctx = LinksAwakeningContext(args.connect, args.password)
-        
-        ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
-
-        item_id_lookup = get_locations_to_id()
-
-        def on_item_get(check):
-            meta = checkMetadataTable[check.id]
-            name = meta_to_name(meta)
-            print(name)
-            ap_id = item_id_lookup[name]
-            ctx.found_check(ap_id)
-            
-        ctx.la_task = create_task_log_exception(ctx.run_game_loop(on_item_get))
-        if gui_enabled:
-            ctx.run_gui()
-        ctx.run_cli()
-
-        await ctx.exit_event.wait()
-        await ctx.shutdown()
 
     parser = get_base_parser(description="Link's Awakening Client.")
     parser.add_argument("url", nargs="?", help="Archipelago connection url")
