@@ -17,6 +17,7 @@ from .LADXR.settings import Settings as LADXRSettings
 from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
 from .LADXR.itempool import ItemPool as LADXRItemPool
 from Utils import get_options
+import binascii
 #from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
 class LinksAwakeningWorld(World):
@@ -269,9 +270,15 @@ class LinksAwakeningWorld(World):
 
         name_for_rom = self.multiworld.player_name[self.player]
 
-        rom = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=self.multiworld.random, player_name=name_for_rom, player_id = self.player)
+        rom, gameid = generator.generateRom(args, self.laxdr_options, bytes.fromhex(self.multiworld.seed_name), self.ladxr_logic, rnd=self.multiworld.random, player_name=name_for_rom, player_id = self.player)
       
         handle = open(out_file, "wb")
         rom.save(handle, name="LADXR")
         handle.close()
-        
+    
+    def generate_multi_key(self):
+        return bytes.fromhex(self.multiworld.seed_name) + self.player.to_bytes(2, 'big')
+
+    def modify_multidata(self, multidata: dict):
+        multi_key = binascii.hexlify(self.generate_multi_key()).decode()
+        multidata["connect_names"][multi_key] = multidata["connect_names"][self.multiworld.player_name[self.player]]

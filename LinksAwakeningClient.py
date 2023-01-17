@@ -150,8 +150,8 @@ class LAClientConstants:
     #
     # Memory locations of LADXR
     ROMGameID = 0x0051 # 4 bytes
-    ROMWorldID = 0x0055
-    ROMConnectorVersion = 0x0056
+    #ROMWorldID = 0x0055
+    #ROMConnectorVersion = 0x0056
     wGameplayType = 0xDB95            # RO: We should only act if this is higher then 6, as it indicates that the game is running normally
     wLinkSyncSequenceNumber = 0xDDF6  # RO: Starts at 0, increases every time an item is received from the server and processed
     wLinkStatusBits = 0xDDF7          # RW:
@@ -323,7 +323,7 @@ class RAGameboy():
             print(splits[3])
 
 
-
+import binascii
 class LinksAwakeningClient():
     socket = None
     gameboy = None
@@ -338,10 +338,11 @@ class LinksAwakeningClient():
         self.gameboy = RAGameboy(address, port)
         print(f"Connected to Retroarch {self.get_retroarch_version()}")
         self.msg("AP Client connected")
-        for i in range(1, 1024):
-            print(self.gameboy.read_memory(i * 1024, 1024))
-        print(self.gameboy.read_memory(LAClientConstants.ROMGameID, 4))
-        print(self.gameboy.read_memory(LAClientConstants.ROMConnectorVersion, 1))
+        #for i in range(1, 1024):
+        #    print(self.gameboy.read_memory(i * 1024, 1024))
+        self.auth = binascii.hexlify(self.gameboy.read_memory(0x0134, 12)).decode()
+        print(self.auth)
+        
         
 
     async def wait_and_init_tracker(self):
@@ -430,6 +431,7 @@ if __name__ == '__main__':
         #slot = 1
         la_task = None
         client = LinksAwakeningClient()
+        # TODO: this needs to re-read on reset
         found_checks = []
         last_resend = time.time()
         recvd_checks = {}
@@ -445,6 +447,8 @@ if __name__ == '__main__':
         async def server_auth(self, password_requested: bool = False):
             if password_requested and not self.password:
                 await super(LinksAwakeningContext, self).server_auth(password_requested)
+            self.auth = self.client.auth
+            print(self.auth)
             await self.get_username()
             await self.send_connect()
 
@@ -475,7 +479,8 @@ if __name__ == '__main__':
 
     async def main(args):
         ctx = LinksAwakeningContext(args.connect, args.password)
-        ctx.auth = args.name
+        if args.name:
+            ctx.auth = args.name
         ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
         item_id_lookup = get_locations_to_id()
