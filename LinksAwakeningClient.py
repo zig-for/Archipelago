@@ -513,15 +513,11 @@ async def main():
 
     if args.url:
         url = urllib.parse.urlparse(args.url)
-        
         args.connect = url.netloc
-
-        print(url)
-        print(url.netloc)
         if url.password:
             args.password = urllib.parse.unquote(url.password)
 
-    ctx = LinksAwakeningContext(args.url, args.password)
+    ctx = LinksAwakeningContext(args.connect, args.password)
     
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 

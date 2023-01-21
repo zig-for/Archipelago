@@ -8,7 +8,7 @@ from .LADXR.checkMetadata import checkMetadataTable
 from .LADXR.locations.keyLocation import KeyLocation as LADXRKeyLocation
 from .Common import *
 from worlds.generic.Rules import add_rule, set_rule, add_item_rule
-from .Items import ladxr_item_to_la_item_name, links_awakening_items, ItemName
+from .Items import ladxr_item_to_la_item_name, links_awakening_items, ItemName, LinksAwakeningItem
 from .LADXR.itempool import ItemPool as LADXRItemPool
 
 prefilled_events = ["ANGLER_KEYHOLE", "RAFT", "MEDICINE2", "CASTLE_BUTTON"]
@@ -72,7 +72,11 @@ class LinksAwakeningLocation(Location):
         def filter_item(item):
             if ladxr_item.local_only and item.player != player:
                 return False
-            return item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS
+            # TODO: if item isn't it allowed list, turn into letter
+            if isinstance(item, LinksAwakeningItem):
+                return item.item_data.ladxr_id in self.ladxr_item.OPTIONS
+            return True
+            #return item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS
         add_item_rule(self, filter_item)
 
         # Fill local items first
