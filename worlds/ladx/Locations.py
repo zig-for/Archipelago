@@ -54,7 +54,7 @@ def get_locations_to_id():
 locations_to_id = get_locations_to_id()
 class LinksAwakeningLocation(Location):  
     game = LINKS_AWAKENING
-    
+    dungeon = None
     def __init__(self, player: int, region, ladxr_item):
         name = meta_to_name(ladxr_item.metadata)
         

@@ -168,8 +168,6 @@ class ItemName:
     TRADING_ITEM_SCALE = "Trading Item Scale"
     TRADING_ITEM_MAGNIFYING_GLASS = "Trading Item Magnifying Glass"
 
-
-
 links_awakening_items = [
     ItemData(ItemName.POWER_BRACELET, "POWER_BRACELET", ItemClassification.progression),
     ItemData(ItemName.SHIELD, "SHIELD", ItemClassification.progression),
