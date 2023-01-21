@@ -166,9 +166,7 @@ class LinksAwakeningWorld(World):
                         continue
 
                     self.multiworld.itempool.append(item)
-#        for dungeon_index in range(len(self.prefill_dungeon_items)):
-#            items = self.prefill_dungeon_items[dungeon_index]
-#            print(f"D{dungeon_index} P{self.player} I{len(items)}")
+
     def pre_fill(self):
         dungeon_locations = [[] for _ in range(9)]
         local_only_locations = []

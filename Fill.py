@@ -349,30 +349,6 @@ def distribute_items_restrictive(world: MultiWorld) -> None:
     itempool = sorted(world.itempool)
     world.random.shuffle(itempool)
 
-    counts_by_player = []
-    for i in range(4):
-        counts_by_player.append([])
-        for j in range(10):
-            counts_by_player[i].append(0)
-
-    finder = {}
-    for loc in fill_locations:
-        if loc.name not in finder:
-            finder[loc.name] = []
-        finder[loc.name].append(loc)
-        if not loc.dungeon:
-            # print(loc)
-            pass
-        else:
-            if loc.dungeon == 9:
-                print(loc)
-            counts_by_player[loc.player - 1][loc.dungeon - 1] += 1
-    print(counts_by_player)
-    for name, locs in finder.items():
-        if len(locs) != 4:
-            if locs[0].dungeon == None:
-                print(locs)
-            
     fill_locations, itempool = distribute_early_items(world, fill_locations, itempool)
 
     progitempool: typing.List[Item] = []
@@ -448,6 +424,7 @@ def distribute_items_restrictive(world: MultiWorld) -> None:
         locations_counter.update(location.player for location in unfilled)
         print_data = {"items": items_counter, "locations": locations_counter}
         logging.info(f'Per-Player counts: {print_data})')
+
 
 def flood_items(world: MultiWorld) -> None:
     # get items to distribute
@@ -667,10 +644,6 @@ def balance_multiworld_progression(world: MultiWorld) -> None:
                         for new_location in replacement_locations:
                             if new_location.can_fill(state, old_location.item, False) and \
                                     old_location.can_fill(state, new_location.item, False):
-                                assert(old_location.item)
-                                if not new_location.item:
-                                    print(new_location.name)
-                                assert(new_location.item)
                                 replacement_locations.remove(new_location)
                                 swap_location_item(old_location, new_location)
                                 logging.debug(f"Progression balancing moved {new_location.item} to {new_location}, "
