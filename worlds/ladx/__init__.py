@@ -106,7 +106,7 @@ class LinksAwakeningWorld(World):
         r.exits = [Entrance(self.player, "Start Game", r)]
         r.exits[0].connect(start)
         
-        self.multiworld.regions.append(r)  # or use += [r...]
+        self.multiworld.regions.append(r)
 
         for region in regions:
             for loc in region.locations:
@@ -126,17 +126,14 @@ class LinksAwakeningWorld(World):
 
     def create_items(self) -> None:    
         exclude = [item for item in self.multiworld.precollected_items[self.player]]
-        self.prefill_dungeon_items = [[] for _ in range(9)]
+        self.prefill_dungeon_items = []
         self.trade_items = []
-        total = 0
         for ladx_item_name, count in self.ladxr_itempool.items():
             # event
             if ladx_item_name not in ladxr_item_to_la_item_name:
                 continue
             item_name = ladxr_item_to_la_item_name[ladx_item_name]
             for _ in range(count):
-                total += 1
-
                 if item_name in exclude:
                     exclude.remove(item_name)  # this is destructive. create unique list above
                     self.multiworld.itempool.append(self.create_item("nothing"))
@@ -162,13 +159,13 @@ class LinksAwakeningWorld(World):
                                 if found:
                                     break                            
                         else:
-                            self.prefill_dungeon_items[item.item_data.dungeon_index - 1].append(item)
+                            self.prefill_dungeon_items.append(item)
                         continue
 
                     self.multiworld.itempool.append(item)
 
     def pre_fill(self):
-        dungeon_locations = [[] for _ in range(9)]
+        dungeon_locations = []
         local_only_locations = []
         all_state = self.multiworld.get_all_state(use_cache=True)
         
@@ -179,31 +176,31 @@ class LinksAwakeningWorld(World):
             if item.player == self.player 
                 and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS 
                 and "KEY" not in item.item_data.ladxr_id]
-        # print(possible_start_items)
+        
         start_item = self.multiworld.random.choice(possible_start_items)
         self.multiworld.itempool.remove(start_item)
         start_loc.place_locked_item(start_item)
 
-        # TODO: shuffle!
         for r in self.multiworld.get_regions():
             if r.player != self.player:
                 continue
             if r.dungeon_index:
-                dungeon_locations[r.dungeon_index-1] += r.locations
-                for loc in r.locations:
-                    loc.dungeon = r.dungeon_index
+                dungeon_locations += r.locations
+                for location in r.locations:
+                    location.dungeon = r.dungeon_index
+                    orig_rule = location.item_rule
+                    location.item_rule = lambda item, orig_rule=orig_rule: \
+                        (not isinstance(item, DungeonItemData) or item.dungeon_index == location.dungeon) and orig_rule(item)
             for loc in r.locations:
                 if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only and not loc.item:
                     local_only_locations.append(loc)
                 if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
-                    # each item only fits one place, but this is easier
+                    # TODO: place_locked_item
                     fill_restrictive(self.multiworld, all_state, [loc], self.trade_items, lock=True)
 
-
-        for i, dungeon_items in enumerate(self.prefill_dungeon_items):
-            dungeon_items = sorted(dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
-            self.multiworld.random.shuffle(dungeon_locations[i])
-            fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
+        dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
+        self.multiworld.random.shuffle(dungeon_locations)
+        fill_restrictive(self.multiworld, all_state, dungeon_locations, dungeon_items, lock=True)
 
         # Fill local only first
         # Double check that we haven't filled the location first so we don't double fill
@@ -227,21 +224,9 @@ class LinksAwakeningWorld(World):
         l.place_locked_item(self.create_event("An Alarm Clock"))
         
         self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
-        
-        # regions = self.multiworld.get_regions(self.player)
-        # for region in regions:
-        #     if region.player != self.player:
-        #         continue
-        #     for location in region.locations:
-        #         if location.name in prefilled_events:
-        #             location.place_locked_item(self.create_event(location.name))
-                    
-
-
 
     def generate_output(self, output_directory: str):
         # copy items back to locations
-
         for r in self.multiworld.get_regions(self.player):
             for loc in r.locations:
                 if isinstance(loc, LinksAwakeningLocation):
