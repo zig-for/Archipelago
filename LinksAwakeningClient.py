@@ -336,6 +336,7 @@ class LinksAwakeningClient():
         self.gameboy.send(s)
 
     def __init__(self, address="127.0.0.1", port=55355):
+        print(port)
         self.gameboy = RAGameboy(address, port)
         print(f"Connected to Retroarch {self.get_retroarch_version()}")
         self.msg("AP Client connected")
@@ -434,7 +435,7 @@ def create_task_log_exception(awaitable) -> asyncio.Task:
         except Exception as e:
             logger.exception(e)
     return asyncio.create_task(_log_exception(awaitable))
-
+import typing
 class LinksAwakeningContext(CommonContext):
     tags = {"AP"}
     game = "Links Awakening DX"  # empty matches any game since 0.3.2
@@ -442,11 +443,14 @@ class LinksAwakeningContext(CommonContext):
     want_slot_data = True  # Can't use game specific slot_data
     #slot = 1
     la_task = None
-    client = LinksAwakeningClient()
+    client = None
     # TODO: this needs to re-read on reset
     found_checks = []
     last_resend = time.time()
     recvd_checks = {}
+    def __init__(self, server_address: typing.Optional[str], password: typing.Optional[str]) -> None:
+        self.client = LinksAwakeningClient()
+        super().__init__(server_address, password)
     async def send_checks(self):
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
         await self.send_msgs(message)
@@ -460,7 +464,6 @@ class LinksAwakeningContext(CommonContext):
         if password_requested and not self.password:
             await super(LinksAwakeningContext, self).server_auth(password_requested)
         self.auth = self.client.auth
-        print(self.auth)
         await self.get_username()
         await self.send_connect()
 
@@ -507,14 +510,18 @@ async def main():
             args.url = meta["server"]
         logger.info(f"wrote rom file to {rom_file}")
 
+
     if args.url:
         url = urllib.parse.urlparse(args.url)
+        
         args.connect = url.netloc
+
+        print(url)
+        print(url.netloc)
         if url.password:
             args.password = urllib.parse.unquote(url.password)
 
-
-    ctx = LinksAwakeningContext(args.connect, args.password)
+    ctx = LinksAwakeningContext(args.url, args.password)
     
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
@@ -537,7 +544,6 @@ async def main():
 
 if __name__ == '__main__':    
     Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
-
 
     colorama.init()    
     asyncio.run(main())

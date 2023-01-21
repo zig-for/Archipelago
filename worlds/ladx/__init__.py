@@ -180,7 +180,10 @@ class LinksAwakeningWorld(World):
         # For now, special case first item
         start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
         # TODO: for now, tail key doesn't work - will need to walk the pool one more time and ensure a weapon is sphere 2
-        possible_start_items = [item for item in self.multiworld.itempool if item.player == self.player and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS and "KEY" not in item.item_data.ladxr_id]
+        possible_start_items = [item for item in self.multiworld.itempool 
+            if item.player == self.player 
+                and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS 
+                and "KEY" not in item.item_data.ladxr_id]
         start_item = self.multiworld.random.choice(possible_start_items)
         self.multiworld.itempool.remove(start_item)
         start_loc.place_locked_item(start_item)
@@ -221,16 +224,21 @@ class LinksAwakeningWorld(World):
         for r in self.multiworld.get_regions(self.player):
             for loc in r.locations:
                 if isinstance(loc, LinksAwakeningLocation):
+                    # If we're a links awakening item, just use the item
                     if isinstance(loc.item, LinksAwakeningItem):
-
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
-
+                    # TODO: if the item name contains "sword", use a sword icon, etc
+                    
+                    # Otherwise, use a cute letter as the icon
                     else:
                         loc.ladxr_item.item = "TRADING_ITEM_LETTER"
+
                     if loc.item:
                         loc.ladxr_item.item_owner = loc.item.player
                     else:
                         loc.ladxr_item.item_owner = self.player
+
+                    # Kind of kludge, make it possible for the location to differentiate between local and remote items
                     loc.ladxr_item.location_owner = self.player
 
     def generate_basic(self) -> None:
