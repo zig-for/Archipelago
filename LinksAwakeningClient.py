@@ -4,11 +4,11 @@ import select
 import socket
 import time
 import urllib
-from datetime import datetime
 
+import typing
 import colorama
 from NetUtils import ClientStatus
-from worlds.ladx import LADXDeltaPatch
+
 import Utils
 from CommonClient import (ClientCommandProcessor, CommonContext,
                           get_base_parser, gui_enabled, logger, server_loop)
@@ -17,6 +17,17 @@ from worlds.ladx.Items import ItemName, links_awakening_items_by_name
 from worlds.ladx.LADXR.checkMetadata import checkMetadataTable
 from worlds.ladx.Locations import get_locations_to_id, meta_to_name
 
+class GameboyException(Exception):
+    pass
+
+class RetroArchDisconnectError(GameboyException):
+    pass
+
+class InvalidEmulatorStateError(GameboyException):
+    pass
+
+class BadRetroArchResponse(GameboyException):
+    pass
 
 # kbranch you're a hero
 # https://github.com/kbranch/Magpie/blob/master/autotracking/checks.py
@@ -195,8 +206,20 @@ class RAGameboy():
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.setblocking(False)
         assert(self.socket)
+        self.socket.setblocking(False)
+
+    def get_retroarch_version(self):
+        self.send(b'VERSION\n')
+        select.select([self.socket], [], [])
+        response_str, addr = self.socket.recvfrom(16)
+        return response_str.rstrip()
+
+    def get_retroarch_status(self, timeout):
+        self.send(b'GET_STATUS\n')
+        select.select([self.socket], [], [], timeout)
+        response_str, addr = self.socket.recvfrom(1000, )
+        return response_str.rstrip()
 
     def set_cache_limits(self, cache_start, cache_size):
         self.cache_start = cache_start
@@ -215,20 +238,26 @@ class RAGameboy():
         response = await asyncio.get_event_loop().sock_recv(self.socket, 4096)
         return response
 
-    async def is_in_gameplay(self):
+    async def check_safe_gameplay(self, throw=True):
         async def check_wram():
             check_values = await self.async_read_memory(LAClientConstants.wCheckAddress, LAClientConstants.WRamCheckSize)
 
             if check_values != LAClientConstants.WRamSafetyValue:
+                if throw:
+                    raise InvalidEmulatorStateError()
                 return False
             return True
 
         if not await check_wram():
+            if throw:
+                raise InvalidEmulatorStateError()
             return False
 
         gameplay_value = await self.async_read_memory(LAClientConstants.wGameplayType)
         gameplay_value = gameplay_value[0]
         if not (LAClientConstants.MinGameplayValue <= gameplay_value <= LAClientConstants.MaxGameplayValue):
+            if throw:
+                raise InvalidEmulatorStateError()
             return False
         if not await check_wram():
             return False
@@ -241,7 +270,7 @@ class RAGameboy():
         # First read the safety address - if it's invalid, bail
         self.cache = []
         
-        if not await self.is_in_gameplay():
+        if not await self.check_safe_gameplay():
             return
 
         cache = []
@@ -251,7 +280,7 @@ class RAGameboy():
             remaining_size -= len(block)
             cache += block
 
-        if not await self.is_in_gameplay():
+        if not await self.check_safe_gameplay():
             return
 
         self.cache = cache
@@ -276,14 +305,14 @@ class RAGameboy():
         # ...actually, we probably _only_ need the post check 
 
         # Check before read
-        if not self.is_in_gameplay():
+        if not await self.check_safe_gameplay():
             return None
 
         # Do read
         r = await self.async_read_memory(address, size)
 
         # Check after read
-        if not self.is_in_gameplay():
+        if not await self.check_safe_gameplay():
             return None
         
         return r
@@ -299,7 +328,8 @@ class RAGameboy():
         # Ignore the address for now
 
         # TODO: transform to bytes
-        print(splits)
+        if splits[2][:2] == "-1":
+            raise BadRetroArchResponse()
         return bytearray.fromhex(splits[2])
     
     async def async_read_memory(self, address, size = 1):
@@ -337,29 +367,46 @@ class LinksAwakeningClient():
     gameboy = None
     tracker = None
     auth = None
-
+    game_crc = None
     def msg(self, m):
         print(m)
         s = f"SHOW_MSG {m}\n"
         self.gameboy.send(s)
 
-    def __init__(self, address="127.0.0.1", port=55355):
-        print(port)
-        self.gameboy = RAGameboy(address, port)
-        print(f"Connected to Retroarch {self.get_retroarch_version()}")
-        self.msg("AP Client connected")
-        #for i in range(1, 1024):
-        #    print(self.gameboy.read_memory(i * 1024, 1024))
-        IMMEDIATELY_SEND_ITEM_TEST = False
-        if IMMEDIATELY_SEND_ITEM_TEST:
-            self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [3, 100])
-            self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [1])
+    def __init__(self, retroarch_address="127.0.0.1", retroarch_port=55355):
+        self.gameboy = RAGameboy(retroarch_address, retroarch_port)
 
-        self.reset_auth()
-
-
+    # TODO: async
+    def wait_for_retroarch_connection(self):
+        print("Waiting on connection to Retroarch...")
+        while True:
+            try:
+                version = self.gameboy.get_retroarch_version()
+                
+                NO_CONTENT = b"GET_STATUS CONTENTLESS"
+                status = NO_CONTENT
+                core_type = None
+                GAME_BOY = b"game_boy"
+                while status == NO_CONTENT or core_type != GAME_BOY:
+                    try:
+                        status = self.gameboy.get_retroarch_status(0.1)
+                        GET_STATUS, PLAYING, info = status.split(b" ")
+                        core_type, rom_name, self.game_crc = info.split(b",")
+                        if core_type != GAME_BOY:
+                            print(f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
+                            time.sleep(1.0)
+                            continue
+                    except (BlockingIOError, TimeoutError):
+                        time.sleep(0.1)
+                        pass
+                print(f"Connected to Retroarch {version} {status}")
+                self.gameboy.read_memory(0x1000)
+                return
+            except ConnectionResetError:
+                time.sleep(1.0)
+                pass
+        
     def reset_auth(self):
-
         auth = binascii.hexlify(self.gameboy.read_memory(0x0134, 12)).decode()
 
         if self.auth:
@@ -382,8 +429,6 @@ class LinksAwakeningClient():
         if index != next_index:
             return
 
-
-        # TODO: this needs to read and count current progressive item state??
         item_id -= LABaseID
         
         # The player name table only goes up to 100, so don't go past that
@@ -393,6 +438,7 @@ class LinksAwakeningClient():
 
         # 2. write
         status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
+        # TODO: check safety value
         while status & 1 == 1:
             time.sleep(0.1)
             status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
@@ -402,32 +448,21 @@ class LinksAwakeningClient():
         status |= 1
         status = self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [status])
         self.gameboy.write_memory(LAClientConstants.wRecvIndex, [next_index]) 
-        
 
-    def get_retroarch_version(self):
-        self.gameboy.send(b'VERSION\n')
-        select.select([self.gameboy.socket], [], [])
-        response_str, addr = self.gameboy.socket.recvfrom(16)
-        return response_str.rstrip()
-    
-    min_safe_value=0xB
     async def wait_for_game_ready(self):
-        while not self.gameboy.is_in_gameplay():
+        print("Waiting on game to be in valid state...")
+        while not await self.gameboy.check_safe_gameplay(throw=False):
             pass
     
     async def main_tick(self, cb):
-        if not self.tracker:
-            await self.wait_and_init_tracker()
-
         async def read_byte(b):
             mem = await self.async_read_memory_safe(b)
             if mem is None:
                 return None
             return mem[0]
 
-        ok = await self.tracker.readChecks(read_byte, cb)
-        if not ok:
-            await self.wait_and_init_tracker()
+        await self.tracker.readChecks(read_byte, cb)
+
 
 
 def create_task_log_exception(awaitable) -> asyncio.Task:
@@ -437,7 +472,7 @@ def create_task_log_exception(awaitable) -> asyncio.Task:
         except Exception as e:
             logger.exception(e)
     return asyncio.create_task(_log_exception(awaitable))
-import typing
+
 class LinksAwakeningContext(CommonContext):
     tags = {"AP"}
     game = "Links Awakening DX"  # empty matches any game since 0.3.2
@@ -450,6 +485,7 @@ class LinksAwakeningContext(CommonContext):
     found_checks = []
     last_resend = time.time()
     recvd_checks = {}
+
     def __init__(self, server_address: typing.Optional[str], password: typing.Optional[str]) -> None:
         self.client = LinksAwakeningClient()
         super().__init__(server_address, password)
@@ -492,12 +528,25 @@ class LinksAwakeningContext(CommonContext):
 
     async def run_game_loop(self, item_get_cb):
         while True:
-            await self.client.main_tick(item_get_cb)
-            await asyncio.sleep(0.1)
-            now = time.time()
-            if self.last_resend + 5.0 < now:
-                self.last_resend = now
-                await self.send_checks()
+            try:
+                print("(Re)Starting game loop")
+                self.found_checks = []
+                self.client.wait_for_retroarch_connection()
+                self.client.reset_auth()
+                await self.client.wait_and_init_tracker()
+                while True:
+                    await self.client.main_tick(item_get_cb)
+                    await asyncio.sleep(0.1)
+                    now = time.time()
+                    if self.last_resend + 5.0 < now:
+                        self.last_resend = now
+                        await self.send_checks()
+
+            except GameboyException:
+                time.sleep(1.0)
+                pass
+
+
 
 async def main():
     parser = get_base_parser(description="Link's Awakening Client.")
