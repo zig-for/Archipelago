@@ -7,6 +7,7 @@ import urllib
 from datetime import datetime
 
 import colorama
+from NetUtils import ClientStatus
 from worlds.ladx import LADXDeltaPatch
 import Utils
 from CommonClient import (ClientCommandProcessor, CommonContext,
@@ -452,14 +453,19 @@ class LinksAwakeningContext(CommonContext):
     def __init__(self, server_address: typing.Optional[str], password: typing.Optional[str]) -> None:
         self.client = LinksAwakeningClient()
         super().__init__(server_address, password)
+
     async def send_checks(self):
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
+        await self.send_msgs(message)
+
+    async def send_victory(self):
+        message = [{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]
+        print("victory!")
         await self.send_msgs(message)
 
     def found_check(self, item_id):
         self.found_checks.append(item_id)
         asyncio.create_task(self.send_checks())
-        
 
     async def server_auth(self, password_requested: bool = False):
         if password_requested and not self.password:

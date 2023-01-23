@@ -214,6 +214,64 @@ class LinksAwakeningWorld(World):
         #print("post_fill")
         pass
 
+    name_cache = {}
+
+    def guess_icon_for_other_world(self, other):
+        if not self.name_cache:
+            from .LADXR.locations.faceKey import FaceKey
+            sample_key = FaceKey()
+            forbidden = [
+                "TRADING",
+                "ITEM",
+                "BAD",
+                "SINGLE",
+                "UPGRADE",
+            ]
+            for item in sample_key.OPTIONS:
+                self.name_cache[item] = item
+                splits = item.split("_")
+                self.name_cache["".join(splits)] = item
+                if 'RUPEES' in splits:
+                    self.name_cache["".join(reversed(splits))] = item
+                    
+                for word in item.split("_"):
+                    if word not in forbidden and not word.isnumeric():
+                        self.name_cache[word] = item
+            others = {
+                'KEY': 'KEY',
+                'COMPASS': 'COMPASS',
+                'BIGKEY': 'NIGHTMARE_KEY',
+                'MAP': 'MAP',
+                'FLUTE': 'OCARINA',
+                'SONG': 'OCARINA',
+                'MUSHROOM': 'TOADSTOOL',
+                'GLOVE': 'POWER_BRACELET',
+                'BOOT': 'PEGASUS_BOOTS',
+                'SHOE': 'PEGASUS_BOOTS',
+                'SHOES': 'PEGASUS_BOOTS',
+                'SANCTUARYHEARTCONTAINER': 'HEART_CONTAINER',
+                'BOSSHEARTCONTAINER': 'HEART_CONTAINER',
+                'HEARTCONTAINER': 'HEART_CONTAINER',
+                'BOMBS': 'BOMB',
+                # TODO: instruments because we can
+            }
+            self.name_cache |= others
+            
+        
+        uppered = other.upper()
+        if "BIG KEY" in uppered:
+            return self.name_cache['BIG KEY']
+        possibles = other.upper().split(" ")
+        rejoined = "".join(possibles)
+        if rejoined in self.name_cache:
+            return self.name_cache[rejoined]
+        for name in possibles:
+            if name in self.name_cache:
+                return self.name_cache[name]
+        
+        return "TRADING_ITEM_LETTER"
+
+
     def generate_basic(self) -> None:
         # place "Victory" at "Final Boss" and set collection as win condition
 
@@ -237,7 +295,7 @@ class LinksAwakeningWorld(World):
                     # TODO: if the item name contains "sword", use a sword icon, etc
                     # Otherwise, use a cute letter as the icon
                     else:
-                        loc.ladxr_item.item = "TRADING_ITEM_LETTER"
+                        loc.ladxr_item.item = self.guess_icon_for_other_world(loc.item.name)
 
                     if loc.item:
                         loc.ladxr_item.item_owner = loc.item.player
