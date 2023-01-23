@@ -16,7 +16,6 @@ from worlds.ladx.Items import ItemName, links_awakening_items_by_name
 from worlds.ladx.LADXR.checkMetadata import checkMetadataTable
 from worlds.ladx.Locations import get_locations_to_id, meta_to_name
 
-SAFETY_ADDRESS = 0xDB95 
 
 # kbranch you're a hero
 # https://github.com/kbranch/Magpie/blob/master/autotracking/checks.py
@@ -169,22 +168,21 @@ class LAClientConstants:
 
     wRecvIndex = 0xDDFE # 0xDB58
 
+    wCheckAddress = 0xD155
+    WRamCheckSize = 0x13
+    WRamSafetyValue = bytearray([0]*WRamCheckSize)
+    
+    MinGameplayValue = 0x06
+    MaxGameplayValue = 0x1A
+    VictoryGameplayAndSub = 0x0201
+
 all_check_addresses = {}
 
 for data in checkMetadataTable:
     if "-" not in data and data != "None":
         all_check_addresses[int(data, 16)] = checkMetadataTable[data]
 
-was_safe = False
-def safety_is_safe(value):
-    is_safe = 6 <= value <= 12 
-    global was_safe
-    if was_safe and not is_safe:
-        print(f"Invalid safety byte {hex(value)} detected, will reset tracker.")
-        print("If reached during normal gameplay (and not via a reset) please report!")
 
-    was_safe = is_safe
-    return is_safe
 
 class RAGameboy():
     cache = []
@@ -216,6 +214,24 @@ class RAGameboy():
         response = await asyncio.get_event_loop().sock_recv(self.socket, 4096)
         return response
 
+    async def is_in_gameplay(self):
+        async def check_wram():
+            check_values = await self.async_read_memory(LAClientConstants.wCheckAddress, LAClientConstants.WRamCheckSize)
+
+            if check_values != LAClientConstants.WRamSafetyValue:
+                return False
+            return True
+
+        if not await check_wram():
+            return False
+
+        gameplay_value = await self.async_read_memory(LAClientConstants.wGameplayType)
+        gameplay_value = gameplay_value[0]
+        if not (LAClientConstants.MinGameplayValue <= gameplay_value <= LAClientConstants.MaxGameplayValue):
+            return False
+        if not await check_wram():
+            return False
+        return True
 
     # We're sadly unable to update the whole cache at once 
     # as RetroArch only gives back some number of bytes at a time
@@ -223,14 +239,8 @@ class RAGameboy():
     async def update_cache(self):
         # First read the safety address - if it's invalid, bail
         self.cache = []
-        async def check_safety():
-            check_value = await self.async_read_memory(SAFETY_ADDRESS, 1)
-
-            if not safety_is_safe(check_value[0]):
-                return False
-            return True
-
-        if not await check_safety():
+        
+        if not await self.is_in_gameplay():
             return
 
         cache = []
@@ -240,7 +250,7 @@ class RAGameboy():
             remaining_size -= len(block)
             cache += block
 
-        if not await check_safety():
+        if not await self.is_in_gameplay():
             return
 
         self.cache = cache
@@ -265,17 +275,14 @@ class RAGameboy():
         # ...actually, we probably _only_ need the post check 
 
         # Check before read
-        check_value = await self.async_read_memory(SAFETY_ADDRESS, 1)
-
-        if not safety_is_safe(check_value[0]):
+        if not self.is_in_gameplay():
             return None
 
         # Do read
         r = await self.async_read_memory(address, size)
 
         # Check after read
-        check_value = await self.async_read_memory(SAFETY_ADDRESS, 1)
-        if not safety_is_safe(check_value[0]):
+        if not self.is_in_gameplay():
             return None
         
         return r
@@ -402,16 +409,10 @@ class LinksAwakeningClient():
         response_str, addr = self.gameboy.socket.recvfrom(16)
         return response_str.rstrip()
     
-    safety_address = 0xDB95 
     min_safe_value=0xB
     async def wait_for_game_ready(self):
-        check_value = 0
-        while not safety_is_safe(check_value):
-            check_value = (await self.gameboy.async_read_memory(SAFETY_ADDRESS))[0]
-
-    
-   
-    
+        while not self.gameboy.is_in_gameplay():
+            pass
     
     async def main_tick(self, cb):
         if not self.tracker:
