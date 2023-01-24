@@ -169,6 +169,7 @@ class LAClientConstants:
     #      Bit0: wLinkGive* contains valid data, set from script cleared from ROM.
     #      Bit1: wLinkSendItem* contains valid data, set from ROM cleared from lua
     #      Bit2: wLinkSendShop* contains valid data, set from ROM cleared from lua
+    wLinkHealth = 0xDB5A
     wLinkGiveItem = 0xDDF8 # RW
     wLinkGiveItemFrom = 0xDDF9 # RW
     wLinkSendItemRoomHigh = 0xDDFA # RO
@@ -186,7 +187,7 @@ class LAClientConstants:
     
     MinGameplayValue = 0x06
     MaxGameplayValue = 0x1A
-    VictoryGameplayAndSub = 0x0201
+    VictoryGameplayAndSub = 0x0102
 
 all_check_addresses = {}
 
@@ -255,7 +256,8 @@ class RAGameboy():
 
         gameplay_value = await self.async_read_memory(LAClientConstants.wGameplayType)
         gameplay_value = gameplay_value[0]
-        if not (LAClientConstants.MinGameplayValue <= gameplay_value <= LAClientConstants.MaxGameplayValue):
+        # In gameplay or credits
+        if not (LAClientConstants.MinGameplayValue <= gameplay_value <= LAClientConstants.MaxGameplayValue) and gameplay_value != 0x1:
             if throw:
                 raise InvalidEmulatorStateError()
             return False
@@ -368,6 +370,8 @@ class LinksAwakeningClient():
     tracker = None
     auth = None
     game_crc = None
+    pending_deathlink = False
+    deathlink_debounce = True
     def msg(self, m):
         print(m)
         s = f"SHOW_MSG {m}\n"
@@ -382,7 +386,6 @@ class LinksAwakeningClient():
         while True:
             try:
                 version = self.gameboy.get_retroarch_version()
-                
                 NO_CONTENT = b"GET_STATUS CONTENTLESS"
                 status = NO_CONTENT
                 core_type = None
@@ -390,6 +393,10 @@ class LinksAwakeningClient():
                 while status == NO_CONTENT or core_type != GAME_BOY:
                     try:
                         status = self.gameboy.get_retroarch_status(0.1)
+                        
+                        if status.count(b" ") < 2:
+                            time.sleep(1.0)
+                            continue
                         GET_STATUS, PLAYING, info = status.split(b" ")
                         core_type, rom_name, self.game_crc = info.split(b",")
                         if core_type != GAME_BOY:
@@ -454,15 +461,36 @@ class LinksAwakeningClient():
         while not await self.gameboy.check_safe_gameplay(throw=False):
             pass
     
-    async def main_tick(self, cb):
+    async def main_tick(self, item_get_cb, win_cb, deathlink_cb):
         async def read_byte(b):
             mem = await self.async_read_memory_safe(b)
             if mem is None:
                 return None
             return mem[0]
 
-        await self.tracker.readChecks(read_byte, cb)
+        await self.tracker.readChecks(read_byte, item_get_cb)
 
+        # Force win
+        # self.gameboy.write_memory(LAClientConstants.wGameplayType, [1, 0])
+        # 
+        # Force death
+
+        current_health =(await self.gameboy.read_memory_cache([LAClientConstants.wLinkHealth]))[LAClientConstants.wLinkHealth]
+        if self.deathlink_debounce and current_health != 0:
+            self.deathlink_debounce = False
+        elif not self.deathlink_debounce and current_health == 0:
+            print("Sending deathlink")
+            await deathlink_cb()
+            self.deathlink_debounce = True
+
+        if self.pending_deathlink:
+            print("Got a deathlink")
+            self.gameboy.write_memory(LAClientConstants.wLinkHealth, [0])
+            self.pending_deathlink = False
+            self.deathlink_debounce = True
+
+        if (await self.gameboy.read_memory_cache([LAClientConstants.wGameplayType]))[LAClientConstants.wGameplayType] == 1:
+            await win_cb()
 
 
 def create_task_log_exception(awaitable) -> asyncio.Task:
@@ -485,7 +513,7 @@ class LinksAwakeningContext(CommonContext):
     found_checks = []
     last_resend = time.time()
     recvd_checks = {}
-
+    won = False
     def __init__(self, server_address: typing.Optional[str], password: typing.Optional[str]) -> None:
         self.client = LinksAwakeningClient()
         super().__init__(server_address, password)
@@ -494,10 +522,23 @@ class LinksAwakeningContext(CommonContext):
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
         await self.send_msgs(message)
 
-    async def send_victory(self):
-        message = [{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]
-        print("victory!")
+    async def send_deathlink(self):
+        message = [{"cmd": 'Deathlink',
+                    'time': time.time(),
+                    'cause': 'Had a nightmare',
+                    #'source': self.slot_info[self.slot].name,
+                    }]
         await self.send_msgs(message)
+
+    async def send_victory(self):
+        if not self.won:
+            message = [{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]
+            print("victory!")
+            await self.send_msgs(message)
+            self.won = True
+    
+    async def on_deathlink(self, data: typing.Dict[str, typing.Any]) -> None:
+        self.client.pending_deathlink = True
 
     def found_check(self, item_id):
         self.found_checks.append(item_id)
@@ -515,27 +556,42 @@ class LinksAwakeningContext(CommonContext):
             self.game = self.slot_info[self.slot].game
         # TODO - use watcher_event
         if cmd == "ReceivedItems":
-            logging.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
+            # logging.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
             for index, item in enumerate(args["items"], args["index"]):
                 self.recvd_checks[index] = item
-            logging.info(f"{self.recvd_checks}")
+            # logging.info(f"{self.recvd_checks}")
             index = self.client.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
-            logging.info(f"Playing back from {index}")
+            # logging.info(f"Playing back from {index}")
             while index in self.recvd_checks:
                 item = self.recvd_checks[index]
                 self.client.recved_item_from_ap(item.item, item.player, index)
                 index += 1
 
-    async def run_game_loop(self, item_get_cb):
+    item_id_lookup = get_locations_to_id()
+    async def run_game_loop(self):
+        def on_item_get(check):
+            meta = checkMetadataTable[check.id]
+            name = meta_to_name(meta)
+            print(name)
+            ap_id = self.item_id_lookup[name]
+            self.found_check(ap_id)
+
+        async def victory():
+            await self.send_victory()
+
+        async def deathlink():
+            await self.send_deathlink()
+
         while True:
             try:
+                # TODO: cancel all client tasks
                 print("(Re)Starting game loop")
                 self.found_checks = []
                 self.client.wait_for_retroarch_connection()
                 self.client.reset_auth()
                 await self.client.wait_and_init_tracker()
                 while True:
-                    await self.client.main_tick(item_get_cb)
+                    await self.client.main_tick(on_item_get, victory, deathlink)
                     await asyncio.sleep(0.1)
                     now = time.time()
                     if self.last_resend + 5.0 < now:
@@ -577,16 +633,9 @@ async def main():
     
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
-    item_id_lookup = get_locations_to_id()
-
-    def on_item_get(check):
-        meta = checkMetadataTable[check.id]
-        name = meta_to_name(meta)
-        print(name)
-        ap_id = item_id_lookup[name]
-        ctx.found_check(ap_id)
-        
-    ctx.la_task = create_task_log_exception(ctx.run_game_loop(on_item_get))
+    
+    # TODO: nothing about the lambda about has to be in a lambda
+    ctx.la_task = create_task_log_exception(ctx.run_game_loop())
     if gui_enabled:
         ctx.run_gui()
     ctx.run_cli()
