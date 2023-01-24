@@ -63,8 +63,6 @@ def fill_restrictive(world: MultiWorld, base_state: CollectionState, locations: 
                 perform_access_check = True
 
             for i, location in enumerate(locations):
-#                if allow_partial:
-#                    print(f"location: {location} single_player_placement: {single_player_placement} location.can_fill: {location.can_fill(maximum_exploration_state, item_to_place, perform_access_check)}")
                 if (not single_player_placement or location.player == item_to_place.player) \
                         and location.can_fill(maximum_exploration_state, item_to_place, perform_access_check):
                     # popping by index is faster than removing by content,
@@ -142,9 +140,7 @@ def fill_restrictive(world: MultiWorld, base_state: CollectionState, locations: 
                 f'Not all items placed. Game beatable anyway. (Could not place {unplaced_items})')
         else:
             if len(unplaced_items) == 1:
-                    
-                for location in locations:
-                    
+                for location in locations:  
                     print(f"location: {location} single_player_placement: {single_player_placement} location.can_fill: {location.can_fill(maximum_exploration_state, item_to_place, perform_access_check)}")
             print(maximum_exploration_state.prog_items)
 

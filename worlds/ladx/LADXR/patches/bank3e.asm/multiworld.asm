@@ -267,6 +267,57 @@ SpecialRandomTeleport:
 
     ret
 
+Data_004_7AE5: ; @TODO Palette data
+    db   $33, $62, $1A, $01, $FF, $0F, $FF, $7F
+
+
+Deathlink:
+    ld   a, $CA               ; $7AF3: $3E $CA
+    call $3B86                ; $7AF5: $CD $86 $3B  ;SpawnEntityTrampoline
+    ld   a, $26               ; $7AF8: $3E $26      ;
+    ldh  [$F4], a             ; $7AFA: $E0 $F4      ; set noise
+    ldh  a, [$98] ; LinkX
+    ld   hl, $C200 ; wEntitiesPosXTable
+    add  hl, de
+    ld   [hl], a
+    ldh  a, [$99] ; LinkY
+    sub  a, 54
+    ld   hl, $C210 ; wEntitiesPosYTable
+    add  hl, de
+    ld   [hl], a
+    ld   hl, $C2D0          ; $7B0A: $21 $D0 $C2
+    add  hl, de                                   ; $7B0D: $19
+    ld   [hl], $01                                ; $7B0E: $36 $01
+    ld   hl, $C2E0    ; $7B10: $21 $E0 $C2
+    add  hl, de                                   ; $7B13: $19
+    ld   [hl], $C0                                ; $7B14: $36 $C0
+    call $0C05             ; $7B16: $CD $05 $0C
+    ld   [hl], $C0                                ; $7B19: $36 $C0
+    call $3B12                ; $7B1B: $CD $12 $3B
+
+    xor  a                                        ; $7B1E: $AF
+    ld   [$DB0D], a           ; $7B1F: $EA $0D $DB ; ld   [wHasMedicine], a
+    ld   a, $FF                                   ; $7B22: $3E $FF
+    ld   [$DB94], a           ; $7B24: $EA $94 $DB ; ld   [wSubtractHealthBuffer], a
+
+    ld   hl, $DC88                             ; $7B2C: $21 $88 $DC
+    ld   de, Data_004_7AE5                        ; $7B2F: $11 $E5 $7A
+    
+    loop_7B32:
+    ld   a, [de]                                  ; $7B32: $1A
+    ; ld   [hl+], a                                 ; $7B33: $22
+    db $22
+    inc  de                                       ; $7B34: $13
+    ld   a, l                                     ; $7B35: $7D
+    and  $07                                      ; $7B36: $E6 $07
+    jr   nz, loop_7B32                           ; $7B38: $20 $F8
+
+    ld   a, $02                                   ; $7B3A: $3E $02
+    ld   [$DDD1], a                   ; $7B3C: $EA $D1 $DD
+
+    
+    ret
+
 RandomTeleportPositions:
     db $55, $54, $54, $54, $55, $55, $55, $54, $65, $55, $54, $65, $56, $56, $55, $55
     db $55, $45, $65, $54, $55, $55, $55, $55, $55, $55, $55, $58, $43, $57, $55, $55

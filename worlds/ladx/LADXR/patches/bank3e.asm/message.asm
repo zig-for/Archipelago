@@ -1,4 +1,4 @@
-BuildItemMessage:
+BuildItemMessage:    
     ld   hl, ItemNamePointers
     ldh  a, [$F1]
     ld   d, $00
