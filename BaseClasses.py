@@ -1441,6 +1441,11 @@ class Spoiler():
             # cull entries in spheres for spoiler walkthrough at end
             sphere -= to_delete
 
+        # Remove empty spheres
+        collection_spheres = [sphere for sphere in collection_spheres if sphere]
+        # Guard against using state_cache after this, we've reindexed the spheres
+        state_cache = None
+
         # second phase, sphere 0
         removed_precollected = []
         for item in (i for i in chain.from_iterable(multiworld.precollected_items.values()) if i.advancement):
