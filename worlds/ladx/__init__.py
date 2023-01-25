@@ -169,6 +169,11 @@ class LinksAwakeningWorld(World):
         local_only_locations = []
         all_state = self.multiworld.get_all_state(use_cache=True)
         
+        trendy_region = self.multiworld.get_region("Trendy Shop", self.player)
+        event_location = Location(self.player, "Can Play Trendy Game", parent=trendy_region)
+        trendy_region.locations.insert(0, event_location)
+        event_location.place_locked_item(self.create_event("Can Play Trendy Game"))
+        print(trendy_region.locations)
         # For now, special case first item
         start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
         # TODO: for now, tail key doesn't work - will need to walk the pool one more time and ensure a weapon is sphere 2
@@ -284,6 +289,10 @@ class LinksAwakeningWorld(World):
         self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
 
     def generate_output(self, output_directory: str):
+        trendy_region = self.multiworld.get_region("Trendy Shop", self.player)
+        print(self.multiworld.get_location("Can Play Trendy Game", self.player))
+        print(trendy_region.locations)
+        print(vars(trendy_region.locations[0]))
         # copy items back to locations
         for r in self.multiworld.get_regions(self.player):
             for loc in r.locations:
