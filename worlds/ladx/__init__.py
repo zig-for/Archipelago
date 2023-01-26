@@ -173,25 +173,28 @@ class LinksAwakeningWorld(World):
         event_location = Location(self.player, "Can Play Trendy Game", parent=trendy_region)
         trendy_region.locations.insert(0, event_location)
         event_location.place_locked_item(self.create_event("Can Play Trendy Game"))
-        print(trendy_region.locations)
-        # For now, special case first item
-        start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
-        # TODO: for now, tail key doesn't work - will need to walk the pool one more time and ensure a weapon is sphere 2
-        possible_start_items = [item for item in self.multiworld.itempool 
-            if item.player == self.player 
-                and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS 
-                and "KEY" not in item.item_data.ladxr_id]
         
-        start_item = self.multiworld.random.choice(possible_start_items)
-        self.multiworld.itempool.remove(start_item)
-        start_loc.place_locked_item(start_item)
-
+        # For now, special case first item
+        FORCE_START_ITEM = True
+        if FORCE_START_ITEM:
+            start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
+            possible_start_items = [item for item in self.multiworld.itempool 
+                if item.player == self.player 
+                    and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS and item.item_data.ladxr_id == "SWORD"]
+            
+            start_item = self.multiworld.random.choice(possible_start_items)
+            self.multiworld.itempool.remove(start_item)
+            start_loc.place_locked_item(start_item)
+        
         for r in self.multiworld.get_regions():
             if r.player != self.player:
                 continue
             if r.dungeon_index:
                 dungeon_locations += r.locations
                 for location in r.locations:
+                    if location.name == "Pit Button Chest (Tail Cave)":
+                        # Don't place dungeon items on pit button chest, to reduce chance of the filler blowing up
+                        dungeon_locations.remove(location)
                     location.dungeon = r.dungeon_index
                     orig_rule = location.item_rule
                     location.item_rule = lambda item, orig_rule=orig_rule: \
@@ -202,6 +205,8 @@ class LinksAwakeningWorld(World):
                 if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
                     # TODO: place_locked_item
                     fill_restrictive(self.multiworld, all_state, [loc], self.trade_items, lock=True)
+        
+        
 
         dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
         self.multiworld.random.shuffle(dungeon_locations)
@@ -289,10 +294,6 @@ class LinksAwakeningWorld(World):
         self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
 
     def generate_output(self, output_directory: str):
-        trendy_region = self.multiworld.get_region("Trendy Shop", self.player)
-        print(self.multiworld.get_location("Can Play Trendy Game", self.player))
-        print(trendy_region.locations)
-        print(vars(trendy_region.locations[0]))
         # copy items back to locations
         for r in self.multiworld.get_regions(self.player):
             for loc in r.locations:
