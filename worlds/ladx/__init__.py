@@ -180,7 +180,7 @@ class LinksAwakeningWorld(World):
             start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
             possible_start_items = [item for item in self.multiworld.itempool 
                 if item.player == self.player 
-                    and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS and item.item_data.ladxr_id == "SWORD"]
+                    and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS]
             
             start_item = self.multiworld.random.choice(possible_start_items)
             self.multiworld.itempool.remove(start_item)

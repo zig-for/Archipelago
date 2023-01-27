@@ -56,7 +56,7 @@ class Check:
             self.diff += self.value - (oldValue or 0)
 
             #if self.diff != 0:
-            #    print(f'Found {self.id}: {"+" if self.diff > 0 else ""}{self.diff}')
+            #    logger.info(f'Found {self.id}: {"+" if self.diff > 0 else ""}{self.diff}')
 
 
 
@@ -181,8 +181,8 @@ class LAClientConstants:
 
     wRecvIndex = 0xDDFE # 0xDB58
 
-    wCheckAddress = 0xD155
-    WRamCheckSize = 0x13
+    wCheckAddress = 0xD155 + 0x10
+    WRamCheckSize = 0x3
     WRamSafetyValue = bytearray([0]*WRamCheckSize)
     
     MinGameplayValue = 0x06
@@ -244,6 +244,7 @@ class RAGameboy():
             check_values = await self.async_read_memory(LAClientConstants.wCheckAddress, LAClientConstants.WRamCheckSize)
 
             if check_values != LAClientConstants.WRamSafetyValue:
+                logger.info(check_values)
                 if throw:
                     raise InvalidEmulatorStateError()
                 return False
@@ -259,6 +260,7 @@ class RAGameboy():
         # In gameplay or credits
         if not (LAClientConstants.MinGameplayValue <= gameplay_value <= LAClientConstants.MaxGameplayValue) and gameplay_value != 0x1:
             if throw:
+                logger.info("invalid emu state")
                 raise InvalidEmulatorStateError()
             return False
         if not await check_wram():
@@ -360,7 +362,7 @@ class RAGameboy():
         assert(splits[0] == command)
 
         if splits[2] == "-1":
-            print(splits[3])
+            logger.info(splits[3])
 
 
 import binascii
@@ -373,7 +375,7 @@ class LinksAwakeningClient():
     pending_deathlink = False
     deathlink_debounce = True
     def msg(self, m):
-        print(m)
+        logger.info(m)
         s = f"SHOW_MSG {m}\n"
         self.gameboy.send(s)
 
@@ -382,7 +384,7 @@ class LinksAwakeningClient():
 
     # TODO: async
     def wait_for_retroarch_connection(self):
-        print("Waiting on connection to Retroarch...")
+        logger.info("Waiting on connection to Retroarch...")
         while True:
             try:
                 version = self.gameboy.get_retroarch_version()
@@ -400,13 +402,13 @@ class LinksAwakeningClient():
                         GET_STATUS, PLAYING, info = status.split(b" ")
                         core_type, rom_name, self.game_crc = info.split(b",")
                         if core_type != GAME_BOY:
-                            print(f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
+                            logger.info(f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
                             time.sleep(1.0)
                             continue
                     except (BlockingIOError, TimeoutError):
                         time.sleep(0.1)
                         pass
-                print(f"Connected to Retroarch {version} {status}")
+                logger.info(f"Connected to Retroarch {version} {status}")
                 self.gameboy.read_memory(0x1000)
                 return
             except ConnectionResetError:
@@ -432,7 +434,7 @@ class LinksAwakeningClient():
         # TODO: the game breaks if you haven't talked to anyone before doing this
         
         next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
-        print(f"next index was {next_index}")
+        logger.info(f"next index was {next_index}")
         if index != next_index:
             return
 
@@ -457,7 +459,7 @@ class LinksAwakeningClient():
         self.gameboy.write_memory(LAClientConstants.wRecvIndex, [next_index]) 
 
     async def wait_for_game_ready(self):
-        print("Waiting on game to be in valid state...")
+        logger.info("Waiting on game to be in valid state...")
         while not await self.gameboy.check_safe_gameplay(throw=False):
             pass
     
@@ -479,12 +481,12 @@ class LinksAwakeningClient():
         if self.deathlink_debounce and current_health != 0:
             self.deathlink_debounce = False
         elif not self.deathlink_debounce and current_health == 0:
-            print("Sending deathlink")
+            logger.info("Sending deathlink")
             await deathlink_cb()
             self.deathlink_debounce = True
 
         if self.pending_deathlink:
-            print("Got a deathlink")
+            logger.info("Got a deathlink")
             self.gameboy.write_memory(LAClientConstants.wLinkHealth, [0])
             self.pending_deathlink = False
             self.deathlink_debounce = True
@@ -533,7 +535,7 @@ class LinksAwakeningContext(CommonContext):
     async def send_victory(self):
         if not self.won:
             message = [{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]
-            print("victory!")
+            logger.info("victory!")
             await self.send_msgs(message)
             self.won = True
     
@@ -556,12 +558,14 @@ class LinksAwakeningContext(CommonContext):
             self.game = self.slot_info[self.slot].game
         # TODO - use watcher_event
         if cmd == "ReceivedItems":
-            # logging.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
+            logger.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
             for index, item in enumerate(args["items"], args["index"]):
                 self.recvd_checks[index] = item
-            # logging.info(f"{self.recvd_checks}")
+            logger.info(f"{len(self.recvd_checks)}")
+   
             index = self.client.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
-            # logging.info(f"Playing back from {index}")
+            
+            logger.info(f"Playing back from {index}")
             while index in self.recvd_checks:
                 item = self.recvd_checks[index]
                 self.client.recved_item_from_ap(item.item, item.player, index)
@@ -572,7 +576,6 @@ class LinksAwakeningContext(CommonContext):
         def on_item_get(check):
             meta = checkMetadataTable[check.id]
             name = meta_to_name(meta)
-            print(name)
             ap_id = self.item_id_lookup[name]
             self.found_check(ap_id)
 
@@ -585,7 +588,7 @@ class LinksAwakeningContext(CommonContext):
         while True:
             try:
                 # TODO: cancel all client tasks
-                print("(Re)Starting game loop")
+                logger.info("(Re)Starting game loop")
                 self.found_checks = []
                 self.client.wait_for_retroarch_connection()
                 self.client.reset_auth()
@@ -611,7 +614,7 @@ async def main():
     parser.add_argument('diff_file', default="", type=str, nargs="?",
                         help='Path to a .apladx Archipelago Binary Patch file')
     args = parser.parse_args()
-    print(args)
+    logger.info(args)
 
 
     if args.diff_file:

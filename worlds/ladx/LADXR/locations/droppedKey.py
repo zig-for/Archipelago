@@ -18,7 +18,9 @@ class DroppedKey(ItemInfo):
     MULTIWORLD = True
 
     def patch(self, rom, option, *, multiworld=None):
-        if option.startswith(MAP) or option.startswith(COMPASS) or option.startswith(STONE_BEAK) or option.startswith(NIGHTMARE_KEY) or option.startswith(KEY):
+        if (option.startswith(MAP) and option != MAP) or (option.startswith(COMPASS) and option != COMPASS) or option.startswith(STONE_BEAK) or (option.startswith(NIGHTMARE_KEY) and option != NIGHTMARE_KEY )or (option.startswith(KEY) and option != KEY):
+            if option[-1] == 'P':
+                print(option)
             if self._location.dungeon == int(option[-1]) and multiworld is None and self.room not in {0x166, 0x223}:
                 option = option[:-1]
         rom.banks[0x3E][self.room + 0x3800] = CHEST_ITEMS[option]
