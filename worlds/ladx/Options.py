@@ -13,10 +13,10 @@ class LADXROption:
 class Logic(Choice, LADXROption):
     """Affects where items are allowed to be placed.
     [Casual] Same as normal, except that a few more complex options are removed, like removing bushes with powder and killing enemies with powder or bombs.
-    [Normal] playable without using any tricks or glitches. Requires nothing to be done outside of normal item usage.
-    [Hard] More advanced techniques may be required, but glitches are not. Examples include tricky jumps, killing enemies with only pots and skipping keys with smart routing.
+    [Normal] Playable without using any tricks or glitches. Can require knowledge from a vanilla playthrough, such as how to open Color Dungeon.
+    [Hard] More advanced techniques may be required, but glitches are not. Examples include tricky jumps, killing enemies with only pots.
     [Glitched] Advanced glitches and techniques may be required, but extremely difficult or tedious tricks are not required. Examples include Bomb Triggers, Super Jumps and Jesus Jumps.
-    [Hell] Obscure and hard techniques may be required. Examples include featherless jumping with boots and/or hookshot, sequential pit buffers and unclipped superjumps. Things in here can be extremely hard to do or very time consuming."""
+    [Hell] Obscure knowledge and hard techniques may be required. Examples include featherless jumping with boots and/or hookshot, sequential pit buffers and unclipped superjumps. Things in here can be extremely hard to do or very time consuming."""
     display_name = "Logic"
     ladxr_name = "logic"
     option_casual = 0
@@ -53,14 +53,12 @@ class TradeQuest(DefaultOffToggle, LADXROption):
 
 class Boomerang(Choice):
     """
-    [Normal], requires magnifier to get the boomerang.
-    [Trade], allows to trade an inventory item for a random other inventory item boomerang is shuffled.
-    [Gift], You get a random gift of any item, and the boomerang is shuffled.
+    [Normal], requires Magnifying Lens to get the boomerang.
+    [Gift], The boomerang salesman will give you a random item, and the boomerang is shuffled.
     """
 
     normal = 0
-    trade = 1
-    gift = 2
+    gift = 1
     default = gift
 
 # TODO: I know we have helper classes for this
@@ -77,18 +75,18 @@ class DungeonItemsShuffle(Choice):
     localkeys = 2
     localnightmarekey = 3
     keysanity = 4
-    kysy = 5
+    keysy = 5
 
     default = standard
 
 # TODO: translate to lttp parlance
 class EntranceShuffle(Choice):
     """Randomizes where overworld entrances lead to.
-    [Simple] single entrance caves that contain items are randomized
-    [Advanced] Connector caves are also randomized
-    [Expert] Caves/houses without items are also randomized
-    [Insanity] A few very annoying entrances will be randomized as well.
-    If random start location and/or dungeon shuffle is enabled, then these will be shuffled with all the entrances.
+    [Simple] Single-entrance caves/houses that have items are shuffled amongst each other.
+    [Advanced] Simple, but two-way connector caves are shuffled in their own pool as well.
+    [Expert] Advanced, but caves/houses without items are also shuffled into the Simple entrance pool.
+    [Insanity] Expert, but the Raft Minigame hut and Mamu's cave are added to the non-connector pool.
+    If random start location and/or dungeon shuffle is enabled, then these will be shuffled with all the non-connector entrance pool.
     Note, some entrances can lead into water, use the warp-to-home from the save&quit menu to escape this."""
     none = 0
     simple = 1
@@ -105,12 +103,19 @@ class BossShuffle(Choice):
 
 
 class Goal(Choice, LADXROption):
+    """
+    [Instruments] The Wind Fish's Egg will only open if you have the required number of Instruments of the Sirens, and play the Ballad of the Wind Fish.
+    [Seashells] The Egg will open when you bring 20 seashells. The Ballad and Ocarina are not needed.
+    [Open] The Egg will start pre-opened.  
+    """
     display_name = "Goal"
     ladxr_name = "goal"
     option_instruments = 1
     option_seashells = 2
     option_open = 3
-    default = option_instruments
+    
+    default = instruments
+
 
     def to_ladxr_option(self, all_options):
 
@@ -148,9 +153,9 @@ class InstrumentCount(Range, LADXROption):
 # [Bingo-25] Bingo, but need to fill the whole bingo card to win!"""),
 class ItemPool(Choice):
     """Effects which items are shuffled.
-[Casual] places more inventory and key items so the seed is easier.
-[More keys] adds more small keys and extra nightmare keys so dungeons are easier.
-[Path of pain]... just find out yourself."""
+[Casual] Places multiple copies of key items.
+[More keys] Adds additional small/nightmare keys so that dungeons are faster.
+[Path of Pain]. Adds negative heart containers to the item pool."""
     casual = 0
     more_keys = 1
     normal = 2
@@ -177,10 +182,12 @@ class ItemPool(Choice):
 # [Always] you can always steal from the shop
 # [Never] you can never steal from the shop."""),
 class Bowwow(Choice):
-    """Allows BowWow to be taken into any area, damage bosses and more enemies. If enabled you always start with bowwow. Swordless option removes the swords from the game and requires you to beat the game without a sword and just bowwow."""
+    """Allows BowWow to be taken into any area.  Certain enemies and bosses are given a new weakness to BowWow.
+    [Normal] BowWow is in the item pool, but can be logically expected as a damage source.
+    [Swordless] The progressive swords are removed from the item pool.
+    """
     normal = 0
-    always = 1
-    swordless = 2
+    swordless = 1
     default = normal
 
 class Overworld(Choice, LADXROption):
@@ -192,7 +199,7 @@ class Overworld(Choice, LADXROption):
     ladxr_name = "overworld"
     option_normal = 0
     option_dungeon_dive = 1
-    option_no_dungeons = 2
+    option_tiny_dungeons = 2
     # option_shuffled = 3
     default = option_normal
 
@@ -233,16 +240,20 @@ class Overworld(Choice, LADXROption):
 #                 aesthetic=True),
 
 class LinkPalette(Choice, LADXROption):
+    """
+    A-D are color palettes usually used during the damage animation and can change based on where you are.
+    """
     display_name = "Links Palette"
     ladxr_name = "linkspalette"
     option_normal = -1
     option_green = 0
     option_yellow = 1
     option_red = 2
-    option_a = 3
-    option_b = 4
-    option_c = 5
-    option_d = 6
+    option_blue = 3
+    option_invert_a = 4
+    option_invert_b = 5
+    option_invert_c = 6
+    option_invert_d = 7
     default = option_normal
 
     def to_ladxr_option(self, all_options):
