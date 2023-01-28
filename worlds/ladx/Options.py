@@ -114,7 +114,7 @@ class Goal(Choice, LADXROption):
     option_seashells = 2
     option_open = 3
     
-    default = instruments
+    default = option_instruments
 
 
     def to_ladxr_option(self, all_options):
