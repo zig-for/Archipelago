@@ -317,7 +317,7 @@ class LinksAwakeningWorld(World):
 
                     # Kind of kludge, make it possible for the location to differentiate between local and remote items
                     loc.ladxr_item.location_owner = self.player
-                            
+
         # How to generate the mod or ROM highly depends on the game
         # if the mod is written in Lua, Jinja can be used to fill a template
         # if the mod reads a json file, `json.dump()` can be used to generate that
