@@ -212,10 +212,6 @@ class LinksAwakeningWorld(World):
         self.multiworld.random.shuffle(dungeon_locations)
         fill_restrictive(self.multiworld, all_state, dungeon_locations, dungeon_items, lock=True)
         
-        #hibiscus = next(item for item in self.multiworld.itempool if item.name == "Hibiscus")
-        #goat = next(loc for loc in local_only_locations if "Goat" in loc.name)
-        #fill_restrictive(self.multiworld, all_state, [goat], [hibiscus], lock=True)
-        #self.multiworld.itempool.remove(hibiscus)
         DO_EARLY_FILL = False
         if DO_EARLY_FILL:
             # Fill local only first
@@ -224,6 +220,7 @@ class LinksAwakeningWorld(World):
             self.multiworld.random.shuffle(local_only_locations)
 
             # Shuffle the pool first
+            # extra disabled to suss out self locking trade items
             # self.multiworld.random.shuffle(self.multiworld.itempool)
             fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=False, single_player_placement=True)
     def post_fill(self):
