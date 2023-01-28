@@ -244,7 +244,6 @@ class RAGameboy():
             check_values = await self.async_read_memory(LAClientConstants.wCheckAddress, LAClientConstants.WRamCheckSize)
 
             if check_values != LAClientConstants.WRamSafetyValue:
-                logger.info(check_values)
                 if throw:
                     raise InvalidEmulatorStateError()
                 return False
@@ -462,7 +461,7 @@ class LinksAwakeningClient():
         logger.info("Waiting on game to be in valid state...")
         while not await self.gameboy.check_safe_gameplay(throw=False):
             pass
-    
+    last_index = 0
     async def main_tick(self, item_get_cb, win_cb, deathlink_cb):
         async def read_byte(b):
             mem = await self.async_read_memory_safe(b)
@@ -472,6 +471,10 @@ class LinksAwakeningClient():
 
         await self.tracker.readChecks(read_byte, item_get_cb)
 
+        next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
+        if next_index != self.last_index:
+            self.last_index = next_index
+            logger.info(f"Got new index {next_index}")
         # Force win
         # self.gameboy.write_memory(LAClientConstants.wGameplayType, [1, 0])
         # 
