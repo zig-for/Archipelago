@@ -165,9 +165,10 @@ class LinksAwakeningWorld(World):
                     self.multiworld.itempool.append(item)
 
     def pre_fill(self):
+        from BaseClasses import CollectionState
         dungeon_locations = []
         local_only_locations = []
-        all_state = self.multiworld.get_all_state(use_cache=True)
+        all_state = self.multiworld.get_all_state(use_cache=False)
         
         trendy_region = self.multiworld.get_region("Trendy Shop", self.player)
         event_location = Location(self.player, "Can Play Trendy Game", parent=trendy_region)
@@ -210,17 +211,21 @@ class LinksAwakeningWorld(World):
         dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
         self.multiworld.random.shuffle(dungeon_locations)
         fill_restrictive(self.multiworld, all_state, dungeon_locations, dungeon_items, lock=True)
-
-        # Fill local only first
-        # Double check that we haven't filled the location first so we don't double fill
-        local_only_locations = [loc for loc in local_only_locations if not loc.item]
-        self.multiworld.random.shuffle(local_only_locations)
-
         
-        # Shuffle the pool first 
-        # self.multiworld.random.shuffle(self.multiworld.itempool)
-        fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
+        #hibiscus = next(item for item in self.multiworld.itempool if item.name == "Hibiscus")
+        #goat = next(loc for loc in local_only_locations if "Goat" in loc.name)
+        #fill_restrictive(self.multiworld, all_state, [goat], [hibiscus], lock=True)
+        #self.multiworld.itempool.remove(hibiscus)
+        DO_EARLY_FILL = False
+        if DO_EARLY_FILL:
+            # Fill local only first
+            # Double check that we haven't filled the location first so we don't double fill
+            local_only_locations = [loc for loc in local_only_locations if not loc.item]
+            self.multiworld.random.shuffle(local_only_locations)
 
+            # Shuffle the pool first
+            # self.multiworld.random.shuffle(self.multiworld.itempool)
+            fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=False, single_player_placement=True)
     def post_fill(self):
 
         #print("post_fill")

@@ -76,9 +76,11 @@ class LinksAwakeningLocation(Location):
             if isinstance(item, LinksAwakeningItem):
                 # Don't allow self locking Trade Sequence Items - there's some settings where it could be legal
                 # but it's not worth the headache to pass in the required metadata
-                if item.item_data.ladxr_id.startswith("TRADING_ITEM") and isinstance(self.ladxr_item, TradeSequenceItem):
-                    if item.item_data.ladxr_id == TradeRequirements[self.ladxr_item.default_item]:
-                        return False
+                RESTRICT_TRADE_ITEMS = True
+                if RESTRICT_TRADE_ITEMS:
+                    if item.item_data.ladxr_id.startswith("TRADING_ITEM") and isinstance(self.ladxr_item, TradeSequenceItem):
+                        if item.item_data.ladxr_id == TradeRequirements[self.ladxr_item.default_item]:
+                            return False
                 return item.item_data.ladxr_id in self.ladxr_item.OPTIONS
             return True
         add_item_rule(self, filter_item)
