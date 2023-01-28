@@ -27,8 +27,14 @@ class Logic(Choice, LADXROption):
     
     default = option_normal
 
-class TradeQuest(DefaultOnToggle, LADXROption):
+class TradeQuest(DefaultOffToggle, LADXROption):
+    """
+    On - adds the trade items to the pool (the trade locations will always be local items)
+    Off - (default) doesn't add them
+    """
     ladxr_name = "tradequest"
+
+
 #            Setting('forwardfactor', 'Main', 'F', 'Forward Factor', default=0.0,
 #                description="Forward item weight adjustment factor, lower values generate more rear heavy seeds while higher values generate front heavy seeds. Default is 0.5."),
 #            Setting('accessibility', 'Main', 'A', 'Accessibility', options=[('all', 'a', '100% Locations'), ('goal', 'g', 'Beatable')], default='all',
@@ -109,6 +115,7 @@ class Goal(Choice, LADXROption):
     option_open = 3
     
     default = instruments
+
 
     def to_ladxr_option(self, all_options):
 

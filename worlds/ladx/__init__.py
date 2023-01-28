@@ -81,11 +81,9 @@ class LinksAwakeningWorld(World):
                 self.laxdr_options.set( f"{name}={value}")
         self.laxdr_options.validate()
         world_setup = LADXRWorldSetup()
-        import random
-        rnd = random.Random()
-        world_setup.randomize(self.laxdr_options, rnd)
+        world_setup.randomize(self.laxdr_options, self.multiworld.random)
         self.ladxr_logic = LAXDRLogic(configuration_options=self.laxdr_options, world_setup=world_setup)
-        self.ladxr_itempool = LADXRItemPool(self.ladxr_logic, self.laxdr_options, rnd).toDict()
+        self.ladxr_itempool = LADXRItemPool(self.ladxr_logic, self.laxdr_options, self.multiworld.random).toDict()
 
 
     def create_regions(self) -> None:
@@ -108,20 +106,19 @@ class LinksAwakeningWorld(World):
         r.exits = [Entrance(self.player, "Start Game", r)]
         r.exits[0].connect(start)
         
-        self.multiworld.regions.append(r)  # or use += [r...]
-        for region in self.multiworld.get_regions():
-            if region.player != self.player:
-                continue
-            for loc in r.locations:
+        self.multiworld.regions.append(r)
+
+        for region in regions:
+            for loc in region.locations:
                 if loc.event:
-                    loc.place_locked_item(self.create_item(loc.ladxr_item.OPTIONS[0]))
+                    loc.place_locked_item(self.create_event(loc.ladxr_item.OPTIONS[0]))
         
     def create_item(self, item_name: str):
         # This is called when AP wants to create an item by name (for plando) or
         # when you call it from your own code.
         item_data = self.item_name_to_data[item_name]
 
-        return LinksAwakeningItem(item_data, self.player)
+        return LinksAwakeningItem(item_data, self, self.player)
 
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
@@ -129,7 +126,7 @@ class LinksAwakeningWorld(World):
 
     def create_items(self) -> None:    
         exclude = [item for item in self.multiworld.precollected_items[self.player]]
-        self.prefill_dungeon_items = [[] for _ in range(9)]
+        self.prefill_dungeon_items = []
         self.trade_items = []
         for ladx_item_name, count in self.ladxr_itempool.items():
             # event
@@ -143,7 +140,6 @@ class LinksAwakeningWorld(World):
                 else:
                     item = self.create_item(item_name)
 
-                    # TODO: For now, lock instruments, don't do key shuffle
                     if not self.multiworld.tradequest[self.player] and ladx_item_name.startswith("TRADING_"):
                         self.trade_items.append(item)
                         continue
@@ -161,77 +157,158 @@ class LinksAwakeningWorld(World):
                                         loc.place_locked_item(item)
                                         found = True
                                 if found:
-                                    break
-                            if found:
-                                continue
-                            
+                                    break                            
                         else:
-                            self.prefill_dungeon_items[item.item_data.dungeon_index - 1].append(item)
+                            self.prefill_dungeon_items.append(item)
                         continue
 
                     self.multiworld.itempool.append(item)
-                    
 
     def pre_fill(self):
-        dungeon_locations = [[] for _ in range(9)]
+        dungeon_locations = []
         local_only_locations = []
         all_state = self.multiworld.get_all_state(use_cache=True)
         
-        # For now, special case first item
-        start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
-        # TODO: for now, tail key doesn't work - will need to walk the pool one more time and ensure a weapon is sphere 2
-        possible_start_items = [item for item in self.multiworld.itempool 
-            if item.player == self.player 
-                and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS 
-                and "KEY" not in item.item_data.ladxr_id]
-        start_item = self.multiworld.random.choice(possible_start_items)
-        self.multiworld.itempool.remove(start_item)
-        start_loc.place_locked_item(start_item)
+        trendy_region = self.multiworld.get_region("Trendy Shop", self.player)
+        event_location = Location(self.player, "Can Play Trendy Game", parent=trendy_region)
+        trendy_region.locations.insert(0, event_location)
+        event_location.place_locked_item(self.create_event("Can Play Trendy Game"))
         
-        # Test code
-        # bracelet = next(x for x in self.multiworld.itempool if x.name == "Power Bracelet")
-        # self.multiworld.itempool.remove(bracelet)
-        # fill_restrictive(self.multiworld, all_state, [self.multiworld.get_location("Armos Knight (Southern Face Shrine)", self.player)], [bracelet], lock=True)
-
-        # TODO: shuffle!
-
+        # For now, special case first item
+        FORCE_START_ITEM = True
+        if FORCE_START_ITEM:
+            start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
+            possible_start_items = [item for item in self.multiworld.itempool 
+                if item.player == self.player 
+                    and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS]
+            
+            start_item = self.multiworld.random.choice(possible_start_items)
+            self.multiworld.itempool.remove(start_item)
+            start_loc.place_locked_item(start_item)
+        
         for r in self.multiworld.get_regions():
             if r.player != self.player:
                 continue
             if r.dungeon_index:
-                dungeon_locations[r.dungeon_index-1] += r.locations
-            
-            for loc in r.locations:
-                if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only and not loc.item:
-                    local_only_locations.append(loc)
-                if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
-                    # each item only fits one place, but this is easier
-                    fill_restrictive(self.multiworld, all_state, [loc], self.trade_items, lock=True)
+                dungeon_locations += r.locations
+                for location in r.locations:
+                    if location.name == "Pit Button Chest (Tail Cave)":
+                        # Don't place dungeon items on pit button chest, to reduce chance of the filler blowing up
+                        dungeon_locations.remove(location)
+                    location.dungeon = r.dungeon_index
+                    orig_rule = location.item_rule
+                    location.item_rule = lambda item, orig_rule=orig_rule: \
+                        (not isinstance(item, DungeonItemData) or item.dungeon_index == location.dungeon) and orig_rule(item)
 
-        for i, dungeon_items in enumerate(self.prefill_dungeon_items):
-            dungeon_items = sorted(dungeon_items,key=lambda item: item.item_data.dungeon_item_type)
-            self.multiworld.random.shuffle(dungeon_locations[i])
-            fill_restrictive(self.multiworld, all_state, dungeon_locations[i], dungeon_items, lock=True)
-        
+            for loc in r.locations:
+                if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
+                    item = next(i for i in self.trade_items if i.item_data.ladxr_id == loc.ladxr_item.default_item)
+                    loc.place_locked_item(item)                   
+                elif isinstance(loc, LinksAwakeningLocation) and not loc.ladxr_item.MULTIWORLD and not loc.item:
+                    local_only_locations.append(loc)
+
+        dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
+        self.multiworld.random.shuffle(dungeon_locations)
+        fill_restrictive(self.multiworld, all_state, dungeon_locations, dungeon_items, lock=True)
+
         # Fill local only first
+        # Double check that we haven't filled the location first so we don't double fill
+        local_only_locations = [loc for loc in local_only_locations if not loc.item]
         self.multiworld.random.shuffle(local_only_locations)
+
+        
+        # Shuffle the pool first 
+        # self.multiworld.random.shuffle(self.multiworld.itempool)
         fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
 
     def post_fill(self):
 
-        print("post_fill")
+        #print("post_fill")
+        pass
+
+    name_cache = {}
+
+    def guess_icon_for_other_world(self, other):
+        if not self.name_cache:
+            from .LADXR.locations.faceKey import FaceKey
+            sample_key = FaceKey()
+            forbidden = [
+                "TRADING",
+                "ITEM",
+                "BAD",
+                "SINGLE",
+                "UPGRADE",
+            ]
+            for item in sample_key.OPTIONS:
+                self.name_cache[item] = item
+                splits = item.split("_")
+                self.name_cache["".join(splits)] = item
+                if 'RUPEES' in splits:
+                    self.name_cache["".join(reversed(splits))] = item
+                    
+                for word in item.split("_"):
+                    if word not in forbidden and not word.isnumeric():
+                        self.name_cache[word] = item
+            others = {
+                'KEY': 'KEY',
+                'COMPASS': 'COMPASS',
+                'BIGKEY': 'NIGHTMARE_KEY',
+                'MAP': 'MAP',
+                'FLUTE': 'OCARINA',
+                'SONG': 'OCARINA',
+                'MUSHROOM': 'TOADSTOOL',
+                'GLOVE': 'POWER_BRACELET',
+                'BOOT': 'PEGASUS_BOOTS',
+                'SHOE': 'PEGASUS_BOOTS',
+                'SHOES': 'PEGASUS_BOOTS',
+                'SANCTUARYHEARTCONTAINER': 'HEART_CONTAINER',
+                'BOSSHEARTCONTAINER': 'HEART_CONTAINER',
+                'HEARTCONTAINER': 'HEART_CONTAINER',
+                'BOMBS': 'BOMB',
+                # TODO: instruments because we can
+            }
+            self.name_cache |= others
+            
+        
+        uppered = other.upper()
+        if "BIG KEY" in uppered:
+            return self.name_cache['BIG KEY']
+        possibles = other.upper().split(" ")
+        rejoined = "".join(possibles)
+        if rejoined in self.name_cache:
+            return self.name_cache[rejoined]
+        for name in possibles:
+            if name in self.name_cache:
+                return self.name_cache[name]
+        
+        return "TRADING_ITEM_LETTER"
+
+
+    def generate_basic(self) -> None:
+        # place "Victory" at "Final Boss" and set collection as win condition
+
+        windfish = self.multiworld.get_region("Windfish", self.player)
+        l = Location(self.player, "Windfish", parent=windfish)
+        windfish.locations = [l]
+                
+        l.place_locked_item(self.create_event("An Alarm Clock"))
+        
+        self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
+
+    def generate_output(self, output_directory: str):
         # copy items back to locations
         for r in self.multiworld.get_regions(self.player):
             for loc in r.locations:
                 if isinstance(loc, LinksAwakeningLocation):
+                    assert(loc.item)
                     # If we're a links awakening item, just use the item
                     if isinstance(loc.item, LinksAwakeningItem):
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
+
                     # TODO: if the item name contains "sword", use a sword icon, etc
-                    
                     # Otherwise, use a cute letter as the icon
                     else:
-                        loc.ladxr_item.item = "TRADING_ITEM_LETTER"
+                        loc.ladxr_item.item = self.guess_icon_for_other_world(loc.item.name)
 
                     if loc.item:
                         loc.ladxr_item.item_owner = loc.item.player
@@ -241,31 +318,6 @@ class LinksAwakeningWorld(World):
                     # Kind of kludge, make it possible for the location to differentiate between local and remote items
                     loc.ladxr_item.location_owner = self.player
 
-    def generate_basic(self) -> None:
-        # place "Victory" at "Final Boss" and set collection as win condition
-        
-        # TODO: we should probably priority fill the starter item
-
-        windfish = self.multiworld.get_region("Windfish", self.player)
-        l = Location(self.player, "Windfish", parent=windfish)
-        windfish.locations = [l]
-                
-        l.place_locked_item(self.create_event("An Alarm Clock"))
-        
-        self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
-        
-        regions = self.multiworld.get_regions(self.player)
-        for region in regions:
-            if region.player != self.player:
-                continue
-            for location in region.locations:
-                if location.name in prefilled_events:
-                    location.place_locked_item(self.create_event(location.name))
-                    
-
-
-
-    def generate_output(self, output_directory: str):
         # How to generate the mod or ROM highly depends on the game
         # if the mod is written in Lua, Jinja can be used to fill a template
         # if the mod reads a json file, `json.dump()` can be used to generate that

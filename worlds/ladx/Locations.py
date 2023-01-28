@@ -10,7 +10,7 @@ from .Common import *
 from worlds.generic.Rules import add_rule, set_rule, add_item_rule
 from .Items import ladxr_item_to_la_item_name, links_awakening_items, ItemName, LinksAwakeningItem
 from .LADXR.itempool import ItemPool as LADXRItemPool
-
+from .LADXR.locations.tradeSequence import TradeRequirements, TradeSequenceItem
 prefilled_events = ["ANGLER_KEYHOLE", "RAFT", "MEDICINE2", "CASTLE_BUTTON"]
 
 links_awakening_dungeon_names = [
@@ -54,7 +54,7 @@ def get_locations_to_id():
 locations_to_id = get_locations_to_id()
 class LinksAwakeningLocation(Location):  
     game = LINKS_AWAKENING
-    
+    dungeon = None
     def __init__(self, player: int, region, ladxr_item):
         name = meta_to_name(ladxr_item.metadata)
         
@@ -70,30 +70,34 @@ class LinksAwakeningLocation(Location):
         self.parent_region = region
         self.ladxr_item = ladxr_item
         def filter_item(item):
-            if ladxr_item.local_only and item.player != player:
+            if not ladxr_item.MULTIWORLD and item.player != player:
                 return False
             # TODO: if item isn't it allowed list, turn into letter
             if isinstance(item, LinksAwakeningItem):
+                # Don't allow self locking Trade Sequence Items - there's some settings where it could be legal
+                # but it's not worth the headache to pass in the required metadata
+                if item.item_data.ladxr_id.startswith("TRADING_ITEM") and isinstance(self.ladxr_item, TradeSequenceItem):
+                    if item.item_data.ladxr_id == TradeRequirements[self.ladxr_item.default_item]:
+                        return False
                 return item.item_data.ladxr_id in self.ladxr_item.OPTIONS
             return True
-            #return item.player != player or item.item_data.ladxr_id in self.ladxr_item.OPTIONS
         add_item_rule(self, filter_item)
 
         # Fill local items first
-        if self.ladxr_item.local_only:
-            self.progress_type = LocationProgressType.PRIORITY
+        #if not self.ladxr_item.local_only:
+        #    self.progress_type = LocationProgressType.PRIORITY
 
 def has_free_weapon(state: "CollectionState", player: int) -> bool:
     return state.has("Progressive Sword", player) or state.has("Magic Rod", player) or state.has("Boomerang", player) or state.has("Hookshot", player)
 
 # If the player has access to farm enough rupees to afford a game, we assume that they can keep beating the game
 def can_farm_rupees(state: "CollectionState", player: int) -> bool:
-    return has_free_weapon(state, player) and (state.can_reach("Trendy Game (Mabe Village)", "Location", player) or state.has("RAFT", player=player))
+    return has_free_weapon(state, player) and (state.has("Can Play Trendy Game", player=player) or state.has("RAFT", player=player))
 
 class LinksAwakeningLogic(LogicMixin):
     rupees = {
-        ItemName.RUPEES_20: 20,
-        ItemName.RUPEES_50: 50,
+        ItemName.RUPEES_20: 0,
+        ItemName.RUPEES_50: 0,
         ItemName.RUPEES_100: 100,
         ItemName.RUPEES_200: 200,
         ItemName.RUPEES_500: 500,
