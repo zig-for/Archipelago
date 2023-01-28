@@ -37,14 +37,19 @@ class DungeonItemData(ItemData):
 class LinksAwakeningItem(Item):
     game: str = Common.LINKS_AWAKENING
 
-    def __init__(self, item_data, player):
-        classfication = item_data.classification
-        if item_data.mark_only_first_progression:
-            if player in item_data.created_for_players:
-                classfication = ItemClassification.filler
-            else:
-                item_data.created_for_players.add(player)
-        super().__init__(item_data.item_name, item_data.classification, Common.BASE_ID + item_data.item_id, player)
+    def __init__(self, item_data, world, player):
+        classification = item_data.classification
+        if callable(classification):
+            classification = classification(world, player)
+        # this doesn't work lol
+        MARK_FIRST_ITEM = False
+        if MARK_FIRST_ITEM:
+            if item_data.mark_only_first_progression:
+                if player in item_data.created_for_players:
+                    classification = ItemClassification.filler
+                else:
+                    item_data.created_for_players.add(player)
+        super().__init__(item_data.item_name, classification, Common.BASE_ID + item_data.item_id, player)
         self.item_data = item_data
 
 # TODO: use _NAMES instead?
@@ -273,20 +278,20 @@ links_awakening_items = [
     DungeonItemData(ItemName.INSTRUMENT6, "INSTRUMENT6", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT7, "INSTRUMENT7", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT8, "INSTRUMENT8", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_YOSHI_DOLL, "TRADING_ITEM_YOSHI_DOLL", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_RIBBON, "TRADING_ITEM_RIBBON", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_DOG_FOOD, "TRADING_ITEM_DOG_FOOD", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_BANANAS, "TRADING_ITEM_BANANAS", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_STICK, "TRADING_ITEM_STICK", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_HONEYCOMB, "TRADING_ITEM_HONEYCOMB", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_PINEAPPLE, "TRADING_ITEM_PINEAPPLE", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_HIBISCUS, "TRADING_ITEM_HIBISCUS", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_LETTER, "TRADING_ITEM_LETTER", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_BROOM, "TRADING_ITEM_BROOM", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_FISHING_HOOK, "TRADING_ITEM_FISHING_HOOK", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_NECKLACE, "TRADING_ITEM_NECKLACE", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_SCALE, "TRADING_ITEM_SCALE", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", ItemClassification.progression)
+    ItemData(ItemName.TRADING_ITEM_YOSHI_DOLL, "TRADING_ITEM_YOSHI_DOLL", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_RIBBON, "TRADING_ITEM_RIBBON", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_DOG_FOOD, "TRADING_ITEM_DOG_FOOD", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_BANANAS, "TRADING_ITEM_BANANAS", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_STICK, "TRADING_ITEM_STICK", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_HONEYCOMB, "TRADING_ITEM_HONEYCOMB", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_PINEAPPLE, "TRADING_ITEM_PINEAPPLE", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_HIBISCUS, "TRADING_ITEM_HIBISCUS", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_LETTER, "TRADING_ITEM_LETTER", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_BROOM, "TRADING_ITEM_BROOM", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_FISHING_HOOK, "TRADING_ITEM_FISHING_HOOK", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_NECKLACE, "TRADING_ITEM_NECKLACE", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_SCALE, "TRADING_ITEM_SCALE", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
+    ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler)
 ]
 
 ladxr_item_to_la_item_name = {

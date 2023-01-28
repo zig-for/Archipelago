@@ -5,7 +5,6 @@ from .itemInfo import ItemInfo
 class Witch(ItemInfo):
     def __init__(self):
         super().__init__(0x2A2)
-        self.local_only = True
 
     OPTIONS = [POWER_BRACELET, SHIELD, BOW, HOOKSHOT, MAGIC_ROD, PEGASUS_BOOTS, OCARINA,
         FEATHER, SHOVEL, MAGIC_POWDER, BOMB, SWORD, FLIPPERS, MAGNIFYING_LENS, MEDICINE,

@@ -28,7 +28,6 @@ class StartItem(DroppedKey):
     def __init__(self):
         super().__init__(0x2A3)
         self.give_bowwow = False
-        self.local_only = True
 
     def configure(self, options):
         if options.bowwow != 'normal':

@@ -13,9 +13,6 @@ class ItemInfo:
         self.metadata = checkMetadataTable.get(self.nameId, checkMetadataTable["None"])
         self.forced_item = None
 
-        # AP
-        self.local_only = False
-
     @property
     def location(self):
         return self._location

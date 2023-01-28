@@ -118,7 +118,7 @@ class LinksAwakeningWorld(World):
         # when you call it from your own code.
         item_data = self.item_name_to_data[item_name]
 
-        return LinksAwakeningItem(item_data, self.player)
+        return LinksAwakeningItem(item_data, self, self.player)
 
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
@@ -199,14 +199,13 @@ class LinksAwakeningWorld(World):
                     orig_rule = location.item_rule
                     location.item_rule = lambda item, orig_rule=orig_rule: \
                         (not isinstance(item, DungeonItemData) or item.dungeon_index == location.dungeon) and orig_rule(item)
+
             for loc in r.locations:
-                if isinstance(loc, LinksAwakeningLocation) and loc.ladxr_item.local_only and not loc.item:
-                    local_only_locations.append(loc)
                 if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
-                    # TODO: place_locked_item
-                    fill_restrictive(self.multiworld, all_state, [loc], self.trade_items, lock=True)
-        
-        
+                    item = next(i for i in self.trade_items if i.item_data.ladxr_id == loc.ladxr_item.default_item)
+                    loc.place_locked_item(item)                   
+                elif isinstance(loc, LinksAwakeningLocation) and not loc.ladxr_item.MULTIWORLD and not loc.item:
+                    local_only_locations.append(loc)
 
         dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
         self.multiworld.random.shuffle(dungeon_locations)
@@ -216,8 +215,11 @@ class LinksAwakeningWorld(World):
         # Double check that we haven't filled the location first so we don't double fill
         local_only_locations = [loc for loc in local_only_locations if not loc.item]
         self.multiworld.random.shuffle(local_only_locations)
-        fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
+
         
+        # Shuffle the pool first 
+        # self.multiworld.random.shuffle(self.multiworld.itempool)
+        fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=True)
 
     def post_fill(self):
 
@@ -302,6 +304,7 @@ class LinksAwakeningWorld(World):
                     # If we're a links awakening item, just use the item
                     if isinstance(loc.item, LinksAwakeningItem):
                         loc.ladxr_item.item = loc.item.item_data.ladxr_id
+
                     # TODO: if the item name contains "sword", use a sword icon, etc
                     # Otherwise, use a cute letter as the icon
                     else:
@@ -314,7 +317,7 @@ class LinksAwakeningWorld(World):
 
                     # Kind of kludge, make it possible for the location to differentiate between local and remote items
                     loc.ladxr_item.location_owner = self.player
-
+                            
         # How to generate the mod or ROM highly depends on the game
         # if the mod is written in Lua, Jinja can be used to fill a template
         # if the mod reads a json file, `json.dump()` can be used to generate that

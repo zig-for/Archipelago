@@ -161,6 +161,7 @@ class LAClientConstants:
     #
     # Memory locations of LADXR
     ROMGameID = 0x0051 # 4 bytes
+    SlotName = 0x0134
     #ROMWorldID = 0x0055
     #ROMConnectorVersion = 0x0056
     wGameplayType = 0xDB95            # RO: We should only act if this is higher then 6, as it indicates that the game is running normally

@@ -139,11 +139,6 @@ def fill_restrictive(world: MultiWorld, base_state: CollectionState, locations: 
             logging.warning(
                 f'Not all items placed. Game beatable anyway. (Could not place {unplaced_items})')
         else:
-            if len(unplaced_items) == 1:
-                for location in locations:  
-                    print(f"location: {location} single_player_placement: {single_player_placement} location.can_fill: {location.can_fill(maximum_exploration_state, item_to_place, perform_access_check)}")
-            print(maximum_exploration_state.prog_items)
-
             raise FillError(f'No more spots to place {unplaced_items} via fill_restrictive, locations {locations} are invalid. '
                             f'Already placed {len(placements)}: {", ".join(str(place) for place in placements)}')
 

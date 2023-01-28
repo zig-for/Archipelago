@@ -2,6 +2,22 @@ from .itemInfo import ItemInfo
 from .constants import *
 
 
+TradeRequirements = {
+    TRADING_ITEM_YOSHI_DOLL: None,
+    TRADING_ITEM_RIBBON: TRADING_ITEM_YOSHI_DOLL,
+    TRADING_ITEM_DOG_FOOD: TRADING_ITEM_RIBBON,
+    TRADING_ITEM_BANANAS: TRADING_ITEM_DOG_FOOD,
+    TRADING_ITEM_STICK: TRADING_ITEM_BANANAS,
+    TRADING_ITEM_HONEYCOMB: TRADING_ITEM_STICK,
+    TRADING_ITEM_PINEAPPLE: TRADING_ITEM_HONEYCOMB,
+    TRADING_ITEM_HIBISCUS: TRADING_ITEM_PINEAPPLE,
+    TRADING_ITEM_LETTER: TRADING_ITEM_HIBISCUS,
+    TRADING_ITEM_BROOM: TRADING_ITEM_LETTER,
+    TRADING_ITEM_FISHING_HOOK: TRADING_ITEM_BROOM,
+    TRADING_ITEM_NECKLACE: TRADING_ITEM_FISHING_HOOK,
+    TRADING_ITEM_SCALE: TRADING_ITEM_NECKLACE,
+    TRADING_ITEM_MAGNIFYING_GLASS: TRADING_ITEM_SCALE,
+}
 class TradeSequenceItem(ItemInfo):
     OPTIONS = [POWER_BRACELET, SHIELD, BOW, HOOKSHOT, MAGIC_ROD, PEGASUS_BOOTS, OCARINA,
         FEATHER, SHOVEL, MAGIC_POWDER, BOMB, SWORD, FLIPPERS, MAGNIFYING_LENS, MEDICINE,
@@ -18,11 +34,11 @@ class TradeSequenceItem(ItemInfo):
 
     def __init__(self, room, default_item):
         super().__init__(room)
-        self.__default_item = default_item
+        self.default_item = default_item
 
     def configure(self, options):
         if not options.tradequest:
-            self.OPTIONS = [self.__default_item]
+            self.OPTIONS = [self.default_item]
 
     def patch(self, rom, option, *, multiworld=None):
         rom.banks[0x3E][self.room + 0x3B16] = CHEST_ITEMS[option]
