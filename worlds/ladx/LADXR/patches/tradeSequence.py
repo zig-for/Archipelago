@@ -286,10 +286,22 @@ notSideScroll:
         rst  8
     """), fill_nop=True)
     # Trade item message code
+    # rom.patch(0x07, 0x159F, 0x15B9, ASM("""
+    #     ld   a, $09 ; give message and item (from alt item table)
+    #     rst  8
+    # """), fill_nop=True)
     rom.patch(0x07, 0x159F, 0x15B9, ASM("""
-        ld   a, $09 ; give message and item (from alt item table)
+        ldh  a, [$F6] ; map room
+        add a, 2
+        ldh [$F6], a
+        ld   a, $0e ; giveItemMultiworld
         rst  8
+        ldh  a, [$F6] ; map room
+        sub a, 2
+        ldh [$F6], a
     """), fill_nop=True)
+
+
     # Prevent changing the 2nd trade item memory
     rom.patch(0x07, 0x15BD, 0x15C1, ASM("""
         call $7F7F

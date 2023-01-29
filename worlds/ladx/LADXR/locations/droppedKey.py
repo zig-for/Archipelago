@@ -1,6 +1,6 @@
 from .itemInfo import ItemInfo
 from .constants import *
-
+patched_already = {}
 
 class DroppedKey(ItemInfo):
     OPTIONS = [POWER_BRACELET, SHIELD, BOW, HOOKSHOT, MAGIC_ROD, PEGASUS_BOOTS, OCARINA,
@@ -16,32 +16,43 @@ class DroppedKey(ItemInfo):
         TRADING_ITEM_FISHING_HOOK, TRADING_ITEM_NECKLACE, TRADING_ITEM_SCALE, TRADING_ITEM_MAGNIFYING_GLASS
     ]
     MULTIWORLD = True
-
+    default_item = None
     def patch(self, rom, option, *, multiworld=None):
+        room = self.room
+
+        # Offset room for trade items to avoid collisions
+        if self.default_item:
+            roomLo = room & 0xFF
+            roomHi = room ^ roomLo
+            roomLo = (roomLo + 2) & 0xFF
+            room = roomHi | roomLo
         if (option.startswith(MAP) and option != MAP) or (option.startswith(COMPASS) and option != COMPASS) or option.startswith(STONE_BEAK) or (option.startswith(NIGHTMARE_KEY) and option != NIGHTMARE_KEY )or (option.startswith(KEY) and option != KEY):
             if option[-1] == 'P':
                 print(option)
             if self._location.dungeon == int(option[-1]) and multiworld is None and self.room not in {0x166, 0x223}:
                 option = option[:-1]
-        rom.banks[0x3E][self.room + 0x3800] = CHEST_ITEMS[option]
-        if self.room == 0x169:  # Room in D4 where the key drops down the hole into the sidescroller
-            rom.banks[0x3E][0x017C + 0x3800] = CHEST_ITEMS[option]
-        elif self.room == 0x166:  # D4 boss, also place the item in out real boss room.
-            rom.banks[0x3E][0x01ff + 0x3800] = CHEST_ITEMS[option]
-        elif self.room == 0x223:  # D7 boss, also place the item in our real boss room.
-            rom.banks[0x3E][0x02E8 + 0x3800] = CHEST_ITEMS[option]
-        elif self.room == 0x092:  # Marins song
-            rom.banks[0x3E][0x00DC + 0x3800] = CHEST_ITEMS[option]
+        rom.banks[0x3E][room + 0x3800] = CHEST_ITEMS[option]
+        #assert room not in patched_already, f"{self} {patched_already[room]}"
+        #patched_already[room] = self
+        extra = None
+        if room == 0x169:  # Room in D4 where the key drops down the hole into the sidescroller
+            extra = 0x017C
+        elif room == 0x166:  # D4 boss, also place the item in out real boss room.
+            extra = 0x01ff
+        elif room == 0x223:  # D7 boss, also place the item in our real boss room.
+            extra = 0x02E8
+        elif room == 0x092:  # Marins song
+            extra = 0x00DC
+
+        if extra:
+            assert(not self.default_item)
+            rom.banks[0x3E][extra + 0x3800] = CHEST_ITEMS[option]
+
         if multiworld is not None:
-            rom.banks[0x3E][0x3300 + self.room] = multiworld
-            if self.room == 0x169:  # Room in D4 where the key drops down the hole into the sidescroller
-                rom.banks[0x3E][0x3300 + 0x017C] = multiworld
-            elif self.room == 0x166:  # D4 boss, also place the item in out real boss room.
-                rom.banks[0x3E][0x3300 + 0x01ff] = multiworld
-            elif self.room == 0x223:  # D7 boss, also place the item in our real boss room.
-                rom.banks[0x3E][0x3300 + 0x02E8] = multiworld
-            elif self.room == 0x092:  # Marins song
-                rom.banks[0x3E][0x3300 + 0x00DC] = multiworld
+            rom.banks[0x3E][0x3300 + room] = multiworld
+            
+            if extra:
+                rom.banks[0x3E][0x3300 + extra] = multiworld
 
     def read(self, rom):
         assert self._location is not None, hex(self.room)

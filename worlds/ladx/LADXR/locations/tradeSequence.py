@@ -1,6 +1,6 @@
 from .itemInfo import ItemInfo
 from .constants import *
-
+from .droppedKey import DroppedKey
 
 TradeRequirements = {
     TRADING_ITEM_YOSHI_DOLL: None,
@@ -18,7 +18,7 @@ TradeRequirements = {
     TRADING_ITEM_SCALE: TRADING_ITEM_NECKLACE,
     TRADING_ITEM_MAGNIFYING_GLASS: TRADING_ITEM_SCALE,
 }
-class TradeSequenceItem(ItemInfo):
+class TradeSequenceItem(DroppedKey):
     OPTIONS = [POWER_BRACELET, SHIELD, BOW, HOOKSHOT, MAGIC_ROD, PEGASUS_BOOTS, OCARINA,
         FEATHER, SHOVEL, MAGIC_POWDER, BOMB, SWORD, FLIPPERS, MAGNIFYING_LENS, MEDICINE,
         TAIL_KEY, ANGLER_KEY, FACE_KEY, BIRD_KEY, GOLD_LEAF, SLIME_KEY, ROOSTER,
@@ -39,11 +39,13 @@ class TradeSequenceItem(ItemInfo):
     def configure(self, options):
         if not options.tradequest:
             self.OPTIONS = [self.default_item]
+        super().configure(options)
 
-    def patch(self, rom, option, *, multiworld=None):
-        rom.banks[0x3E][self.room + 0x3B16] = CHEST_ITEMS[option]
+    #def patch(self, rom, option, *, multiworld=None):
+    #    rom.banks[0x3E][self.room + 0x3B16] = CHEST_ITEMS[option]
 
     def read(self, rom):
+        assert(False)
         assert self._location is not None, hex(self.room)
         value = rom.banks[0x3E][self.room + 0x3B16]
         for k, v in CHEST_ITEMS.items():

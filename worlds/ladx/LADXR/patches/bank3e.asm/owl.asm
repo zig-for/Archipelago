@@ -46,8 +46,14 @@ GetRoomStatusAddressInHL:
 
 
 RenderOwlStatueItem:
-    ld   hl, $7B16
-    call OffsetPointerByRoomNumber
-    ld   a, [hl]
-    ldh  [$F1], a
-    jp   RenderChestItem
+    ldh  a, [$F6] ; map room
+    add a, 2
+    ldh [$F6], a
+
+    call RenderItemForRoom
+ 
+    ldh  a, [$F6] ; map room
+    sub a, 2
+    ldh [$F6], a
+    ret
+
