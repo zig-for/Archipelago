@@ -55,11 +55,6 @@ class Check:
         if oldValue != self.value:
             self.diff += self.value - (oldValue or 0)
 
-            #if self.diff != 0:
-            #    logger.info(f'Found {self.id}: {"+" if self.diff > 0 else ""}{self.diff}')
-
-
-
 class Tracker:
     all_checks = []
 
@@ -116,31 +111,35 @@ class Tracker:
         lowest_check = 0xffff
         highest_check = 0
 
-        for check in [x for x in checkMetadataTable if x not in blacklist]:
-            room = check.split('-')[0]
+        for check_id in [x for x in checkMetadataTable if x not in blacklist]:
+            room = check_id.split('-')[0]
             mask = 0x10
-            address = addressOverrides[check] if check in addressOverrides else 0xD800 + int(room, 16)
-            
-            if 'Trade' in check or 'Owl' in check:
+            address = addressOverrides[check_id] if check_id in addressOverrides else 0xD800 + int(room, 16)
+
+            if 'Trade' in check_id or 'Owl' in check_id:
                     mask = 0x20
 
-            if check in maskOverrides:
-                mask = maskOverrides[check]
+            if check_id in maskOverrides:
+                mask = maskOverrides[check_id]
             
             lowest_check = min(lowest_check, address)
             highest_check = max(highest_check, address)
-            if check in alternateAddresses:
-                lowest_check = min(lowest_check, alternateAddresses[check])
-                highest_check = max(highest_check, alternateAddresses[check])
+            if check_id in alternateAddresses:
+                lowest_check = min(lowest_check, alternateAddresses[check_id])
+                highest_check = max(highest_check, alternateAddresses[check_id])
 
-            self.all_checks.append(Check(check, address, mask, alternateAddresses[check] if check in alternateAddresses else None))
-            self.remaining_checks = [check for check in self.all_checks]
+            check = Check(check_id, address, mask, alternateAddresses[check_id] if check_id in alternateAddresses else None)
+            if check_id == '0x2A3':
+                self.start_check = check
+            self.all_checks.append(check)
+        self.remaining_checks = [check for check in self.all_checks]
         self.gameboy.set_cache_limits(lowest_check, highest_check - lowest_check + 1)
 
-        
-    async def readChecks(self, read_byte_f, cb):
-        for check in self.remaining_checks:
+    def has_start_item(self):
+        return self.start_check not in self.remaining_checks
 
+    async def readChecks(self, cb):
+        for check in self.remaining_checks:
             addresses = [check.address]
             if check.alternateAddress:
                 addresses.append(check.alternateAddress)
@@ -374,6 +373,7 @@ class LinksAwakeningClient():
     game_crc = None
     pending_deathlink = False
     deathlink_debounce = True
+    recvd_checks = {}
     def msg(self, m):
         logger.info(m)
         s = f"SHOW_MSG {m}\n"
@@ -408,7 +408,7 @@ class LinksAwakeningClient():
                     except (BlockingIOError, TimeoutError):
                         time.sleep(0.1)
                         pass
-                logger.info(f"Connected to Retroarch {version} {status}")
+                logger.info(f"Connected to Retroarch {version} {info}")
                 self.gameboy.read_memory(0x1000)
                 return
             except ConnectionResetError:
@@ -430,13 +430,12 @@ class LinksAwakeningClient():
 
     
     # TODO: this needs to be async and queueing
-    def recved_item_from_ap(self, item_id, from_player, index):
-        # TODO: the game breaks if you haven't talked to anyone before doing this
-        
-        next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
-        logger.info(f"next index was {next_index}")
-        if index != next_index:
+    def recved_item_from_ap(self, item_id, from_player, next_index):
+        # Don't allow getting an item until you've got your first check
+        if not self.tracker.has_start_item():
             return
+
+        logger.info(f"next index was {next_index}")
 
         item_id -= LABaseID
         
@@ -462,20 +461,16 @@ class LinksAwakeningClient():
         logger.info("Waiting on game to be in valid state...")
         while not await self.gameboy.check_safe_gameplay(throw=False):
             pass
+        logger.info("Ready!")
     last_index = 0
     async def main_tick(self, item_get_cb, win_cb, deathlink_cb):
-        async def read_byte(b):
-            mem = await self.async_read_memory_safe(b)
-            if mem is None:
-                return None
-            return mem[0]
-
-        await self.tracker.readChecks(read_byte, item_get_cb)
+        await self.tracker.readChecks(item_get_cb)
 
         next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
         if next_index != self.last_index:
             self.last_index = next_index
             logger.info(f"Got new index {next_index}")
+        
         # Force win
         # self.gameboy.write_memory(LAClientConstants.wGameplayType, [1, 0])
         # 
@@ -498,6 +493,14 @@ class LinksAwakeningClient():
         if (await self.gameboy.read_memory_cache([LAClientConstants.wGameplayType]))[LAClientConstants.wGameplayType] == 1:
             await win_cb()
 
+        recv_index = (await self.gameboy.async_read_memory_safe(LAClientConstants.wRecvIndex))[0]
+        
+        # Play back one at a time
+        
+        if recv_index in self.recvd_checks:
+            item = self.recvd_checks[recv_index]
+            self.recved_item_from_ap(item.item, item.player, recv_index)
+            
 
 def create_task_log_exception(awaitable) -> asyncio.Task:
     async def _log_exception(awaitable):
@@ -518,7 +521,6 @@ class LinksAwakeningContext(CommonContext):
     # TODO: this needs to re-read on reset
     found_checks = []
     last_resend = time.time()
-    recvd_checks = {}
     won = False
     def __init__(self, server_address: typing.Optional[str], password: typing.Optional[str]) -> None:
         self.client = LinksAwakeningClient()
@@ -564,16 +566,7 @@ class LinksAwakeningContext(CommonContext):
         if cmd == "ReceivedItems":
             logger.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
             for index, item in enumerate(args["items"], args["index"]):
-                self.recvd_checks[index] = item
-            logger.info(f"{len(self.recvd_checks)}")
-   
-            index = self.client.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
-            
-            logger.info(f"Playing back from {index}")
-            while index in self.recvd_checks:
-                item = self.recvd_checks[index]
-                self.client.recved_item_from_ap(item.item, item.player, index)
-                index += 1
+                self.client.recvd_checks[index] = item
 
     item_id_lookup = get_locations_to_id()
     async def run_game_loop(self):
