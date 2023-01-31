@@ -113,6 +113,14 @@ class LinksAwakeningWorld(World):
                 if loc.event:
                     loc.place_locked_item(self.create_event(loc.ladxr_item.OPTIONS[0]))
         
+        windfish = self.multiworld.get_region("Windfish", self.player)
+        l = Location(self.player, "Windfish", parent=windfish)
+        windfish.locations = [l]
+                
+        l.place_locked_item(self.create_event("An Alarm Clock"))
+        
+        self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
+
     def create_item(self, item_name: str):
         # This is called when AP wants to create an item by name (for plando) or
         # when you call it from your own code.
@@ -152,7 +160,10 @@ class LinksAwakeningWorld(World):
                             for r in self.multiworld.get_regions():
                                 if r.player != self.player:
                                     continue
+
                                 for loc in r.locations:
+                                    if not isinstance(loc, LinksAwakeningLocation):
+                                        continue
                                     if len(loc.ladxr_item.OPTIONS) == 1 and loc.ladxr_item.OPTIONS[0] == search_string:
                                         loc.place_locked_item(item)
                                         found = True
@@ -286,16 +297,7 @@ class LinksAwakeningWorld(World):
         return "TRADING_ITEM_LETTER"
 
 
-    def generate_basic(self) -> None:
-        # place "Victory" at "Final Boss" and set collection as win condition
 
-        windfish = self.multiworld.get_region("Windfish", self.player)
-        l = Location(self.player, "Windfish", parent=windfish)
-        windfish.locations = [l]
-                
-        l.place_locked_item(self.create_event("An Alarm Clock"))
-        
-        self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
 
     def generate_output(self, output_directory: str):
         # copy items back to locations
