@@ -262,7 +262,7 @@ class ItemTracker:
             "type":"item",
             "refresh": True,
             "version":"1.0",
-            "diff":False,
+            "diff": diff,
             "items": [],
         }
 

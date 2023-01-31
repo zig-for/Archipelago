@@ -484,8 +484,8 @@ class LinksAwakeningContext(CommonContext):
                         self.last_resend = now
                         await self.send_checks()
                     self.magpie.set_checks(self.client.tracker.all_checks)
-                    self.magpie.set_item_tracker(self.client.item_tracker)
-
+                    await self.magpie.set_item_tracker(self.client.item_tracker)
+                    
             except GameboyException:
                 time.sleep(1.0)
                 pass

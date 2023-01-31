@@ -17,7 +17,7 @@ class Check:
         self.mask = mask
         self.value = None
         self.diff = 0
-    
+
     def set(self, bytes):
         oldValue = self.value
 
@@ -27,12 +27,14 @@ class Check:
             maskedByte = byte
             if self.mask:
                 maskedByte &= self.mask
-            
+
             self.value |= int(maskedByte > 0)
 
         if oldValue != self.value:
             self.diff += self.value - (oldValue or 0)
 # Todo: unify this with existing item tables?
+
+
 class LocationTracker:
     all_checks = []
 
@@ -92,26 +94,30 @@ class LocationTracker:
         for check_id in [x for x in checkMetadataTable if x not in blacklist]:
             room = check_id.split('-')[0]
             mask = 0x10
-            address = addressOverrides[check_id] if check_id in addressOverrides else 0xD800 + int(room, 16)
+            address = addressOverrides[check_id] if check_id in addressOverrides else 0xD800 + int(
+                room, 16)
 
             if 'Trade' in check_id or 'Owl' in check_id:
-                    mask = 0x20
+                mask = 0x20
 
             if check_id in maskOverrides:
                 mask = maskOverrides[check_id]
-            
+
             lowest_check = min(lowest_check, address)
             highest_check = max(highest_check, address)
             if check_id in alternateAddresses:
                 lowest_check = min(lowest_check, alternateAddresses[check_id])
-                highest_check = max(highest_check, alternateAddresses[check_id])
+                highest_check = max(
+                    highest_check, alternateAddresses[check_id])
 
-            check = Check(check_id, address, mask, alternateAddresses[check_id] if check_id in alternateAddresses else None)
+            check = Check(check_id, address, mask,
+                          alternateAddresses[check_id] if check_id in alternateAddresses else None)
             if check_id == '0x2A3':
                 self.start_check = check
             self.all_checks.append(check)
         self.remaining_checks = [check for check in self.all_checks]
-        self.gameboy.set_cache_limits(lowest_check, highest_check - lowest_check + 1)
+        self.gameboy.set_cache_limits(
+            lowest_check, highest_check - lowest_check + 1)
 
     def has_start_item(self):
         return self.start_check not in self.remaining_checks
@@ -142,12 +148,14 @@ class MagpieBridge:
     checks = None
     item_tracker = None
     ws = None
+
     async def handler(self, websocket):
         self.ws = websocket
         while True:
             message = json.loads(await websocket.recv())
             if message["type"] == "handshake":
-                logger.info(f"Connected, supported features: {message['features']}")
+                logger.info(
+                    f"Connected, supported features: {message['features']}")
                 if "items" in message["features"]:
                     await self.send_all_inventory()
                 if "checks" in message["features"]:
@@ -156,38 +164,46 @@ class MagpieBridge:
     async def send_all_checks(self):
         while self.checks == None:
             await asyncio.sleep(0.1)
-        logger.info("sending checks to magpie")
+        logger.info("sending all checks to magpie")
         message = {
-            "type":"check",
+            "type": "check",
             "refresh":  True,
-            "version":"1.0",
-            "diff":False,
+            "version": "1.0",
+            "diff": False,
             "checks": [{"id": check.id, "checked": check.value} for check in self.checks]
         }
-        
+
         await self.ws.send(json.dumps(message))
 
     async def send_new_checks(self, checks):
         if not self.ws:
             return
 
-        logger.info("sending checks to magpie")
+        logger.debug("Sending new {checks} to magpie")
         message = {
-            "type":"check",
+            "type": "check",
             "refresh": True,
-            "version":"1.0",
+            "version": "1.0",
             "diff": True,
             "checks": [{"id": check, "checked": True} for check in checks]
         }
 
         await self.ws.send(json.dumps(message))
+
     async def send_all_inventory(self):
-        logger.info("sending items to magpie")
+        logger.info("Sending inventory to magpie")
 
         while self.item_tracker == None:
             await asyncio.sleep(0.1)
-        
+
         await self.item_tracker.sendItems(self.ws)
+
+    async def send_inventory_diffs(self):
+        if not self.ws:
+            return
+        if not self.item_tracker:
+            return
+        await self.item_tracker.sendItems(self.ws, diff=True)
 
     async def serve(self):
         async with websockets.serve(lambda w: self.handler(w), "", 17026, logger=logger):
@@ -196,5 +212,12 @@ class MagpieBridge:
     def set_checks(self, checks):
         self.checks = checks
 
-    def set_item_tracker(self, item_tracker):
+    async def set_item_tracker(self, item_tracker):
+        stale_tracker = self.item_tracker != item_tracker
         self.item_tracker = item_tracker
+        if stale_tracker:
+            if self.ws:
+                await self.send_all_inventory()
+        else:
+            await self.send_inventory_diffs()
+
