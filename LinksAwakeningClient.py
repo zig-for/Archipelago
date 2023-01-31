@@ -32,7 +32,26 @@ class InvalidEmulatorStateError(GameboyException):
 class BadRetroArchResponse(GameboyException):
     pass
 
+def magpie_logo():
+    from kivy.uix.image import Image, CoreImage
+    import io
+    import base64
 
+    binary_data = """
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAAXN
+SR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA
+7DAcdvqGQAAADGSURBVDhPhVLBEcIwDHOYhjHCBuXHj2OTbAL8+
+MEGZIxOQ1CinOOk0Op0bmo7tlXXeR9FJMYDLOD9mwcLjQK7+hSZ
+wgcWMZJOAGeGKtChNHFL0j+FZD3jSCuo0w7l03wDrWdg00C4/aW
+eDEYNenuzPOfPspBnxf0kssE80vN0L8361j10P03DK4x6FHabuV
+ear8fHme+b17rwSjbAXeUMLb+EVTV2QHm46MWQanmnydA98KsVS
+XkV+qFpGQXrLhT/fqraQeQLuplpNH5g+WkAAAAASUVORK5CYII="""
+    binary_data= base64.b64decode(binary_data)
+    data = io.BytesIO(binary_data)
+    img = CoreImage(data, ext="png").texture
+
+   
+    return img
 
 class LAClientConstants:
     # Connector version
@@ -398,7 +417,21 @@ class LinksAwakeningContext(CommonContext):
         super().__init__(server_address, password)
 
     def run_gui(self) -> None:
-        from kvui import GameManager
+        from kvui import GameManager, Button
+        from kivy.uix.image import Image, CoreImage
+        from kivy.lang import Builder
+        from kivy.uix.boxlayout import BoxLayout
+        import webbrowser
+
+        w = Builder.load_string("""
+Button:
+    text: ""
+    size: 30, 30
+    size_hint_x: None
+    Image: 
+        size: 16, 16
+        center: self.parent.center
+""")
 
         class LADXManager(GameManager):
             logging_pairs = [
@@ -406,9 +439,18 @@ class LinksAwakeningContext(CommonContext):
                 ("Tracker", "Tracker"),                
             ]
             base_title = "Archipelago SNI Client"
+            def build(self):
+                b = super().build()
+                w.on_press = lambda: webbrowser.open('https://magpietracker.us')
+                w.children[0].texture = magpie_logo()
+                self.connect_layout.add_widget(w)
+                
+                return b
 
         self.ui = LADXManager(self)
         self.ui_task = asyncio.create_task(self.ui.async_run(), name="UI")  # type: ignore
+    
+    
 
     async def send_checks(self):
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
