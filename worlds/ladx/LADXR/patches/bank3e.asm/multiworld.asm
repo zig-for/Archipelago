@@ -55,25 +55,30 @@ MainLoop:
 
     ; Give an item to the player
     ld   a, [wLinkGiveItem]
+    ; if zol:
     cp   $22 ; zol item
     jr   z, LinkGiveSlime
+    ; if special item
     cp   $F0
     jr   nc, HandleSpecialItem
+    ; tmpChestItem = a
     ldh  [$F1], a
+    ; Give the item
     call GiveItemFromChest
+    ; Paste the item text
     call BuildItemMessage
+    ; Paste " from "
     ld hl, SpaceFrom
     call MessageCopyString
+    ; Paste the player name
     ld  a, [wLinkGiveItemFrom]
     call MessageAddPlayerName
-    ; todo: check if index out of range
-    ;dec  de
-    ;ld   a, [wLinkGiveItemFrom]
-    ;add  a, $30 ; '0'
-    ;ld   [de], a
     ld   a, $C9
+    ; hl = $wLinkStatusBits
     ld   hl, wLinkStatusBits
+    ; clear the 0 bit of *hl
     res  0, [hl]
+    ; OpenDialog()
     jp   $2385 ; Opendialog in $000-$0FF range
 
 LinkGiveSlime:
