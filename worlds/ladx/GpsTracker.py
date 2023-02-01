@@ -86,6 +86,5 @@ class GpsTracker:
             "x": self.screenX,
             "y": self.screenY,
         }
-        print(message)
        
         await socket.send(json.dumps(message))
