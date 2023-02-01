@@ -20,6 +20,8 @@ from worlds.ladx.LADXR.checkMetadata import checkMetadataTable
 from worlds.ladx.Locations import get_locations_to_id, meta_to_name
 from worlds.ladx.Tracker import LocationTracker, MagpieBridge
 from worlds.ladx.ItemTracker import ItemTracker
+from worlds.ladx.GpsTracker import GpsTracker
+
 class GameboyException(Exception):
     pass
 
@@ -319,6 +321,7 @@ class LinksAwakeningClient():
         await self.wait_for_game_ready()
         self.tracker = LocationTracker(self.gameboy)
         self.item_tracker = ItemTracker(self.gameboy)
+        self.gps_tracker = GpsTracker(self.gameboy)
     
     # TODO: this needs to be async and queueing
     def recved_item_from_ap(self, item_id, from_player, next_index):
@@ -359,6 +362,7 @@ class LinksAwakeningClient():
     async def main_tick(self, item_get_cb, win_cb, deathlink_cb):
         await self.tracker.readChecks(item_get_cb)
         await self.item_tracker.readItems()
+        await self.gps_tracker.read_location()
 
         next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
         if next_index != self.last_index:
@@ -441,7 +445,7 @@ Button:
             base_title = "Archipelago SNI Client"
             def build(self):
                 b = super().build()
-                w.on_press = lambda: webbrowser.open('https://magpietracker.us')
+                w.on_press = lambda: webbrowser.open('https://dev.magpietracker.us')
                 w.children[0].texture = magpie_logo()
                 self.connect_layout.add_widget(w)
                 
@@ -527,12 +531,11 @@ Button:
                         await self.send_checks()
                     self.magpie.set_checks(self.client.tracker.all_checks)
                     await self.magpie.set_item_tracker(self.client.item_tracker)
+                    await self.magpie.send_gps(self.client.gps_tracker)
                     
             except GameboyException:
                 time.sleep(1.0)
                 pass
-
-
 
 async def main():
     parser = get_base_parser(description="Link's Awakening Client.")

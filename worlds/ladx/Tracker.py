@@ -205,6 +205,11 @@ class MagpieBridge:
             return
         await self.item_tracker.sendItems(self.ws, diff=True)
 
+    async def send_gps(self, gps):
+        if not self.ws:
+            return
+        await gps.send_location(self.ws)
+
     async def serve(self):
         async with websockets.serve(lambda w: self.handler(w), "", 17026, logger=logger):
             await asyncio.Future()  # run forever
