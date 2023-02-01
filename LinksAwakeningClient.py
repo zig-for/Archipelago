@@ -467,10 +467,9 @@ Button:
 
             def build(self):
                 b = super().build()
-                w.on_press = lambda: webbrowser.open(
-                    'https://dev.magpietracker.us')
 
-                button = Button(text="", size=(30, 30), size_hint_x=None)
+                button = Button(text="", size=(30, 30), size_hint_x=None,
+                                on_press=lambda _: webbrowser.open('https://dev.magpietracker.us'))
                 image = Image(size=(16, 16), texture=magpie_logo())
                 button.add_widget(image)
 
@@ -479,7 +478,7 @@ Button:
                 button.bind(center=set_center)
 
                 self.connect_layout.add_widget(button)
-                inspector.create_inspector(Window, self.connect_layout)
+                #inspector.create_inspector(Window, self.connect_layout)
                 return b
 
         self.ui = LADXManager(self)
