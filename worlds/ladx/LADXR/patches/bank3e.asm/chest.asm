@@ -33,13 +33,13 @@ RenderChestItem:
     ret
 
 GiveItemFromChestMultiworld:
+    call IncreaseCheckCounter
     ; Check our "item is for other player" flag
     ld   hl, $7300
     call OffsetPointerByRoomNumber
     ld   a, [hl]
     ld   hl, $0055
     cp   [hl]
-    call IncreaseCheckCounter
     ret nz
     
 GiveItemFromChest:
