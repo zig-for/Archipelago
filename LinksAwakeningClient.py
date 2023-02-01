@@ -1,3 +1,4 @@
+import binascii
 import asyncio
 import logging
 import select
@@ -22,23 +23,28 @@ from worlds.ladx.Tracker import LocationTracker, MagpieBridge
 from worlds.ladx.ItemTracker import ItemTracker
 from worlds.ladx.GpsTracker import GpsTracker
 
+from kivy.uix.image import CoreImage
+import io
+import base64
+
+
 class GameboyException(Exception):
     pass
+
 
 class RetroArchDisconnectError(GameboyException):
     pass
 
+
 class InvalidEmulatorStateError(GameboyException):
     pass
+
 
 class BadRetroArchResponse(GameboyException):
     pass
 
-def magpie_logo():
-    from kivy.uix.image import Image, CoreImage
-    import io
-    import base64
 
+def magpie_logo():
     binary_data = """
 iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAAXN
 SR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA
@@ -48,47 +54,49 @@ wgcWMZJOAGeGKtChNHFL0j+FZD3jSCuo0w7l03wDrWdg00C4/aW
 eDEYNenuzPOfPspBnxf0kssE80vN0L8361j10P03DK4x6FHabuV
 ear8fHme+b17rwSjbAXeUMLb+EVTV2QHm46MWQanmnydA98KsVS
 XkV+qFpGQXrLhT/fqraQeQLuplpNH5g+WkAAAAASUVORK5CYII="""
-    binary_data= base64.b64decode(binary_data)
+    binary_data = base64.b64decode(binary_data)
     data = io.BytesIO(binary_data)
-    img = CoreImage(data, ext="png").texture
+    return CoreImage(data, ext="png").texture
 
-   
-    return img
 
 class LAClientConstants:
     # Connector version
     VERSION = 0x01
     #
     # Memory locations of LADXR
-    ROMGameID = 0x0051 # 4 bytes
+    ROMGameID = 0x0051  # 4 bytes
     SlotName = 0x0134
-    #ROMWorldID = 0x0055
-    #ROMConnectorVersion = 0x0056
-    wGameplayType = 0xDB95            # RO: We should only act if this is higher then 6, as it indicates that the game is running normally
-    wLinkSyncSequenceNumber = 0xDDF6  # RO: Starts at 0, increases every time an item is received from the server and processed
+    # ROMWorldID = 0x0055
+    # ROMConnectorVersion = 0x0056
+    # RO: We should only act if this is higher then 6, as it indicates that the game is running normally
+    wGameplayType = 0xDB95
+    # RO: Starts at 0, increases every time an item is received from the server and processed
+    wLinkSyncSequenceNumber = 0xDDF6
     wLinkStatusBits = 0xDDF7          # RW:
     #      Bit0: wLinkGive* contains valid data, set from script cleared from ROM.
     #      Bit1: wLinkSendItem* contains valid data, set from ROM cleared from lua
     #      Bit2: wLinkSendShop* contains valid data, set from ROM cleared from lua
     wLinkHealth = 0xDB5A
-    wLinkGiveItem = 0xDDF8 # RW
-    wLinkGiveItemFrom = 0xDDF9 # RW
-    wLinkSendItemRoomHigh = 0xDDFA # RO
-    wLinkSendItemRoomLow = 0xDDFB # RO
-    wLinkSendItemTarget = 0xDDFC # RO
-    wLinkSendItemItem = 0xDDFD # RO
+    wLinkGiveItem = 0xDDF8  # RW
+    wLinkGiveItemFrom = 0xDDF9  # RW
+    wLinkSendItemRoomHigh = 0xDDFA  # RO
+    wLinkSendItemRoomLow = 0xDDFB  # RO
+    wLinkSendItemTarget = 0xDDFC  # RO
+    wLinkSendItemItem = 0xDDFD  # RO
     # wLinkSendShopItem = 0xDDFE # RO, which item to send (1 based, order of the shop items)
-    wLinkSendShopTarget = 0xDDFF # RO, which player to send to, but it's just the X position of the NPC used, so 0x18 is player 0
+    # RO, which player to send to, but it's just the X position of the NPC used, so 0x18 is player 0
+    wLinkSendShopTarget = 0xDDFF
 
-    wRecvIndex = 0xDDFE # 0xDB58
+    wRecvIndex = 0xDDFE  # 0xDB58
 
     wCheckAddress = 0xD155 + 0x10
     WRamCheckSize = 0x3
     WRamSafetyValue = bytearray([0]*WRamCheckSize)
-    
+
     MinGameplayValue = 0x06
     MaxGameplayValue = 0x1A
     VictoryGameplayAndSub = 0x0102
+
 
 class RAGameboy():
     cache = []
@@ -96,11 +104,12 @@ class RAGameboy():
     cache_size = 0
     last_cache_read = None
     socket = None
+
     def __init__(self, address, port) -> None:
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        assert(self.socket)
+        assert (self.socket)
         self.socket.setblocking(False)
 
     def get_retroarch_version(self):
@@ -118,6 +127,7 @@ class RAGameboy():
     def set_cache_limits(self, cache_start, cache_size):
         self.cache_start = cache_start
         self.cache_size = cache_size
+
     def send(self, b):
         if type(b) is str:
             b = b.encode('ascii')
@@ -159,13 +169,13 @@ class RAGameboy():
             return False
         return True
 
-    # We're sadly unable to update the whole cache at once 
+    # We're sadly unable to update the whole cache at once
     # as RetroArch only gives back some number of bytes at a time
     # So instead read as big as chunks at a time as we can manage
     async def update_cache(self):
         # First read the safety address - if it's invalid, bail
         self.cache = []
-        
+
         if not await self.check_safe_gameplay():
             return
 
@@ -188,17 +198,18 @@ class RAGameboy():
             await self.update_cache()
         if not self.cache:
             return None
-        assert(len(self.cache) == self.cache_size)
+        assert (len(self.cache) == self.cache_size)
         for address in addresses:
             assert self.cache_start <= address <= self.cache_start + self.cache_size
-        r = {address: self.cache[address - self.cache_start] for address in addresses}
+        r = {address: self.cache[address - self.cache_start]
+             for address in addresses}
         return r
 
     async def async_read_memory_safe(self, address, size=1):
         # whenever we do a read for a check, we need to make sure that we aren't reading
         # garbage memory values - we also need to protect against reading a value, then the emulator resetting
-        # 
-        # ...actually, we probably _only_ need the post check 
+        #
+        # ...actually, we probably _only_ need the post check
 
         # Check before read
         if not await self.check_safe_gameplay():
@@ -210,33 +221,34 @@ class RAGameboy():
         # Check after read
         if not await self.check_safe_gameplay():
             return None
-        
+
         return r
-    def read_memory(self, address, size = 1):
+
+    def read_memory(self, address, size=1):
         command = "READ_CORE_MEMORY"
-        
+
         self.send(f'{command} {hex(address)} {size}\n')
         response = self.recv()
-        
+
         splits = response.decode().split(" ", 2)
 
-        assert(splits[0] == command)
+        assert (splits[0] == command)
         # Ignore the address for now
 
         # TODO: transform to bytes
         if splits[2][:2] == "-1":
             raise BadRetroArchResponse()
         return bytearray.fromhex(splits[2])
-    
-    async def async_read_memory(self, address, size = 1):
+
+    async def async_read_memory(self, address, size=1):
         command = "READ_CORE_MEMORY"
-        
+
         self.send(f'{command} {hex(address)} {size}\n')
         response = await self.async_recv()
         response = response[:-1]
         splits = response.decode().split(" ", 2)
 
-        assert(splits[0] == command)
+        assert (splits[0] == command)
         # Ignore the address for now
 
         # TODO: transform to bytes
@@ -244,20 +256,19 @@ class RAGameboy():
 
     def write_memory(self, address, bytes):
         command = "WRITE_CORE_MEMORY"
-        
+
         self.send(f'{command} {hex(address)} {" ".join(hex(b) for b in bytes)}')
         select.select([self.socket], [], [])
         response, _ = self.socket.recvfrom(4096)
-        
+
         splits = response.decode().split(" ", 3)
 
-        assert(splits[0] == command)
+        assert (splits[0] == command)
 
         if splits[2] == "-1":
             logger.info(splits[3])
 
 
-import binascii
 class LinksAwakeningClient():
     socket = None
     gameboy = None
@@ -267,6 +278,7 @@ class LinksAwakeningClient():
     pending_deathlink = False
     deathlink_debounce = True
     recvd_checks = {}
+
     def msg(self, m):
         logger.info(m)
         s = f"SHOW_MSG {m}\n"
@@ -288,14 +300,15 @@ class LinksAwakeningClient():
                 while status == NO_CONTENT or core_type != GAME_BOY:
                     try:
                         status = self.gameboy.get_retroarch_status(0.1)
-                        
+
                         if status.count(b" ") < 2:
                             time.sleep(1.0)
                             continue
                         GET_STATUS, PLAYING, info = status.split(b" ")
                         core_type, rom_name, self.game_crc = info.split(b",")
                         if core_type != GAME_BOY:
-                            logger.info(f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
+                            logger.info(
+                                f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
                             time.sleep(1.0)
                             continue
                     except (BlockingIOError, TimeoutError):
@@ -307,22 +320,21 @@ class LinksAwakeningClient():
             except ConnectionResetError:
                 time.sleep(1.0)
                 pass
-        
+
     def reset_auth(self):
         auth = binascii.hexlify(self.gameboy.read_memory(0x0134, 12)).decode()
 
         if self.auth:
-            assert(auth == self.auth)
-        
+            assert (auth == self.auth)
+
         self.auth = auth
-        
 
     async def wait_and_init_tracker(self):
         await self.wait_for_game_ready()
         self.tracker = LocationTracker(self.gameboy)
         self.item_tracker = ItemTracker(self.gameboy)
         self.gps_tracker = GpsTracker(self.gameboy)
-    
+
     # TODO: this needs to be async and queueing
     def recved_item_from_ap(self, item_id, from_player, next_index):
         # Don't allow getting an item until you've got your first check
@@ -332,7 +344,7 @@ class LinksAwakeningClient():
         logger.info(f"next index was {next_index}")
 
         item_id -= LABaseID
-        
+
         # The player name table only goes up to 100, so don't go past that
         # Even if it didn't, the remote player _index_ byte is just a byte, so 255 max
         if from_player > 100:
@@ -343,14 +355,17 @@ class LinksAwakeningClient():
         # TODO: check safety value
         while status & 1 == 1:
             time.sleep(0.1)
-            status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
+            status = self.gameboy.read_memory(
+                LAClientConstants.wLinkStatusBits)[0]
             print(f"Waiting on client {status}")
-        
+
         next_index += 1
-        self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [item_id, from_player])
+        self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [
+                                  item_id, from_player])
         status |= 1
-        status = self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [status])
-        self.gameboy.write_memory(LAClientConstants.wRecvIndex, [next_index]) 
+        status = self.gameboy.write_memory(
+            LAClientConstants.wLinkStatusBits, [status])
+        self.gameboy.write_memory(LAClientConstants.wRecvIndex, [next_index])
 
     async def wait_for_game_ready(self):
         logger.info("Waiting on game to be in valid state...")
@@ -369,7 +384,7 @@ class LinksAwakeningClient():
             self.last_index = next_index
             logger.info(f"Got new index {next_index}")
 
-        current_health =(await self.gameboy.read_memory_cache([LAClientConstants.wLinkHealth]))[LAClientConstants.wLinkHealth]
+        current_health = (await self.gameboy.read_memory_cache([LAClientConstants.wLinkHealth]))[LAClientConstants.wLinkHealth]
         if self.deathlink_debounce and current_health != 0:
             self.deathlink_debounce = False
         elif not self.deathlink_debounce and current_health == 0:
@@ -387,11 +402,12 @@ class LinksAwakeningClient():
             await win_cb()
 
         recv_index = (await self.gameboy.async_read_memory_safe(LAClientConstants.wRecvIndex))[0]
-        
+
         # Play back one at a time
         if recv_index in self.recvd_checks:
             item = self.recvd_checks[recv_index]
             self.recved_item_from_ap(item.item, item.player, recv_index)
+
 
 def create_task_log_exception(awaitable) -> asyncio.Task:
     async def _log_exception(awaitable):
@@ -401,12 +417,13 @@ def create_task_log_exception(awaitable) -> asyncio.Task:
             logger.exception(e)
     return asyncio.create_task(_log_exception(awaitable))
 
+
 class LinksAwakeningContext(CommonContext):
     tags = {"AP"}
     game = "Links Awakening DX"  # empty matches any game since 0.3.2
     items_handling = 0b101  # receive all items for /received
     want_slot_data = True  # Can't use game specific slot_data
-    #slot = 1
+    # slot = 1
     la_task = None
     client = None
     # TODO: this needs to re-read on reset
@@ -416,6 +433,7 @@ class LinksAwakeningContext(CommonContext):
     magpie = MagpieBridge()
     magpie_task = None
     won = False
+
     def __init__(self, server_address: typing.Optional[str], password: typing.Optional[str]) -> None:
         self.client = LinksAwakeningClient()
         super().__init__(server_address, password)
@@ -436,25 +454,37 @@ Button:
         size: 16, 16
         center: self.parent.center
 """)
+        from kivy.modules import inspector
+
+        from kivy.core.window import Window
 
         class LADXManager(GameManager):
             logging_pairs = [
                 ("Client", "Archipelago"),
-                ("Tracker", "Tracker"),                
+                ("Tracker", "Tracker"),
             ]
             base_title = "Archipelago SNI Client"
+
             def build(self):
                 b = super().build()
-                w.on_press = lambda: webbrowser.open('https://dev.magpietracker.us')
-                w.children[0].texture = magpie_logo()
-                self.connect_layout.add_widget(w)
-                
+                w.on_press = lambda: webbrowser.open(
+                    'https://dev.magpietracker.us')
+
+                button = Button(text="", size=(30, 30), size_hint_x=None)
+                image = Image(size=(16, 16), texture=magpie_logo())
+                button.add_widget(image)
+
+                def set_center(_, center):
+                    image.center = center
+                button.bind(center=set_center)
+
+                self.connect_layout.add_widget(button)
+                inspector.create_inspector(Window, self.connect_layout)
                 return b
 
         self.ui = LADXManager(self)
-        self.ui_task = asyncio.create_task(self.ui.async_run(), name="UI")  # type: ignore
-    
-    
+        self.ui_task = asyncio.create_task(
+            self.ui.async_run(), name="UI")  # type: ignore
 
     async def send_checks(self):
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
@@ -464,17 +494,18 @@ Button:
         message = [{"cmd": 'Deathlink',
                     'time': time.time(),
                     'cause': 'Had a nightmare',
-                    #'source': self.slot_info[self.slot].name,
+                    # 'source': self.slot_info[self.slot].name,
                     }]
         await self.send_msgs(message)
 
     async def send_victory(self):
         if not self.won:
-            message = [{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}]
+            message = [{"cmd": "StatusUpdate",
+                        "status": ClientStatus.CLIENT_GOAL}]
             logger.info("victory!")
             await self.send_msgs(message)
             self.won = True
-    
+
     async def on_deathlink(self, data: typing.Dict[str, typing.Any]) -> None:
         self.client.pending_deathlink = True
 
@@ -495,14 +526,17 @@ Button:
             self.game = self.slot_info[self.slot].game
         # TODO - use watcher_event
         if cmd == "ReceivedItems":
-            logger.info(f"Got items starting at {args['index']} of count {len(args['items'])}")
+            logger.info(
+                f"Got items starting at {args['index']} of count {len(args['items'])}")
             for index, item in enumerate(args["items"], args["index"]):
                 self.client.recvd_checks[index] = item
 
     item_id_lookup = get_locations_to_id()
+
     async def run_game_loop(self):
         def on_item_get(ladxr_checks):
-            checks = [self.item_id_lookup[meta_to_name(checkMetadataTable[check.id])] for check in ladxr_checks]
+            checks = [self.item_id_lookup[meta_to_name(
+                checkMetadataTable[check.id])] for check in ladxr_checks]
             self.new_checks(checks, [check.id for check in ladxr_checks])
 
         async def victory():
@@ -510,9 +544,9 @@ Button:
 
         async def deathlink():
             await self.send_deathlink()
-        
+
         self.magpie_task = asyncio.create_task(self.magpie.serve())
-        
+
         while True:
             try:
                 # TODO: cancel all client tasks
@@ -521,7 +555,7 @@ Button:
                 self.client.wait_for_retroarch_connection()
                 self.client.reset_auth()
                 await self.client.wait_and_init_tracker()
-                
+
                 while True:
                     await self.client.main_tick(on_item_get, victory, deathlink)
                     await asyncio.sleep(0.1)
@@ -532,10 +566,11 @@ Button:
                     self.magpie.set_checks(self.client.tracker.all_checks)
                     await self.magpie.set_item_tracker(self.client.item_tracker)
                     await self.magpie.send_gps(self.client.gps_tracker)
-                    
+
             except GameboyException:
                 time.sleep(1.0)
                 pass
+
 
 async def main():
     parser = get_base_parser(description="Link's Awakening Client.")
@@ -546,7 +581,6 @@ async def main():
     args = parser.parse_args()
     logger.info(args)
 
-
     if args.diff_file:
         import Patch
         logger.info("patch file was supplied - creating rom...")
@@ -555,7 +589,6 @@ async def main():
             args.url = meta["server"]
         logger.info(f"wrote rom file to {rom_file}")
 
-
     if args.url:
         url = urllib.parse.urlparse(args.url)
         args.connect = url.netloc
@@ -563,10 +596,9 @@ async def main():
             args.password = urllib.parse.unquote(url.password)
 
     ctx = LinksAwakeningContext(args.connect, args.password)
-    
+
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
-    
     # TODO: nothing about the lambda about has to be in a lambda
     ctx.la_task = create_task_log_exception(ctx.run_game_loop())
     if gui_enabled:
@@ -576,12 +608,9 @@ async def main():
     await ctx.exit_event.wait()
     await ctx.shutdown()
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
     Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
 
-    colorama.init()    
+    colorama.init()
     asyncio.run(main())
     colorama.deinit()
-
-
-
