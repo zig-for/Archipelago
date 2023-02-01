@@ -19,7 +19,7 @@ class Logic(Choice, LADXROption):
     [Hell] Obscure knowledge and hard techniques may be required. Examples include featherless jumping with boots and/or hookshot, sequential pit buffers and unclipped superjumps. Things in here can be extremely hard to do or very time consuming."""
     display_name = "Logic"
     ladxr_name = "logic"
-    option_casual = 0
+    # option_casual = 0
     option_normal = 1
     option_hard = 2
     option_glitched = 3
