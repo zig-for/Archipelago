@@ -32,9 +32,6 @@ RenderChestItem:
     call $0AD2
     ret
 
-SendItemFromChestToOtherGame:
-    ret
-
 GiveItemFromChestMultiworld:
     ; Check our "item is for other player" flag
     ld   hl, $7300
@@ -43,8 +40,8 @@ GiveItemFromChestMultiworld:
     ld   hl, $0055
     cp   [hl]
     call IncreaseCheckCounter
-    jr   nz, SendItemFromChestToOtherGame
-
+    jr   z, GiveItemFromChest
+    ret
 GiveItemFromChest:
     ldh  a, [$F1] ; Load active sprite variant
 

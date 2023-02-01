@@ -423,7 +423,7 @@ OAMData:
 
         ld   a, [$B011] ; check count high
         call updateOAM
-        ld   a, [$B010] ; death count low
+        ld   a, [$B010] ; check count low
         call updateOAM
         ret
 

@@ -227,8 +227,7 @@ def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, playe
 
     world_setup = logic.world_setup
     item_list = [item for item in logic.iteminfo_list if not isinstance(item, KeyLocation)]
-    print(len(item_list))
-    print(len(logic.iteminfo_list))
+
     hints.addHints(rom, rnd, item_list)
 
     if world_setup.goal == "raft":
