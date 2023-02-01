@@ -40,8 +40,8 @@ GiveItemFromChestMultiworld:
     ld   hl, $0055
     cp   [hl]
     call IncreaseCheckCounter
-    jr   z, GiveItemFromChest
-    ret
+    ret nz
+    
 GiveItemFromChest:
     ldh  a, [$F1] ; Load active sprite variant
 
