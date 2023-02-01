@@ -32,12 +32,7 @@ RenderChestItem:
     call $0AD2
     ret
 
-SendItemFromChestToOtherGameWait:
-    halt ; Wait a frame until we might have room to send
-    jr SendItemFromChestToOtherGame.retry
-
 SendItemFromChestToOtherGame:
-    call IncreaseCheckCounter
     ret
 
 GiveItemFromChestMultiworld:
@@ -47,10 +42,10 @@ GiveItemFromChestMultiworld:
     ld   a, [hl]
     ld   hl, $0055
     cp   [hl]
+    call IncreaseCheckCounter
     jr   nz, SendItemFromChestToOtherGame
 
 GiveItemFromChest:
-    call IncreaseCheckCounter
     ldh  a, [$F1] ; Load active sprite variant
 
     rst  0 ; JUMP TABLE
