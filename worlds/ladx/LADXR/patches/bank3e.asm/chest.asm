@@ -38,29 +38,6 @@ SendItemFromChestToOtherGameWait:
 
 SendItemFromChestToOtherGame:
     call IncreaseCheckCounter
-.retry:
-    ; AP patch - don't wait on server
-    ; ld   hl, wLinkStatusBits
-    ; bit  1, [hl]
-    ; jp   nz, SendItemFromChestToOtherGameWait
-
-    ; Store send item data
-    ld   hl, $0000
-    call OffsetPointerByRoomNumber
-    ld   a, h
-    ld   [wLinkSendItemRoomHigh], a
-    ld   a, l
-    ld   [wLinkSendItemRoomLow], a
-    ld   hl, $7300
-    call OffsetPointerByRoomNumber
-    ld   a, [hl]
-    ld   [wLinkSendItemTarget], a
-    ldh  a, [$F1] ; Load active sprite variant
-    ld   [wLinkSendItemItem], a
-
-    ; Finally set the status bit to indicate there is an item to send
-    ld   hl, wLinkStatusBits
-    set  1, [hl]
     ret
 
 GiveItemFromChestMultiworld:
