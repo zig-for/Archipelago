@@ -75,6 +75,7 @@ class GpsTracker:
         if (self.room != last_room):
             self.location_changed = True
     
+    last_message = {}
     async def send_location(self, socket, diff=False):
         if self.room is None: 
             return
@@ -86,5 +87,6 @@ class GpsTracker:
             "x": self.screenX,
             "y": self.screenY,
         }
-       
-        await socket.send(json.dumps(message))
+        if message != self.last_message:
+            self.last_message = message
+            await socket.send(json.dumps(message))

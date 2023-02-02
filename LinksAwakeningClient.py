@@ -23,7 +23,6 @@ from worlds.ladx.Tracker import LocationTracker, MagpieBridge
 from worlds.ladx.ItemTracker import ItemTracker
 from worlds.ladx.GpsTracker import GpsTracker
 
-from kivy.uix.image import CoreImage
 import io
 import base64
 
@@ -45,6 +44,7 @@ class BadRetroArchResponse(GameboyException):
 
 
 def magpie_logo():
+    from kivy.uix.image import CoreImage
     binary_data = """
 iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAAXN
 SR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA
@@ -288,7 +288,7 @@ class LinksAwakeningClient():
         self.gameboy = RAGameboy(retroarch_address, retroarch_port)
 
     # TODO: async
-    def wait_for_retroarch_connection(self):
+    async def wait_for_retroarch_connection(self):
         logger.info("Waiting on connection to Retroarch...")
         while True:
             try:
@@ -302,23 +302,23 @@ class LinksAwakeningClient():
                         status = self.gameboy.get_retroarch_status(0.1)
 
                         if status.count(b" ") < 2:
-                            time.sleep(1.0)
+                            await asyncio.sleep(1.0)
                             continue
                         GET_STATUS, PLAYING, info = status.split(b" ")
                         core_type, rom_name, self.game_crc = info.split(b",")
                         if core_type != GAME_BOY:
                             logger.info(
                                 f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
-                            time.sleep(1.0)
+                            await asyncio.sleep(1.0)
                             continue
                     except (BlockingIOError, TimeoutError):
-                        time.sleep(0.1)
+                        await asyncio.sleep(0.1)
                         pass
                 logger.info(f"Connected to Retroarch {version} {info}")
                 self.gameboy.read_memory(0x1000)
                 return
             except ConnectionResetError:
-                time.sleep(1.0)
+                await asyncio.sleep(1.0)
                 pass
 
     def reset_auth(self):
@@ -454,10 +454,6 @@ Button:
         size: 16, 16
         center: self.parent.center
 """)
-        from kivy.modules import inspector
-
-        from kivy.core.window import Window
-
         class LADXManager(GameManager):
             logging_pairs = [
                 ("Client", "Archipelago"),
@@ -478,7 +474,6 @@ Button:
                 button.bind(center=set_center)
 
                 self.connect_layout.add_widget(button)
-                #inspector.create_inspector(Window, self.connect_layout)
                 return b
 
         self.ui = LADXManager(self)
@@ -545,13 +540,16 @@ Button:
             await self.send_deathlink()
 
         self.magpie_task = asyncio.create_task(self.magpie.serve())
+        
+        # yield to allow UI to start
+        await asyncio.sleep(0)
 
         while True:
             try:
                 # TODO: cancel all client tasks
                 logger.info("(Re)Starting game loop")
                 self.found_checks.clear()
-                self.client.wait_for_retroarch_connection()
+                await self.client.wait_for_retroarch_connection()
                 self.client.reset_auth()
                 await self.client.wait_and_init_tracker()
 

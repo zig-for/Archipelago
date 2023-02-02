@@ -265,8 +265,12 @@ class ItemTracker:
             "diff": diff,
             "items": [],
         }
-
-        for item in self.items:
+        items = self.items
+        if diff:
+            items = [item for item in items if item.diff != 0]
+        if not items:
+            return
+        for item in items:
             value = item.diff if diff else item.value
 
             message["items"].append(
