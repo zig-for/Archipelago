@@ -362,7 +362,7 @@ class Assembler:
 
     def insertString(self, string: str) -> None:
         if string.startswith('"') and string.endswith('"'):
-            self.__result += string[1:-1].encode("ascii")
+            self.__result += string[1:-1].encode("latin1")
         elif string.startswith("m\"") and string.endswith("\""):
             self.__result += utils.formatText(string[2:-1].replace("|", "\n"))
         else:
