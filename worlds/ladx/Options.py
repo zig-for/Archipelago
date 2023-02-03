@@ -259,6 +259,23 @@ class LinkPalette(Choice, LADXROption):
     def to_ladxr_option(self, all_options):
         return self.ladxr_name, str(self.value)
 
+class TrendyGame(Choice):
+    """
+    [Easy] All of the items hold still for you
+    [Normal] The vanilla behavior
+    [Hard] ?
+    [Harder] ???
+    [Hardest] ????
+    [Impossible] ?????
+    """
+    option_easy = 0
+    option_normal = 1
+    option_hard = 2
+    option_harder = 3
+    option_hardest = 4
+    option_impossible = 5
+    default = option_harder
+
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'logic': Logic,
     # 'heartpiece': DefaultOnToggle, # description='Includes heart pieces in the item pool'),                
@@ -281,4 +298,5 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'bowwow': Bowwow,
     # 'overworld': Overworld,
     'link_palette': LinkPalette,
+    'trendy_game': TrendyGame,
 }

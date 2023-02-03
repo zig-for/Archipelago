@@ -56,7 +56,7 @@ from . import hints
 from .locations.keyLocation import KeyLocation
 from .patches import bank34
 # Function to generate a final rom, this patches the rom with all required patches
-def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, player_name=None, player_names=[], player_id = 0):
+def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=None, player_name=None, player_names=[], player_id = 0):
     print("Loading: %s" % (args.input_filename))
     rom = ROMWithTables(args.input_filename)
 
@@ -268,6 +268,57 @@ def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, playe
     patches.aesthetics.updateSpriteData(rom)
     if args.doubletrouble:
         patches.enemies.doubleTrouble(rom)
+
+    from ..Options import TrendyGame
+    if ap_settings["trendy_game"] != TrendyGame.option_normal:
+
+        # TODO: if 0 or 4, 5, replace tiles
+
+        from .roomEditor import RoomEditor, Object
+        room_editor = RoomEditor(rom, 0x2A0)
+
+        if ap_settings["trendy_game"] == TrendyGame.option_easy:
+            # Set physics flag on all objects
+            for i in range(0, 6):
+                rom.banks[0x4][0x6F1E + i -0x4000] = 0x4
+        else:
+            # All levels
+            # Set physics flag on yoshi
+            rom.banks[0x4][0x6F21-0x4000] = 0x3
+            # Add new conveyor to "push" yoshi
+            room_editor.objects.append(Object(5, 3, 0xD0))
+
+            if int(ap_settings["trendy_game"]) >= TrendyGame.option_harder:
+                """
+                Data_004_76A0::
+                    db   $FC, $00, $04, $00, $00
+
+                Data_004_76A5::
+                    db   $00, $04, $00, $FC, $00
+                """
+                speeds = {
+                    TrendyGame.option_harder: (3, 8),
+                    TrendyGame.option_hardest: (3, 8),
+                    TrendyGame.option_impossible: (3, 16),
+                }
+                def speed():
+                    return rnd.randint(*speeds[ap_settings["trendy_game"]])
+                rom.banks[0x4][0x76A0-0x4000] = 0xFF - speed()                
+                rom.banks[0x4][0x76A2-0x4000] = speed()
+                rom.banks[0x4][0x76A6-0x4000] = speed()
+                rom.banks[0x4][0x76A8-0x4000] = 0xFF - speed()
+                if int(ap_settings["trendy_game"]) >= TrendyGame.option_hardest:
+                    rom.banks[0x4][0x76A1-0x4000] = 0xFF - speed()                
+                    rom.banks[0x4][0x76A3-0x4000] = speed()
+                    rom.banks[0x4][0x76A5-0x4000] = speed()
+                    rom.banks[0x4][0x76A7-0x4000] = 0xFF - speed()
+
+            # This doesn't work, you can set random conveyors, but they aren't used
+            # for x in range(3, 9):
+            #     for y in range(1, 5):
+            #         room_editor.objects.append(Object(x, y, 0xCF + rnd.randint(0, 3)))
+
+            room_editor.store(rom)
 
     SEED_LOCATION = 0x0134
     SEED_SIZE = 10

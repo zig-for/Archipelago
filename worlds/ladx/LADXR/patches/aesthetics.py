@@ -173,7 +173,8 @@ def reduceMessageLengths(rom, rnd):
         "Eastmost penninsula is the secret",
         "There is no cow level",
         "You cannot lift rocks with your bear hands",
-        "Thank you, daid!"
+        "Thank you, daid!",
+        "There, there now. Just relax. You've been asleep for almost nine hours now."
     ]))
 
     # Reduce length of a bunch of common texts

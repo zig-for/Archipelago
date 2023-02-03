@@ -388,7 +388,7 @@ class LinksAwakeningClient():
         if self.deathlink_debounce and current_health != 0:
             self.deathlink_debounce = False
         elif not self.deathlink_debounce and current_health == 0:
-            logger.info("Sending deathlink")
+            logger.info("YOU DIED.")
             await deathlink_cb()
             self.deathlink_debounce = True
 

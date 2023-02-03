@@ -56,7 +56,7 @@ class LinksAwakeningWorld(World):
 
     prefill_dungeon_items = None
 
-
+    player_options = None
 
     def create_item(self, item: str) -> LinksAwakeningItem:
         assert(False)
@@ -66,12 +66,14 @@ class LinksAwakeningWorld(World):
         pass
 
     def generate_default_ladxr_logic(self):
-        options = {
+        self.player_options = {
             option: getattr(self.multiworld, option)[self.player] for option in self.option_definitions
         }
         self.laxdr_options = LADXRSettings()
-        for option in options.values():
-            name, value = option.to_ladxr_option(options)
+        for option in self.player_options.values():
+            if not hasattr(option, 'to_ladxr_option'):
+                continue
+            name, value = option.to_ladxr_option(self.player_options)
             if value == "true":
                 value = 1
             elif value == "false":
@@ -356,6 +358,7 @@ class LinksAwakeningWorld(World):
         rom = generator.generateRom(
             args,
             self.laxdr_options,
+            self.player_options,
             bytes.fromhex(self.multiworld.seed_name),
             self.ladxr_logic,
             rnd=self.multiworld.random,

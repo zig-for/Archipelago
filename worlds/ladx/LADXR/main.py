@@ -1,9 +1,7 @@
 import binascii
 from .romTables import ROMWithTables
 import json
-from . import randomizer
 from . import logic
-from . import spoilerLog
 import argparse
 from .settings import Settings
 from typing import Optional, List
@@ -51,105 +49,4 @@ def get_parser():
         help="Load python code mods.")
 
     return parser
-
-def main(mainargs: Optional[List[str]] = None) -> None:
-    import sys
-
-    parser = get_parser()
-    settings = Settings()
-    args = parser.parse_args(mainargs)
-    if args.settingjson:
-        print("var options =")
-        print(json.dumps(settings.toJson(), indent=1))
-        return
-    if args.shortsettings is not None:
-        settings.loadShortString(args.shortsettings)
-    if args.settings:
-        for s in args.settings:
-            settings.set(s)
-    if args.multiworld is not None:
-        for s in args.multiworld:
-            player_settings = Settings(len(args.multiworld))
-            player_settings.loadShortString(s)
-            settings.multiworld_settings.append(player_settings)
-
-    settings.validate()
-    print(f"Short settings string: {settings.getShortString()}")
-
-    if args.timeout is not None:
-        import threading
-        import time
-        import os
-        def timeoutFunction() -> None:
-            time.sleep(args.timeout)
-            print("TIMEOUT")
-            sys.stdout.flush()
-            os._exit(1)
-        threading.Thread(target=timeoutFunction, daemon=True).start()
-
-    if args.exportmap:
-        import mapexport
-        print(f"Loading: {args.input_filename}")
-        rom = ROMWithTables(args.input_filename)
-        mapexport.MapExport(rom).export_all()
-        sys.exit(0)
-
-    if args.emptyplan:
-        import locations.items
-        f = open(args.emptyplan, "wt")
-        f.write(";Plandomizer data\n;Items: %s\n" % (", ".join(map(lambda n: getattr(locations.items, n), filter(lambda n: not n.startswith("__"), dir(locations.items))))))
-        f.write(";Modify the item pool:\n")
-        f.write(";Pool:SWORD:+5\n")
-        f.write(";Pool:RUPEES_50:-5\n")
-        import worldSetup
-        iteminfo_list = logic.Logic(args, world_setup=worldSetup.WorldSetup()).iteminfo_list
-        for ii in sorted(iteminfo_list, key=lambda n: (n.location.dungeon if n.location.dungeon else -1, repr(n.metadata))):
-            if len(ii.OPTIONS) > 1:
-                f.write(";%r\n" % (ii.metadata))
-                f.write("Location:%s: \n" % (ii.nameId))
-        sys.exit(0)
-
-    if args.dump is not None or args.test:
-        print("Loading: %s" % (args.input_filename))
-        roms = [ROMWithTables(f) for f in [args.input_filename] + args.dump]
-
-        if args.spoilerformat == "none":
-            args.spoilerformat = "console"
-
-        try:
-            log = spoilerLog.SpoilerLog(settings, args, roms)
-            log.output(args.spoiler_filename)
-            sys.exit(0)
-        except spoilerLog.RaceRomException:
-            print("Cannot read spoiler log for race rom")
-            sys.exit(1)
-
-    userSeed = None
-    if settings.seed:
-        try:
-            userSeed = binascii.unhexlify(settings.seed)
-        except binascii.Error:
-            userSeed = settings.seed.encode("ascii")
-
-    retry_count = 0
-    while True:
-        try:
-            r = randomizer.Randomizer(args, settings, seed=userSeed)
-            seed = binascii.hexlify(r.seed).decode("ascii").upper()
-            break
-        except randomizer.Error as e:
-            if userSeed is not None:
-                print("Specified seed does not produce a valid result.")
-                sys.exit(1)
-            retry_count += 1
-            if retry_count > 100:
-                print("Randomization keeps failing, abort!")
-                sys.exit(1)
-            print("Failed (%s), trying again: %d" % (e, retry_count))
-
-    print("Seed: %s" % (seed))
-
-
-if __name__ == "__main__":
-    main()
 
