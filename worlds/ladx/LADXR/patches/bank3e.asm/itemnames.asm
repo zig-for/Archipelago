@@ -4,7 +4,7 @@ BuildRemoteItemMessage:
     call CustomItemMessageThreeFour
     ld   a, $A0 ; low of wCustomMessage
     cp   e
-    ret z
+    ret  nz
 
 BuildItemMessage:    
     ld   hl, ItemNamePointers
