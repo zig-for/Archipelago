@@ -6,13 +6,14 @@ class ItemInfo:
     OPTIONS = []
     MULTIWORLD = False
 
-    def __init__(self, room=None):
+    def __init__(self, room=None, extra=None):
         self.item = None
         self._location = None
         self.room = room
+        self.extra = extra
         self.metadata = checkMetadataTable.get(self.nameId, checkMetadataTable["None"])
         self.forced_item = None
-
+        self.custom_item_name = None
     @property
     def location(self):
         return self._location

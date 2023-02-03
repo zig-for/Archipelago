@@ -199,6 +199,8 @@ class ROMWithTables(ROM):
         self.background_tiles = BackgroundTilesTable(self)
         self.background_attributes = BackgroundAttributeTable(self)
 
+        self.itemNames = {}
+
     def save(self, filename, *, name=None):
         self.texts.store(self)
         self.entities.store(self)

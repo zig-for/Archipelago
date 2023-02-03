@@ -17,23 +17,8 @@ class DroppedKey(ItemInfo):
     ]
     MULTIWORLD = True
     default_item = None
-    def patch(self, rom, option, *, multiworld=None):
-        room = self.room
 
-        # Offset room for trade items to avoid collisions
-        if self.default_item:
-            roomLo = room & 0xFF
-            roomHi = room ^ roomLo
-            roomLo = (roomLo + 2) & 0xFF
-            room = roomHi | roomLo
-        if (option.startswith(MAP) and option != MAP) or (option.startswith(COMPASS) and option != COMPASS) or option.startswith(STONE_BEAK) or (option.startswith(NIGHTMARE_KEY) and option != NIGHTMARE_KEY )or (option.startswith(KEY) and option != KEY):
-            if option[-1] == 'P':
-                print(option)
-            if self._location.dungeon == int(option[-1]) and multiworld is None and self.room not in {0x166, 0x223}:
-                option = option[:-1]
-        rom.banks[0x3E][room + 0x3800] = CHEST_ITEMS[option]
-        #assert room not in patched_already, f"{self} {patched_already[room]}"
-        #patched_already[room] = self
+    def __init__(self, room=None):
         extra = None
         if room == 0x169:  # Room in D4 where the key drops down the hole into the sidescroller
             extra = 0x017C
@@ -43,16 +28,27 @@ class DroppedKey(ItemInfo):
             extra = 0x02E8
         elif room == 0x092:  # Marins song
             extra = 0x00DC
+        super().__init__(room, extra)
+    def patch(self, rom, option, *, multiworld=None):
+        if (option.startswith(MAP) and option != MAP) or (option.startswith(COMPASS) and option != COMPASS) or option.startswith(STONE_BEAK) or (option.startswith(NIGHTMARE_KEY) and option != NIGHTMARE_KEY )or (option.startswith(KEY) and option != KEY):
+            if option[-1] == 'P':
+                print(option)
+            if self._location.dungeon == int(option[-1]) and multiworld is None and self.room not in {0x166, 0x223}:
+                option = option[:-1]
+        rom.banks[0x3E][self.room + 0x3800] = CHEST_ITEMS[option]
+        #assert room not in patched_already, f"{self} {patched_already[room]}"
+        #patched_already[room] = self
 
-        if extra:
+
+        if self.extra:
             assert(not self.default_item)
-            rom.banks[0x3E][extra + 0x3800] = CHEST_ITEMS[option]
+            rom.banks[0x3E][self.extra + 0x3800] = CHEST_ITEMS[option]
 
         if multiworld is not None:
-            rom.banks[0x3E][0x3300 + room] = multiworld
+            rom.banks[0x3E][0x3300 + self.room] = multiworld
             
-            if extra:
-                rom.banks[0x3E][0x3300 + extra] = multiworld
+            if self.extra:
+                rom.banks[0x3E][0x3300 + self.extra] = multiworld
 
     def read(self, rom):
         assert self._location is not None, hex(self.room)

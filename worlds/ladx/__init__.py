@@ -313,6 +313,7 @@ class LinksAwakeningWorld(World):
                     # Otherwise, use a cute letter as the icon
                     else:
                         loc.ladxr_item.item = self.guess_icon_for_other_world(loc.item.name)
+                        loc.ladxr_item.custom_item_name = loc.item.name
 
                     if loc.item:
                         loc.ladxr_item.item_owner = loc.item.player

@@ -32,7 +32,14 @@ class TradeSequenceItem(DroppedKey):
         TRADING_ITEM_FISHING_HOOK,TRADING_ITEM_NECKLACE,TRADING_ITEM_SCALE,TRADING_ITEM_MAGNIFYING_GLASS
     ]
 
+
     def __init__(self, room, default_item):
+        self.unadjusted_room = room
+        # Offset room for trade items to avoid collisions 
+        roomLo = room & 0xFF
+        roomHi = room ^ roomLo
+        roomLo = (roomLo + 2) & 0xFF
+        room = roomHi | roomLo
         super().__init__(room)
         self.default_item = default_item
 
@@ -58,4 +65,4 @@ class TradeSequenceItem(DroppedKey):
 
     @property
     def nameId(self):
-        return "0x%03X-Trade" % self.room
+        return "0x%03X-Trade" % self.unadjusted_room

@@ -54,7 +54,7 @@ from .patches import tradeSequence as _
 from . import hints
 
 from .locations.keyLocation import KeyLocation
-
+from .patches import bank34
 # Function to generate a final rom, this patches the rom with all required patches
 def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, player_name=None, player_names=[], player_id = 0):
     print("Loading: %s" % (args.input_filename))
@@ -72,6 +72,8 @@ def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, playe
 
     if settings.gfxmod:
         patches.aesthetics.gfxMod(rom, os.path.join(os.path.dirname(__file__), "gfx", settings.gfxmod))
+
+    item_list = [item for item in logic.iteminfo_list if not isinstance(item, KeyLocation)]
 
     assembler.resetConsts()
     assembler.const("INV_SIZE", 16)
@@ -116,6 +118,7 @@ def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, playe
     patches.enemies.fixArmosKnightAsMiniboss(rom)
     patches.bank3e.addBank3E(rom, seed, player_id, player_names)
     patches.bank3f.addBank3F(rom)
+    patches.bank34.addBank34(rom, item_list)
     patches.core.removeGhost(rom)
     patches.core.fixMarinFollower(rom)
     patches.core.fixWrongWarp(rom)
@@ -226,7 +229,7 @@ def generateRom(args, settings, seed, logic, *, rnd=None, multiworld=None, playe
     # TODO: hints bad
 
     world_setup = logic.world_setup
-    item_list = [item for item in logic.iteminfo_list if not isinstance(item, KeyLocation)]
+
 
     hints.addHints(rom, rnd, item_list)
 

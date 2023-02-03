@@ -205,6 +205,7 @@ WriteToVRAM:
         + open(os.path.join(my_path, "bank3e.asm/chest.asm"), "rt").read()
         + open(os.path.join(my_path, "bank3e.asm/bowwow.asm"), "rt").read()
         + open(os.path.join(my_path, "bank3e.asm/message.asm"), "rt").read()
+        + open(os.path.join(my_path, "bank3e.asm/itemnames.asm"), "rt").read()
         + "".join(generate_name(["The Server"] + player_name_list, i ) for i in range(100)) # allocate
         + 'db "another world", $ff\n'
         + open(os.path.join(my_path, "bank3e.asm/owl.asm"), "rt").read(), 0x4000), fill_nop=True)
