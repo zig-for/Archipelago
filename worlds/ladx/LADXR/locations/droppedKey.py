@@ -28,6 +28,8 @@ class DroppedKey(ItemInfo):
             extra = 0x02E8
         elif room == 0x092:  # Marins song
             extra = 0x00DC
+        elif room == 0x0CE:
+            extra = 0x01F8
         super().__init__(room, extra)
     def patch(self, rom, option, *, multiworld=None):
         if (option.startswith(MAP) and option != MAP) or (option.startswith(COMPASS) and option != COMPASS) or option.startswith(STONE_BEAK) or (option.startswith(NIGHTMARE_KEY) and option != NIGHTMARE_KEY )or (option.startswith(KEY) and option != KEY):

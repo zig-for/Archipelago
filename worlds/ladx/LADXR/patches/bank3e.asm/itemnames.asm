@@ -1,3 +1,11 @@
+
+BuildRemoteItemMessage:
+    ld   de, wCustomMessage
+    call CustomItemMessageThreeFour
+    ld   a, $A0 ; low of wCustomMessage
+    cp   e
+    ret z
+
 BuildItemMessage:    
     ld   hl, ItemNamePointers
     ldh  a, [$F1]
@@ -9,12 +17,14 @@ BuildItemMessage:
     ld   h, [hl]
     ld   l, a
     ld   de, wCustomMessage
-    ; A little slow, but first copy in the regular item message
-    call MessageCopyString
+    jp   MessageCopyString
+    
     ; And then see if the custom item message func wants to override
-    call BuildCustomItemMessage
-    ret
-BuildCustomItemMessage:
+
+    ; add hl, de
+    
+
+CustomItemMessageThreeFour:
     ; the stack _should_ have the address to return to here, so we can just pop it when we're done
     ld   a,  $34   ; Set bank number
     ld   hl, $4000 ; Set next address

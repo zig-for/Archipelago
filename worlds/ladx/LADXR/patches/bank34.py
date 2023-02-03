@@ -114,7 +114,7 @@ def addBank34(rom, item_list):
         if not item.custom_item_name:
             continue
         assert item.room < TotalRoomCount, item.room
-        print(item.custom_item_name)
+        assert len(item.custom_item_name) < 0x100
         addr = add_or_get_name(item.custom_item_name)
         rom.patch(0x34, ItemNameLookupTable + item.room *
                   ItemNameLookupSize, None, to_hex_address(addr))

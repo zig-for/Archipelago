@@ -285,7 +285,7 @@ class LinksAwakeningWorld(World):
         
         uppered = other.upper()
         if "BIG KEY" in uppered:
-            return self.name_cache['BIG KEY']
+            return self.name_cache['BIGKEY']
         possibles = other.upper().split(" ")
         rejoined = "".join(possibles)
         if rejoined in self.name_cache:

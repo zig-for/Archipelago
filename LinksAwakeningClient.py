@@ -341,7 +341,7 @@ class LinksAwakeningClient():
         if not self.tracker.has_start_item():
             return
 
-        logger.info(f"next index was {next_index}")
+        # logger.info(f"next index was {next_index}")
 
         item_id -= LABaseID
 
@@ -357,7 +357,7 @@ class LinksAwakeningClient():
             time.sleep(0.1)
             status = self.gameboy.read_memory(
                 LAClientConstants.wLinkStatusBits)[0]
-            print(f"Waiting on client {status}")
+            # print(f"Waiting on client {status}")
 
         next_index += 1
         self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [
@@ -382,7 +382,7 @@ class LinksAwakeningClient():
         next_index = self.gameboy.read_memory(LAClientConstants.wRecvIndex)[0]
         if next_index != self.last_index:
             self.last_index = next_index
-            logger.info(f"Got new index {next_index}")
+            # logger.info(f"Got new index {next_index}")
 
         current_health = (await self.gameboy.read_memory_cache([LAClientConstants.wLinkHealth]))[LAClientConstants.wLinkHealth]
         if self.deathlink_debounce and current_health != 0:

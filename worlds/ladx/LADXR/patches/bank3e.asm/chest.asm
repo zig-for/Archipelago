@@ -734,7 +734,7 @@ ItemMessageForOtherPlayer:
     push bc
     push hl
     push af
-    call BuildItemMessage
+    call BuildRemoteItemMessage
     ld hl, SpaceFor
     call MessageCopyString
     pop af
