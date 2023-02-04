@@ -1,5 +1,6 @@
 import binascii
 from typing import Optional, Dict, ItemsView, List, Union, Tuple
+import unicodedata
 
 from . import utils
 import re
@@ -362,7 +363,9 @@ class Assembler:
 
     def insertString(self, string: str) -> None:
         if string.startswith('"') and string.endswith('"'):
-            self.__result += string[1:-1].encode("latin1")
+            string = string[1:-1]
+            string = unicodedata.normalize('NFKD', string)
+            self.__result += string.encode("latin1", "ignore")
         elif string.startswith("m\"") and string.endswith("\""):
             self.__result += utils.formatText(string[2:-1].replace("|", "\n"))
         else:
