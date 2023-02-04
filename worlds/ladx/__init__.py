@@ -279,10 +279,12 @@ class LinksAwakeningWorld(World):
                 'SANCTUARYHEARTCONTAINER': 'HEART_CONTAINER',
                 'BOSSHEARTCONTAINER': 'HEART_CONTAINER',
                 'HEARTCONTAINER': 'HEART_CONTAINER',
+                'ENERGYTANK': 'HEART_CONTAINER',
+                'MISSILE': 'ARROW',
                 'BOMBS': 'BOMB',
                 # TODO: instruments because we can
             }
-            self.name_cache |= others
+            self.name_cache.update(others)
             
         
         uppered = other.upper()

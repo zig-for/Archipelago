@@ -465,7 +465,7 @@ Button:
                 b = super().build()
 
                 button = Button(text="", size=(30, 30), size_hint_x=None,
-                                on_press=lambda _: webbrowser.open('https://dev.magpietracker.us'))
+                                on_press=lambda _: webbrowser.open('https://magpietracker.us/?enable_autotracker=1'))
                 image = Image(size=(16, 16), texture=magpie_logo())
                 button.add_widget(image)
 
