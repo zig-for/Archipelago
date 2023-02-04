@@ -463,7 +463,7 @@ Button:
                 ("Client", "Archipelago"),
                 ("Tracker", "Tracker"),
             ]
-            base_title = "Archipelago SNI Client"
+            base_title = "Archipelago Links Awakening DX Client"
 
             def build(self):
                 b = super().build()
