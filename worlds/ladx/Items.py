@@ -173,7 +173,8 @@ class ItemName:
     TRADING_ITEM_SCALE = "Scale"
     TRADING_ITEM_MAGNIFYING_GLASS = "Magnifying Glass"
 
-trade_item_prog = lambda world, player: ItemClassification.progression if getattr(world.multiworld, 'tradequest', {0: False})[player] else ItemClassification.filler
+def trade_item_prog(world, player):
+    return ItemClassification.progression 
 
 links_awakening_items = [
     ItemData(ItemName.POWER_BRACELET, "POWER_BRACELET", ItemClassification.progression),
