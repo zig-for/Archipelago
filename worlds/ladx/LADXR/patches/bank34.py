@@ -115,8 +115,9 @@ def addBank34(rom, item_list):
             continue
         assert item.room < TotalRoomCount, item.room
         # Item names of exactly 255 characters will cause overwrites to occur in the text box
-        assert len(item.custom_item_name) < 0x100
-        addr = add_or_get_name(item.custom_item_name)
+        # assert len(item.custom_item_name) < 0x100
+        # Custom text is only 95 bytes long, restrict to 50
+        addr = add_or_get_name(item.custom_item_name[:50])
         rom.patch(0x34, ItemNameLookupTable + item.room *
                   ItemNameLookupSize, None, to_hex_address(addr))
         if item.extra:
