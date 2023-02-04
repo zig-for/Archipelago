@@ -173,6 +173,8 @@ class ItemName:
     TRADING_ITEM_SCALE = "Scale"
     TRADING_ITEM_MAGNIFYING_GLASS = "Magnifying Glass"
 
+trade_item_prog = lambda world, player: ItemClassification.progression if getattr(world.multiworld, 'tradequest', {0: False})[player] else ItemClassification.filler
+
 links_awakening_items = [
     ItemData(ItemName.POWER_BRACELET, "POWER_BRACELET", ItemClassification.progression),
     ItemData(ItemName.SHIELD, "SHIELD", ItemClassification.progression),
@@ -278,20 +280,20 @@ links_awakening_items = [
     DungeonItemData(ItemName.INSTRUMENT6, "INSTRUMENT6", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT7, "INSTRUMENT7", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT8, "INSTRUMENT8", ItemClassification.progression),
-    ItemData(ItemName.TRADING_ITEM_YOSHI_DOLL, "TRADING_ITEM_YOSHI_DOLL", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_RIBBON, "TRADING_ITEM_RIBBON", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_DOG_FOOD, "TRADING_ITEM_DOG_FOOD", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_BANANAS, "TRADING_ITEM_BANANAS", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_STICK, "TRADING_ITEM_STICK", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_HONEYCOMB, "TRADING_ITEM_HONEYCOMB", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_PINEAPPLE, "TRADING_ITEM_PINEAPPLE", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_HIBISCUS, "TRADING_ITEM_HIBISCUS", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_LETTER, "TRADING_ITEM_LETTER", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_BROOM, "TRADING_ITEM_BROOM", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_FISHING_HOOK, "TRADING_ITEM_FISHING_HOOK", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_NECKLACE, "TRADING_ITEM_NECKLACE", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_SCALE, "TRADING_ITEM_SCALE", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler),
-    ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", lambda world, player: ItemClassification.progression if world.multiworld.tradequest[player] else ItemClassification.filler)
+    ItemData(ItemName.TRADING_ITEM_YOSHI_DOLL, "TRADING_ITEM_YOSHI_DOLL", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_RIBBON, "TRADING_ITEM_RIBBON", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_DOG_FOOD, "TRADING_ITEM_DOG_FOOD", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_BANANAS, "TRADING_ITEM_BANANAS", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_STICK, "TRADING_ITEM_STICK", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_HONEYCOMB, "TRADING_ITEM_HONEYCOMB", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_PINEAPPLE, "TRADING_ITEM_PINEAPPLE", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_HIBISCUS, "TRADING_ITEM_HIBISCUS", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_LETTER, "TRADING_ITEM_LETTER", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_BROOM, "TRADING_ITEM_BROOM", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_FISHING_HOOK, "TRADING_ITEM_FISHING_HOOK", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_NECKLACE, "TRADING_ITEM_NECKLACE", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_SCALE, "TRADING_ITEM_SCALE", trade_item_prog),
+    ItemData(ItemName.TRADING_ITEM_MAGNIFYING_GLASS, "TRADING_ITEM_MAGNIFYING_GLASS", trade_item_prog)
 ]
 
 ladxr_item_to_la_item_name = {
