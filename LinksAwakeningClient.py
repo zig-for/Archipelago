@@ -488,13 +488,15 @@ Button:
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]
         await self.send_msgs(message)
 
+    ENABLE_DEATHLINK = False
     async def send_deathlink(self):
-        message = [{"cmd": 'Deathlink',
-                    'time': time.time(),
-                    'cause': 'Had a nightmare',
-                    # 'source': self.slot_info[self.slot].name,
-                    }]
-        await self.send_msgs(message)
+        if self.ENABLE_DEATHLINK:
+            message = [{"cmd": 'Deathlink',
+                        'time': time.time(),
+                        'cause': 'Had a nightmare',
+                        # 'source': self.slot_info[self.slot].name,
+                        }]
+            await self.send_msgs(message)
 
     async def send_victory(self):
         if not self.won:
@@ -505,7 +507,8 @@ Button:
             self.won = True
 
     async def on_deathlink(self, data: typing.Dict[str, typing.Any]) -> None:
-        self.client.pending_deathlink = True
+        if self.ENABLE_DEATHLINK:
+            self.client.pending_deathlink = True
 
     def new_checks(self, item_ids, ladxr_ids):
         self.found_checks += item_ids
