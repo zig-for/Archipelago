@@ -1,4 +1,0 @@
-{
-    "name": "Zero Meaning",
-    "url": "https://www.twitch.tv/zeromeaning/"
-}
