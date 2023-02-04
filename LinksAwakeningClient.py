@@ -300,18 +300,22 @@ class LinksAwakeningClient():
                 while status == NO_CONTENT or core_type != GAME_BOY:
                     try:
                         status = self.gameboy.get_retroarch_status(0.1)
-
                         if status.count(b" ") < 2:
                             await asyncio.sleep(1.0)
                             continue
-                        GET_STATUS, PLAYING, info = status.split(b" ")
-                        core_type, rom_name, self.game_crc = info.split(b",")
+                        
+                        GET_STATUS, PLAYING, info = status.split(b" ", 2)
+                        if status.count(b",") < 2:
+                            await asyncio.sleep(1.0)
+                            continue
+                        core_type, rom_name, self.game_crc = info.split(b",", 2)
                         if core_type != GAME_BOY:
                             logger.info(
                                 f"Core type should be '{GAME_BOY}', found {core_type} instead - wrong type of ROM?")
                             await asyncio.sleep(1.0)
                             continue
-                    except (BlockingIOError, TimeoutError):
+                    except (BlockingIOError, TimeoutError) as e:
+                        logger.info(e)
                         await asyncio.sleep(0.1)
                         pass
                 logger.info(f"Connected to Retroarch {version} {info}")
