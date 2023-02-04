@@ -5,8 +5,8 @@ from .LADXR.locations.tradeSequence import TradeSequenceItem
 from .Options import links_awakening_options  # the options we defined earlier
 from .Items import LinksAwakeningItem, DungeonItemData, DungeonItemType, links_awakening_items, ItemName, ladxr_item_to_la_item_name, links_awakening_items_by_name # data used below to add items to the World
 from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation, links_awakening_dungeon_names, LinksAwakeningRegion, prefilled_events
-from worlds.AutoWorld import World
-from BaseClasses import Location, Entrance, Item, RegionType, ItemClassification
+from worlds.AutoWorld import WebWorld, World
+from BaseClasses import Location, Entrance, Item, RegionType, ItemClassification, Tutorial
 from Utils import get_options, output_path
 from .Common import *
 from Fill import fill_restrictive
@@ -21,9 +21,22 @@ import binascii
 from .Rom import LADXDeltaPatch
 #from worlds.generic.Rules import add_rule, set_rule, forbid_item
 
+class LinksAwakeningWebWorld(WebWorld):
+    tutorials = [Tutorial(
+        "Multiworld Setup Guide",
+        "A guide to setting up Links Awakening DX for MultiWorld.",
+        "English",
+        "setup_en.md",
+        "setup/en",
+        ["zig"]
+    )]
+    theme = "dirt"
+
 class LinksAwakeningWorld(World):
     """Insert description of the world/game here."""
     game: str = LINKS_AWAKENING # name of the game/world
+    web = LinksAwakeningWebWorld()
+    
     option_definitions = links_awakening_options  # options the player can set
     topology_present = True  # show path to required location checks in spoiler
 
