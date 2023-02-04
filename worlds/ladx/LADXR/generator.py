@@ -70,8 +70,8 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
     for pymod in pymods:
         pymod.prePatch(rom)
 
-    if settings.gfxmod:
-        patches.aesthetics.gfxMod(rom, os.path.join(os.path.dirname(__file__), "gfx", settings.gfxmod))
+    # if settings.gfxmod:
+    #     patches.aesthetics.gfxMod(rom, os.path.join(os.path.dirname(__file__), "gfx", settings.gfxmod))
 
     item_list = [item for item in logic.iteminfo_list if not isinstance(item, KeyLocation)]
 

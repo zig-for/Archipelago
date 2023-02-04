@@ -70,10 +70,10 @@ class Setting:
 class Settings:
     def __init__(self, multiworld_count=None):
         gfx_options = [('', '', 'Default')]
-        gfx_path = os.path.join(os.path.dirname(__file__), "gfx")
-        for filename in sorted(os.listdir(gfx_path)):
-            if filename.endswith(".bin"):
-                gfx_options.append((filename, filename + ">", filename[:-4]))
+        #gfx_path = os.path.join(os.path.dirname(__file__), "gfx")
+        #for filename in sorted(os.listdir(gfx_path)):
+        #    if filename.endswith(".bin"):
+        #        gfx_options.append((filename, filename + ">", filename[:-4]))
 
         self.__all = [
             Setting('seed', 'Main', '<', 'Seed', placeholder='Leave empty for random seed', default="", multiworld=False,
