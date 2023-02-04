@@ -87,10 +87,10 @@ class LAClientConstants:
     # RO, which player to send to, but it's just the X position of the NPC used, so 0x18 is player 0
     wLinkSendShopTarget = 0xDDFF
 
-    wRecvIndex = 0xDDFE  # 0xDB58
 
-    wCheckAddress = 0xD155 + 0x10
-    WRamCheckSize = 0x3
+    wRecvIndex = 0xDDFE  # 0xDB58
+    wCheckAddress = 0xC0FF - 0x4
+    WRamCheckSize = 0x4
     WRamSafetyValue = bytearray([0]*WRamCheckSize)
 
     MinGameplayValue = 0x06

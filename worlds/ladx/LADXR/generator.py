@@ -272,7 +272,7 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
     from ..Options import TrendyGame
     if ap_settings["trendy_game"] != TrendyGame.option_normal:
 
-        # TODO: if 0 or 4, 5, replace tiles
+        # TODO: if 0 or 4, 5, remove inaccurate conveyor tiles
 
         from .roomEditor import RoomEditor, Object
         room_editor = RoomEditor(rom, 0x2A0)
@@ -285,7 +285,7 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
             # All levels
             # Set physics flag on yoshi
             rom.banks[0x4][0x6F21-0x4000] = 0x3
-            # Add new conveyor to "push" yoshi
+            # Add new conveyor to "push" yoshi (it's only a visual)
             room_editor.objects.append(Object(5, 3, 0xD0))
 
             if int(ap_settings["trendy_game"]) >= TrendyGame.option_harder:
@@ -313,13 +313,11 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
                     rom.banks[0x4][0x76A5-0x4000] = speed()
                     rom.banks[0x4][0x76A7-0x4000] = 0xFF - speed()
 
+            room_editor.store(rom)
             # This doesn't work, you can set random conveyors, but they aren't used
             # for x in range(3, 9):
             #     for y in range(1, 5):
             #         room_editor.objects.append(Object(x, y, 0xCF + rnd.randint(0, 3)))
-
-            room_editor.store(rom)
-
     SEED_LOCATION = 0x0134
     SEED_SIZE = 10
 
