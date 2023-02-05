@@ -1,5 +1,5 @@
 import typing
-from Options import Choice, Option, Toggle, DefaultOnToggle, Range
+from Options import Choice, Option, Toggle, DefaultOnToggle, Range, TextChoice
 
 DefaultOffToggle = Toggle
 
@@ -276,6 +276,25 @@ class TrendyGame(Choice):
     option_impossible = 5
     default = option_harder
 
+class GfxMod(TextChoice, LADXROption):
+    """
+    options here correlate with sprite and name files in LADXR/gfx
+    """
+    display_name = "GFX Modification"
+    ladxr_name = "gfxmod"
+    normal = -1
+    bowwow = "Bowwow"
+    bunny = "Bunny"
+    luigi = "Luigi"
+    mario = "Mario"
+    matty_la = "Matty_LA"
+    richard = "Richard"
+    tarin = "Tarin"
+    default = normal
+
+    def to_ladxr_option(self, all_options):
+        return self.ladxr_name, self.value + ".bdiff"
+
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'logic': Logic,
     # 'heartpiece': DefaultOnToggle, # description='Includes heart pieces in the item pool'),                
@@ -299,4 +318,5 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'overworld': Overworld,
     'link_palette': LinkPalette,
     'trendy_game': TrendyGame,
+    'gfxmod': GfxMod,
 }
