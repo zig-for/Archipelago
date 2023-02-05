@@ -535,12 +535,12 @@ async def snes_read(ctx: SNIContext, address: int, size: int) -> typing.Optional
                 break
 
         if len(data) != size:
-            snes_logger.error('Error reading %s, requested %d bytes, received %d' % (hex(address), size, len(data)), exc_info=True)
+            snes_logger.error('Error reading %s, requested %d bytes, received %d' % (hex(address), size, len(data)))
             if len(data):
                 snes_logger.error(str(data))
                 snes_logger.warning('Communication Failure with SNI')
-            #if ctx.snes_socket is not None and not ctx.snes_socket.closed:
-            #    await ctx.snes_socket.close()
+            if ctx.snes_socket is not None and not ctx.snes_socket.closed:
+                await ctx.snes_socket.close()
             return None
 
         return data
@@ -657,6 +657,7 @@ async def run_game(romfile: str) -> None:
     elif isinstance(auto_start, str) and os.path.isfile(auto_start):
         subprocess.Popen([auto_start, romfile],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 
 async def main() -> None:
     multiprocessing.freeze_support()
