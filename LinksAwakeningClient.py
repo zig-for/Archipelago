@@ -66,6 +66,7 @@ class LAClientConstants:
     # Memory locations of LADXR
     ROMGameID = 0x0051  # 4 bytes
     SlotName = 0x0134
+    # Unused
     # ROMWorldID = 0x0055
     # ROMConnectorVersion = 0x0056
     # RO: We should only act if this is higher then 6, as it indicates that the game is running normally
@@ -74,18 +75,17 @@ class LAClientConstants:
     wLinkSyncSequenceNumber = 0xDDF6
     wLinkStatusBits = 0xDDF7          # RW:
     #      Bit0: wLinkGive* contains valid data, set from script cleared from ROM.
-    #      Bit1: wLinkSendItem* contains valid data, set from ROM cleared from lua
-    #      Bit2: wLinkSendShop* contains valid data, set from ROM cleared from lua
     wLinkHealth = 0xDB5A
     wLinkGiveItem = 0xDDF8  # RW
     wLinkGiveItemFrom = 0xDDF9  # RW
-    wLinkSendItemRoomHigh = 0xDDFA  # RO
-    wLinkSendItemRoomLow = 0xDDFB  # RO
-    wLinkSendItemTarget = 0xDDFC  # RO
-    wLinkSendItemItem = 0xDDFD  # RO
+    # All of these six bytes are unused, we can repurpose
+    # wLinkSendItemRoomHigh = 0xDDFA  # RO
+    # wLinkSendItemRoomLow = 0xDDFB  # RO
+    # wLinkSendItemTarget = 0xDDFC  # RO
+    # wLinkSendItemItem = 0xDDFD  # RO
     # wLinkSendShopItem = 0xDDFE # RO, which item to send (1 based, order of the shop items)
     # RO, which player to send to, but it's just the X position of the NPC used, so 0x18 is player 0
-    wLinkSendShopTarget = 0xDDFF
+    # wLinkSendShopTarget = 0xDDFF
 
 
     wRecvIndex = 0xDDFE  # 0xDB58
