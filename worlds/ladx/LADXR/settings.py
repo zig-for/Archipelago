@@ -70,7 +70,7 @@ class Setting:
 class Settings:
     def __init__(self, multiworld_count=None):
         gfx_options = [('', '', 'Default')]
-        gfx_path = os.path.join(("data", "sprites", "ladx")
+        gfx_path = os.path.join("data", "sprites", "ladx", "gfx")
         for filename in sorted(os.listdir(gfx_path)):
             if filename.endswith(".bin") or filename.endswith(".png"):
                 gfx_options.append((filename, filename + ">", filename[:-4]))
