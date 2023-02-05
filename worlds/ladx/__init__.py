@@ -266,6 +266,8 @@ class LinksAwakeningWorld(World):
                 "BAD",
                 "SINGLE",
                 "UPGRADE",
+                "BLUE",
+                "RED"
             ]
             for item in sample_key.OPTIONS:
                 self.name_cache[item] = item
@@ -295,6 +297,9 @@ class LinksAwakeningWorld(World):
                 'ENERGYTANK': 'HEART_CONTAINER',
                 'MISSILE': 'ARROW',
                 'BOMBS': 'BOMB',
+                'BLUEBOOMERANG': 'BOOMERANG',
+                'MAGICMIRROR': 'MAGNIFYINGGLASS'
+                
                 # TODO: instruments because we can
             }
             self.name_cache.update(others)

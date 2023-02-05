@@ -318,6 +318,58 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
             # for x in range(3, 9):
             #     for y in range(1, 5):
             #         room_editor.objects.append(Object(x, y, 0xCF + rnd.randint(0, 3)))
+    ADJUST_PALETTE = False
+    if ADJUST_PALETTE:
+        PALETTE_BANK = 0x21
+        def clamp(x, min, max):
+            if x < min:
+                return min
+            if x > max:
+                return max
+            return x
+        def bin_to_rgb(word):
+            red   = word & 0b11111
+            word >>= 5
+            green = word & 0b11111
+            word >>= 5
+            blue  = word & 0b11111
+            return (red, green, blue)
+        def rgb_to_bin(r, g, b):
+            return (b << 10) | (g << 5) | r
+        import itertools
+        for address in itertools.chain(range(0x5518-0x4000, 0x74A0 - 0x4000, 2), range(0x7536-0x4000, 0x3FFE, 2)):
+            packed = (rom.banks[PALETTE_BANK][address + 1] << 8) | rom.banks[PALETTE_BANK][address]
+            r,g,b = bin_to_rgb(packed)
+            
+            # 1 bit
+            if False:        
+                r &= 0b10000
+                g &= 0b10000
+                b &= 0b10000
+            # 2 bit
+            if False:
+                r &= 0b11000
+                g &= 0b11000
+                b &= 0b11000
+            # Invert
+            if False:
+                r = 31 - r
+                g = 31 - g
+                b = 31 - b
+            # Pink
+            if False:
+                r = r // 2
+                r += 16
+                r = int(r)
+                r = clamp(r, 0, 0x1F)
+                b = b // 2
+                b += 16
+                b = int(b)
+                b = clamp(b, 0, 0x1F)
+            packed = rgb_to_bin(r, g, b)
+            rom.banks[PALETTE_BANK][address] = packed & 0xFF
+            rom.banks[PALETTE_BANK][address + 1] = packed >> 8
+
     SEED_LOCATION = 0x0134
     SEED_SIZE = 10
 

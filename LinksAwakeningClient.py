@@ -527,8 +527,6 @@ Button:
             self.game = self.slot_info[self.slot].game
         # TODO - use watcher_event
         if cmd == "ReceivedItems":
-            logger.info(
-                f"Got items starting at {args['index']} of count {len(args['items'])}")
             for index, item in enumerate(args["items"], args["index"]):
                 self.client.recvd_checks[index] = item
 
