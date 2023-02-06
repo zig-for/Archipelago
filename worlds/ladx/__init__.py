@@ -143,6 +143,7 @@ class LinksAwakeningWorld(World):
 
     def create_items(self) -> None:    
         exclude = [item for item in self.multiworld.precollected_items[self.player]]
+        print(exclude)
         self.prefill_dungeon_items = []
         self.trade_items = []
         for ladx_item_name, count in self.ladxr_itempool.items():

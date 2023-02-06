@@ -276,6 +276,14 @@ class TrendyGame(Choice):
     option_impossible = 5
     default = option_harder
 
+class Palette(Choice):
+    option_normal = 0
+    option_1bit = 1
+    option_2bit = 2
+    option_greyscale = 3
+    option_pink = 4
+    option_inverted = 5
+    
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'logic': Logic,
     # 'heartpiece': DefaultOnToggle, # description='Includes heart pieces in the item pool'),                
@@ -299,4 +307,5 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'overworld': Overworld,
     'link_palette': LinkPalette,
     'trendy_game': TrendyGame,
+    'palette': Palette,
 }
