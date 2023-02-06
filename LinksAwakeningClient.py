@@ -1,30 +1,26 @@
-import binascii
 import asyncio
+import base64
+import binascii
+import io
 import logging
 import select
 import socket
 import time
+import typing
 import urllib
 
-import typing
 import colorama
-import websockets
-
-from NetUtils import ClientStatus
 
 import Utils
-from CommonClient import (ClientCommandProcessor, CommonContext,
-                          get_base_parser, gui_enabled, logger, server_loop)
+from CommonClient import (CommonContext, get_base_parser, gui_enabled, logger,
+                          server_loop)
+from NetUtils import ClientStatus
 from worlds.ladx.Common import BASE_ID as LABaseID
-from worlds.ladx.Items import ItemName, links_awakening_items_by_name
+from worlds.ladx.GpsTracker import GpsTracker
+from worlds.ladx.ItemTracker import ItemTracker
 from worlds.ladx.LADXR.checkMetadata import checkMetadataTable
 from worlds.ladx.Locations import get_locations_to_id, meta_to_name
 from worlds.ladx.Tracker import LocationTracker, MagpieBridge
-from worlds.ladx.ItemTracker import ItemTracker
-from worlds.ladx.GpsTracker import GpsTracker
-
-import io
-import base64
 
 
 class GameboyException(Exception):
@@ -287,7 +283,6 @@ class LinksAwakeningClient():
     def __init__(self, retroarch_address="127.0.0.1", retroarch_port=55355):
         self.gameboy = RAGameboy(retroarch_address, retroarch_port)
 
-    # TODO: async
     async def wait_for_retroarch_connection(self):
         logger.info("Waiting on connection to Retroarch...")
         while True:
@@ -392,7 +387,7 @@ class LinksAwakeningClient():
         if self.deathlink_debounce and current_health != 0:
             self.deathlink_debounce = False
         elif not self.deathlink_debounce and current_health == 0:
-            logger.info("YOU DIED.")
+            # logger.info("YOU DIED.")
             await deathlink_cb()
             self.deathlink_debounce = True
 
@@ -430,7 +425,7 @@ class LinksAwakeningContext(CommonContext):
     # slot = 1
     la_task = None
     client = None
-    # TODO: this needs to re-read on reset
+    # TODO: does this need to re-read on reset?
     found_checks = []
     last_resend = time.time()
 
@@ -443,11 +438,12 @@ class LinksAwakeningContext(CommonContext):
         super().__init__(server_address, password)
 
     def run_gui(self) -> None:
-        from kvui import GameManager, Button
-        from kivy.uix.image import Image, CoreImage
-        from kivy.lang import Builder
-        from kivy.uix.boxlayout import BoxLayout
         import webbrowser
+
+        from kivy.lang import Builder
+        from kivy.uix.image import Image
+
+        from kvui import Button, GameManager
 
         w = Builder.load_string("""
 Button:
@@ -481,8 +477,7 @@ Button:
                 return b
 
         self.ui = LADXManager(self)
-        self.ui_task = asyncio.create_task(
-            self.ui.async_run(), name="UI")  # type: ignore
+        self.ui_task = asyncio.create_task(self.ui.async_run(), name="UI")
 
     async def send_checks(self):
         message = [{"cmd": 'LocationChecks', "locations": self.found_checks}]

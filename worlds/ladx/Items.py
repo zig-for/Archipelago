@@ -4,7 +4,6 @@ import typing
 from enum import IntEnum
 from .LADXR.locations.constants import CHEST_ITEMS
 
-
 class ItemData(typing.NamedTuple):
     item_name: str
     ladxr_id: str
@@ -173,8 +172,7 @@ class ItemName:
     TRADING_ITEM_SCALE = "Scale"
     TRADING_ITEM_MAGNIFYING_GLASS = "Magnifying Glass"
 
-def trade_item_prog(world, player):
-    return ItemClassification.progression 
+trade_item_prog = ItemClassification.progression 
 
 links_awakening_items = [
     ItemData(ItemName.POWER_BRACELET, "POWER_BRACELET", ItemClassification.progression),

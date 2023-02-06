@@ -1,19 +1,24 @@
-# world/mygame/__init__.py
-
-from .LADXR.locations.tradeSequence import TradeSequenceItem
-from .Options import links_awakening_options  # the options we defined earlier
-from .Items import LinksAwakeningItem, DungeonItemData, DungeonItemType, links_awakening_items, ladxr_item_to_la_item_name, links_awakening_items_by_name 
-from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation, LinksAwakeningRegion
-from worlds.AutoWorld import WebWorld, World
-from BaseClasses import Location, Entrance, Item, ItemClassification, Tutorial
-from .Common import *
-from Fill import fill_restrictive
+import binascii
 import os
+
+from BaseClasses import Entrance, Item, ItemClassification, Location, Tutorial
+from Fill import fill_restrictive
+from worlds.AutoWorld import WebWorld, World
+
+from .Common import *
+from .Items import (DungeonItemData, DungeonItemType, LinksAwakeningItem,
+                    ladxr_item_to_la_item_name, links_awakening_items,
+                    links_awakening_items_by_name)
+from .LADXR import generator
+from .LADXR.itempool import ItemPool as LADXRItemPool
+from .LADXR.locations.tradeSequence import TradeSequenceItem
 from .LADXR.logic import Logic as LAXDRLogic
+from .LADXR.main import get_parser
 from .LADXR.settings import Settings as LADXRSettings
 from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
-from .LADXR.itempool import ItemPool as LADXRItemPool
-import binascii
+from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
+                        create_regions_from_ladxr, get_locations_to_id)
+from .Options import links_awakening_options
 from .Rom import LADXDeltaPatch
 
 DEVELOPER_MODE = False
@@ -352,9 +357,7 @@ class LinksAwakeningWorld(World):
 
         out_file = out_name
         print(out_file)
-        from .LADXR import generator 
 
-        from .LADXR.main import get_parser
         parser = get_parser()
         args = parser.parse_args([rom_path, "-o", out_file, "--dump"])
 
