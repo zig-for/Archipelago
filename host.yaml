@@ -94,7 +94,7 @@ lttp_options:
   # File name of the v1.0 J rom
   rom_file: "Zelda no Densetsu - Kamigami no Triforce (Japan).sfc"
 ladx_options:
-  # File name of the DKC3 US rom
+  # File name of the Link's Awakening DX rom
   rom_file: "Legend of Zelda, The - Link's Awakening DX (USA, Europe) (SGB Enhanced).gbc"
 lufia2ac_options:
   # File name of the US rom
