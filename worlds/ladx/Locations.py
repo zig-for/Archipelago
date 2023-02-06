@@ -1,16 +1,13 @@
-from BaseClasses import Region, RegionType, Entrance, Location, LocationProgressType
+from BaseClasses import Region, RegionType, Entrance, Location
 from worlds.AutoWorld import LogicMixin
 
 
-
-from .LADXR.logic.requirements import RequirementsSettings
 from .LADXR.checkMetadata import checkMetadataTable
-from .LADXR.locations.keyLocation import KeyLocation as LADXRKeyLocation
 from .Common import *
-from worlds.generic.Rules import add_rule, set_rule, add_item_rule
-from .Items import ladxr_item_to_la_item_name, links_awakening_items, ItemName, LinksAwakeningItem
-from .LADXR.itempool import ItemPool as LADXRItemPool
+from worlds.generic.Rules import add_item_rule
+from .Items import ladxr_item_to_la_item_name, ItemName, LinksAwakeningItem
 from .LADXR.locations.tradeSequence import TradeRequirements, TradeSequenceItem
+
 prefilled_events = ["ANGLER_KEYHOLE", "RAFT", "MEDICINE2", "CASTLE_BUTTON"]
 
 links_awakening_dungeon_names = [
@@ -25,8 +22,11 @@ links_awakening_dungeon_names = [
     "Color Dungeon"
 ]
 
+
 def meta_to_name(meta):
     return f"{meta.name} ({meta.area})"
+
+
 def get_locations_to_id():
     ret = {
 
@@ -37,8 +37,7 @@ def get_locations_to_id():
         if s == "None":
             continue
         splits = s.split("-")
-    
-        
+
         main_id = int(splits[0], 16)
         sub_id = 0
         if len(splits) > 1:
@@ -51,28 +50,33 @@ def get_locations_to_id():
         ret[name] = BASE_ID + main_id + sub_id
 
     return ret
+
+
 locations_to_id = get_locations_to_id()
-class LinksAwakeningLocation(Location):  
+
+
+class LinksAwakeningLocation(Location):
     game = LINKS_AWAKENING
     dungeon = None
+
     def __init__(self, player: int, region, ladxr_item):
         name = meta_to_name(ladxr_item.metadata)
-        
+
         self.event = ladxr_item.OPTIONS[0] in prefilled_events
         if self.event:
             # TODO: do translation to friendlier string
             name = ladxr_item.OPTIONS[0]
-        
+
         address = None
         if not self.event:
             address = locations_to_id[name]
         super().__init__(player, name, address)
         self.parent_region = region
         self.ladxr_item = ladxr_item
+
         def filter_item(item):
             if not ladxr_item.MULTIWORLD and item.player != player:
                 return False
-            # TODO: if item isn't it allowed list, turn into letter
             if isinstance(item, LinksAwakeningItem):
                 # Don't allow self locking Trade Sequence Items - there's some settings where it could be legal
                 # but it's not worth the headache to pass in the required metadata
@@ -85,9 +89,6 @@ class LinksAwakeningLocation(Location):
             return True
         add_item_rule(self, filter_item)
 
-        # Fill local items first
-        #if not self.ladxr_item.local_only:
-        #    self.progress_type = LocationProgressType.PRIORITY
 
 def has_free_weapon(state: "CollectionState", player: int) -> bool:
     return state.has("Progressive Sword", player) or state.has("Magic Rod", player) or state.has("Boomerang", player) or state.has("Hookshot", player)
@@ -95,6 +96,7 @@ def has_free_weapon(state: "CollectionState", player: int) -> bool:
 # If the player has access to farm enough rupees to afford a game, we assume that they can keep beating the game
 def can_farm_rupees(state: "CollectionState", player: int) -> bool:
     return has_free_weapon(state, player) and (state.has("Can Play Trendy Game", player=player) or state.has("RAFT", player=player))
+
 
 class LinksAwakeningLogic(LogicMixin):
     rupees = {
@@ -114,13 +116,14 @@ class LinksAwakeningLogic(LogicMixin):
 class LinksAwakeningRegion(Region):
     dungeon_index = None
     ladxr_region = None
+
     def __init__(self, name, ladxr_region, hint, player, world):
         super().__init__(name, RegionType.Generic, hint, player, world)
         if ladxr_region:
             self.ladxr_region = ladxr_region
             if ladxr_region.dungeon:
                 self.dungeon_index = ladxr_region.dungeon
-    
+
 
 def translate_item_name(item):
     if item in ladxr_item_to_la_item_name:
@@ -139,13 +142,10 @@ class GameStateAdapater:
             return False
         if item in ladxr_item_to_la_item_name:
             item = ladxr_item_to_la_item_name[item]
-    
+
         return self.state.has(item, self.player)
 
     def get(self, item, default):
-        # Hack - don't keep track of rupees for the moment
-        if "ANGLER" in item:
-            assert(False)
         if item == "RUPEES":
             return self.state.get_credits(self.player)
         elif item.endswith("_USED"):
@@ -167,29 +167,32 @@ class LinksAwakeningEntrance(Entrance):
                 self.condition = condition
         elif condition:
             # rewrite condition
-            self.condition = condition #.copyWithModifiedItemNames(translate_item_name)
+            # .copyWithModifiedItemNames(translate_item_name)
+            self.condition = condition
         else:
             self.condition = None
-
 
     def access_rule(self, state):
         if isinstance(self.condition, str):
             return state.has(self.condition, self.player)
         if self.condition is None:
             return True
-        
+
         return self.condition.test(GameStateAdapater(state, self.player))
-        
+
+
+# Helper to apply function to every ladxr region
 def walk_ladxdr(f, n, walked=set()):
     if n in walked:
         return
     f(n)
     walked.add(n)
-    
+
     for o, req in n.simple_connections:
         walk_ladxdr(f, o, walked)
     for o, req in n.gated_connections:
         walk_ladxdr(f, o, walked)
+
 
 def ladxr_region_to_name(n):
     name = n.name
@@ -204,27 +207,25 @@ def ladxr_region_to_name(n):
 
     return name
 
-def create_regions_from_ladxr(player, multiworld, logic):
-    # No options, yet
 
+def create_regions_from_ladxr(player, multiworld, logic):
     tmp = set()
 
     def print_items(n):
         print(f"Creating Region {ladxr_region_to_name(n)}")
         print("Has simple connections:")
-        for region, info in n.simple_connections:    
+        for region, info in n.simple_connections:
             print("  " + ladxr_region_to_name(region) + " | " + str(info))
         print("Has gated connections:")
 
-        for region, info in n.gated_connections:    
+        for region, info in n.gated_connections:
             print("  " + ladxr_region_to_name(region) + " | " + str(info))
-        
+
         print("Has Locations:")
         for item in n.items:
             print("  " + str(item.metadata))
         print()
 
-     
     used_names = {}
 
     regions = {}
@@ -237,10 +238,9 @@ def create_regions_from_ladxr(player, multiworld, logic):
         used_names[name] = index
         if index != 1:
             name += f" {index}"
-        
-        r = LinksAwakeningRegion(name=name, ladxr_region=l, hint="", player=player, world=multiworld)
-        # TODO: if KeyLocation, add as Event instead
-        # TODO: startlocation is too restrictive for multiworld
+
+        r = LinksAwakeningRegion(
+            name=name, ladxr_region=l, hint="", player=player, world=multiworld)
         r.locations = [LinksAwakeningLocation(player, r, i) for i in l.items]
         regions[l] = r
 
@@ -249,13 +249,9 @@ def create_regions_from_ladxr(player, multiworld, logic):
             region_a = regions[ladxr_location]
             region_b = regions[connection_location]
             # TODO: This name ain't gonna work for entrance rando, we need to cross reference with logic.world.overworld_entrance
-            entrance = LinksAwakeningEntrance(player, f"{region_a.name} -> {region_b.name}", region_a, connection_condition)
+            entrance = LinksAwakeningEntrance(
+                player, f"{region_a.name} -> {region_b.name}", region_a, connection_condition)
             region_a.exits.append(entrance)
             entrance.connect(region_b)
 
-                
-    
-
     return list(regions.values())
-
-
