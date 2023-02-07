@@ -6,7 +6,10 @@ from ..assembler import ASM
 
 class ShopItem(ItemInfo):
     def __init__(self, index):
+        self.MULTIWORLD = True
+
         self.__index = index
+        # TODO: pass in the alternate index for shop 2
         super().__init__(0x2A1)
 
     def patch(self, rom, option, *, multiworld=None):
