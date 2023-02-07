@@ -15,7 +15,8 @@ class ShopItem(ItemInfo):
     def patch(self, rom, option, *, multiworld=None):
         mw_text = ""
         if multiworld:
-            mw_text = f" for player {multiworld}"
+            mw_text = f" for player {rom.player_names[multiworld]}"
+
         if self.__index == 0:
             rom.patch(0x04, 0x37C5, "08", "%02X" % (CHEST_ITEMS[option]))
             rom.texts[0x030] = formatText(f"Deluxe {{%s}} 200 {{RUPEES}}{mw_text}!" % (option), ask="Buy  No Way")
