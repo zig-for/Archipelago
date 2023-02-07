@@ -61,24 +61,6 @@ class Boomerang(Choice):
     gift = 1
     default = gift
 
-# TODO: I know we have helper classes for this
-# this is the worst way to do this but I'm mechanically translating to Archipelago parlance
-# Break apart before merge
-class DungeonItemsShuffle(Choice):
-    """Sets if dungeon items can only be in their respective dungeon, or everywhere.
-    [Standard] dungeon items are only in their dungeon.
-    [Maps/.../..] specified items can be anywhere
-    [Keysanity] all dungeon items can be anywhere.
-    [Keysy] no keys, key doors are already open."""
-    standard = 0
-    smallkeys = 1
-    localkeys = 2
-    localnightmarekey = 3
-    keysanity = 4
-    keysy = 5
-
-    default = standard
-
 # TODO: translate to lttp parlance
 class EntranceShuffle(Choice):
     """Randomizes where overworld entrances lead to.
@@ -108,7 +90,7 @@ class DungeonItemShuffle(Choice):
     option_own_world = 2
     option_any_world = 3
     option_different_world = 4
-    option_delete = 5
+    #option_delete = 5
     #option_start_with = 6
     alias_true = 3
     alias_false = 0
@@ -117,23 +99,27 @@ class ShuffleNightmareKeys(DungeonItemShuffle):
     """
     Shuffle Nightmare Keys
     """
+    ladxr_item = "NIGHTMARE_KEY"
 class ShuffleSmallKeys(DungeonItemShuffle):
     """
     Shuffle Small Keys
     """
+    ladxr_item = "KEY"
 class ShuffleMaps(DungeonItemShuffle):
     """
     Shuffle Dungeon Maps
     """
+    ladxr_item = "MAP"
 class ShuffleCompasses(DungeonItemShuffle):
     """
     Shuffle Dungeon Compasses
     """
-class ShuffleOwlBeaks(DungeonItemShuffle):
+    ladxr_item = "COMPASS"
+class ShuffleStoneBeaks(DungeonItemShuffle):
     """
     Shuffle Owl Beaks
     """
-
+    ladxr_item = "STONE_BEAK"
 class Goal(Choice, LADXROption):
     """
     [Instruments] The Wind Fish's Egg will only open if you have the required number of Instruments of the Sirens, and play the Ballad of the Wind Fish.
@@ -344,5 +330,5 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'shuffle_small_keys': ShuffleSmallKeys,
     'shuffle_maps': ShuffleMaps,
     'shuffle_compasses': ShuffleCompasses,
-    'shuffle_owl_beaks': ShuffleOwlBeaks,
+    'shuffle_stone_beaks': ShuffleStoneBeaks,
 }

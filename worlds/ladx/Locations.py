@@ -76,9 +76,6 @@ class LinksAwakeningLocation(Location):
         def filter_item(item):
             if not ladxr_item.MULTIWORLD and item.player != player:
                 return False
-            #if isinstance(item, LinksAwakeningItem):
-            #    return True
-                #return item.item_data.ladxr_id in self.ladxr_item.OPTIONS
             return True
         add_item_rule(self, filter_item)
 

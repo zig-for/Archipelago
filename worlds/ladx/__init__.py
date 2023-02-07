@@ -22,7 +22,7 @@ from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
 from .Options import links_awakening_options
 from .Rom import LADXDeltaPatch
 
-DEVELOPER_MODE = False
+DEVELOPER_MODE = True
 
 class LinksAwakeningWebWorld(WebWorld):
     tutorials = [Tutorial(
@@ -134,9 +134,38 @@ class LinksAwakeningWorld(World):
 
     def create_items(self) -> None:    
         exclude = [item.name for item in self.multiworld.precollected_items[self.player]]
-        print(exclude)
-        self.prefill_dungeon_items = []
+
         self.trade_items = []
+
+        dungeon_item_types = {
+
+        }
+        from .Options import DungeonItemShuffle        
+        self.prefill_original_dungeon = [ [], [], [], [], [], [], [], [], [] ]
+        self.prefill_own_dungeons = []
+        # For any and different world, set item rule instead
+        
+        for option in ["maps", "compasses", "small_keys", "nightmare_keys", "stone_beaks"]:
+            option = "shuffle_" + option
+            option = self.player_options[option]
+
+            dungeon_item_types[option.ladxr_item] = option.value
+
+            if option.value == DungeonItemShuffle.option_own_world:
+                self.multiworld.local_items[self.player].value |= [
+                    ladxr_item_to_la_item_name[f"{option.ladxr_item}{i}"] for i in range(1, 10)
+                ]
+            elif option.value == DungeonItemShuffle.option_different_world:
+                self.multiworld.non_local_items[self.player].value |= [
+                    ladxr_item_to_la_item_name[f"{option.ladxr_item}{i}"] for i in range(1, 10)
+                ]
+        # option_original_dungeon = 0
+        # option_own_dungeons = 1
+        # option_own_world = 2
+        # option_any_world = 3
+        # option_different_world = 4
+        # option_delete = 5
+
         for ladx_item_name, count in self.ladxr_itempool.items():
             # event
             if ladx_item_name not in ladxr_item_to_la_item_name:
@@ -174,13 +203,20 @@ class LinksAwakeningWorld(World):
                                 if found:
                                     break                            
                         else:
-                            self.prefill_dungeon_items.append(item)
+                            item_type = item.item_data.ladxr_id[:-1]
+                            shuffle_type = dungeon_item_types[item_type]
+                            if shuffle_type == DungeonItemShuffle.option_original_dungeon:
+                                self.prefill_original_dungeon[item.item_data.dungeon_index - 1].append(item)
+                            elif shuffle_type == DungeonItemShuffle.option_own_dungeons:
+                                self.prefill_own_dungeons.append(item)
+                            else:
+                                self.multiworld.itempool.append(item)
                     else:
                         self.multiworld.itempool.append(item)
 
     def pre_fill(self):
         dungeon_locations = []
-        local_only_locations = []
+        dungeon_locations_by_dungeon = [[], [], [], [], [], [], [], [], []]
         all_state = self.multiworld.get_all_state(use_cache=False)
         
         # Add special case for trendy shop access
@@ -207,45 +243,45 @@ class LinksAwakeningWorld(World):
 
             # Set aside dungeon locations
             if r.dungeon_index:
-                dungeon_locations += [loc for loc in r.locations if not loc.item]
+                dungeon_locations += r.locations
+                dungeon_locations_by_dungeon[r.dungeon_index - 1] += r.locations
                 for location in r.locations:
                     if location.name == "Pit Button Chest (Tail Cave)":
                         # Don't place dungeon items on pit button chest, to reduce chance of the filler blowing up
+                        # TODO: no need for this if small key shuffle
                         dungeon_locations.remove(location)
+                        dungeon_locations_by_dungeon[r.dungeon_index - 1].remove(location)
                     # Properly fill locations within dungeon
                     location.dungeon = r.dungeon_index
 
                     # Tell the filler that if we're placing a dungeon item, restrict it to the dungeon the item associates with
                     # This will need changed once keysanity is implemented
-                    orig_rule = location.item_rule
-                    location.item_rule = lambda item, orig_rule=orig_rule: \
-                        (not isinstance(item, DungeonItemData) or item.dungeon_index == location.dungeon) and orig_rule(item)
+                    #orig_rule = location.item_rule
+                    #location.item_rule = lambda item, orig_rule=orig_rule: \
+                    #    (not isinstance(item, DungeonItemData) or item.dungeon_index == location.dungeon) and orig_rule(item)
 
             for location in r.locations:
                 # If tradequests are disabled, place trade items directly in their proper location
                 if not self.multiworld.tradequest[self.player] and isinstance(location, LinksAwakeningLocation) and isinstance(location.ladxr_item, TradeSequenceItem):
                     item = next(i for i in self.trade_items if i.item_data.ladxr_id == location.ladxr_item.default_item)
                     location.place_locked_item(item)                   
-                # Handle local only locations
-                # this code may be unneccessary, early local fill is disabled right now
-                elif isinstance(location, LinksAwakeningLocation) and not location.ladxr_item.MULTIWORLD and not location.item:
-                    local_only_locations.append(location)
+
+
+        for dungeon_index in range(0, 9):
+            print(dungeon_index)
+            locs = dungeon_locations_by_dungeon[dungeon_index]
+            locs = [loc for loc in locs if not loc.item]
+            self.multiworld.random.shuffle(locs)
+            self.multiworld.random.shuffle(self.prefill_original_dungeon[dungeon_index])
+            fill_restrictive(self.multiworld, all_state, locs, self.prefill_original_dungeon[dungeon_index], lock=True)
+            assert not self.prefill_original_dungeon[dungeon_index]
 
         # Fill dungeon items first, to not torture the fill algo
-        dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
+        dungeon_locations = [loc for loc in dungeon_locations if not loc.item]
+        # dungeon_items = sorted(self.prefill_own_dungeons, key=lambda item: item.item_data.dungeon_item_type)
+        self.multiworld.random.shuffle(self.prefill_own_dungeons)
         self.multiworld.random.shuffle(dungeon_locations)
-        fill_restrictive(self.multiworld, all_state, dungeon_locations, dungeon_items, lock=True)
-        
-        DO_EARLY_FILL = False
-        if DO_EARLY_FILL:
-            # Fill local only first
-            # Double check that we haven't filled the location first so we don't double fill
-            local_only_locations = [loc for loc in local_only_locations if not loc.item]
-            self.multiworld.random.shuffle(local_only_locations)
-
-            # Shuffle the pool first
-            self.multiworld.random.shuffle(self.multiworld.itempool)
-            fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=False, single_player_placement=True)
+        fill_restrictive(self.multiworld, all_state, dungeon_locations, self.prefill_own_dungeons, lock=True)
 
     name_cache = {}
 
