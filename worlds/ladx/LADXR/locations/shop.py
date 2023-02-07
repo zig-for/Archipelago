@@ -27,7 +27,6 @@ class ShopItem(ItemInfo):
             rom.texts[0x02C] = formatText(f"{{%s}} Only 980 {{RUPEES}}{mw_text}!" % (option), ask="Buy  No Way")
             
             rom.banks[0x3E][0x3800 + 0x2A7] = CHEST_ITEMS[option]
-            multiworld = 1
             if multiworld:
                 rom.banks[0x3E][0x3300 + 0x2A7] = multiworld
 
