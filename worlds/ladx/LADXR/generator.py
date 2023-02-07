@@ -400,7 +400,7 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
                     b = int(b)
                     b = clamp(b, 0, 0x1F)
                 elif palette == Palette.option_greyscale:
-                    gray=int((0.299*r+0.587*g+0.114*b)/3)
+                    # gray=int(0.299*r+0.587*g+0.114*b)
                     gray = (r + g + b) // 3
                     r = g = b = gray
 

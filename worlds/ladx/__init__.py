@@ -142,7 +142,7 @@ class LinksAwakeningWorld(World):
         return Item(event, ItemClassification.progression, None, self.player)
 
     def create_items(self) -> None:    
-        exclude = [item for item in self.multiworld.precollected_items[self.player]]
+        exclude = [item.name for item in self.multiworld.precollected_items[self.player]]
         print(exclude)
         self.prefill_dungeon_items = []
         self.trade_items = []
@@ -154,7 +154,7 @@ class LinksAwakeningWorld(World):
             for _ in range(count):
                 if item_name in exclude:
                     exclude.remove(item_name)  # this is destructive. create unique list above
-                    self.multiworld.itempool.append(self.create_item("nothing"))
+                    self.multiworld.itempool.append(self.create_item("Master Stalfos' Message"))
                 else:
                     item = self.create_item(item_name)
 
