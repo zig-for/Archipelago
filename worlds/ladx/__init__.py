@@ -228,13 +228,14 @@ class LinksAwakeningWorld(World):
         FORCE_START_ITEM = True
         if FORCE_START_ITEM:
             start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
-            possible_start_items = [index for index, item in enumerate(self.multiworld.itempool)
-                if item.player == self.player 
-                    and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS]
-            
-            index = self.multiworld.random.choice(possible_start_items)
-            start_item = self.multiworld.itempool.pop(index)
-            start_loc.place_locked_item(start_item)
+            if not start_loc.item:
+                possible_start_items = [index for index, item in enumerate(self.multiworld.itempool)
+                    if item.player == self.player 
+                        and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS]
+                
+                index = self.multiworld.random.choice(possible_start_items)
+                start_item = self.multiworld.itempool.pop(index)
+                start_loc.place_locked_item(start_item)
         
         for r in self.multiworld.get_regions():
             if r.player != self.player:

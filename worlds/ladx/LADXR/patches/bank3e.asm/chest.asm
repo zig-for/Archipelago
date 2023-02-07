@@ -779,8 +779,8 @@ ItemSpriteTable:
     db $38, $1A        ; CHEST_RUPEES_200 (yellow)
     db $38, $1A        ; CHEST_RUPEES_500 (yellow)
     db $9E, $14        ; CHEST_SEASHELL
-    db $FF, $18        ; CHEST_MESSAGE
-    db $FF, $18        ; CHEST_GEL
+    db $8A, $14        ; CHEST_MESSAGE
+    db $A0, $14        ; CHEST_GEL
     db $4A, $1D        ; KEY1
     db $4A, $1D        ; KEY2
     db $4A, $1D        ; KEY3
