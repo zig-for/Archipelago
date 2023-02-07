@@ -152,13 +152,13 @@ class LinksAwakeningWorld(World):
             dungeon_item_types[option.ladxr_item] = option.value
 
             if option.value == DungeonItemShuffle.option_own_world:
-                self.multiworld.local_items[self.player].value |= [
+                self.multiworld.local_items[self.player].value |= {
                     ladxr_item_to_la_item_name[f"{option.ladxr_item}{i}"] for i in range(1, 10)
-                ]
+                }
             elif option.value == DungeonItemShuffle.option_different_world:
-                self.multiworld.non_local_items[self.player].value |= [
+                self.multiworld.non_local_items[self.player].value |= {
                     ladxr_item_to_la_item_name[f"{option.ladxr_item}{i}"] for i in range(1, 10)
-                ]
+                }
         # option_original_dungeon = 0
         # option_own_dungeons = 1
         # option_own_world = 2
@@ -197,7 +197,6 @@ class LinksAwakeningWorld(World):
                                     if not isinstance(loc.ladxr_item, Instrument):
                                         continue
                                     loc.place_locked_item(item)
-                                    print(f"Placed instrument at {loc}")
                                     found = True
                                     break
                                 if found:
@@ -229,12 +228,12 @@ class LinksAwakeningWorld(World):
         FORCE_START_ITEM = True
         if FORCE_START_ITEM:
             start_loc = self.multiworld.get_location("Tarin's Gift (Mabe Village)", self.player)
-            possible_start_items = [item for item in self.multiworld.itempool 
+            possible_start_items = [index for index, item in enumerate(self.multiworld.itempool)
                 if item.player == self.player 
                     and item.item_data.ladxr_id in start_loc.ladxr_item.OPTIONS]
             
-            start_item = self.multiworld.random.choice(possible_start_items)
-            self.multiworld.itempool.remove(start_item)
+            index = self.multiworld.random.choice(possible_start_items)
+            start_item = self.multiworld.itempool.pop(index)
             start_loc.place_locked_item(start_item)
         
         for r in self.multiworld.get_regions():
@@ -264,11 +263,9 @@ class LinksAwakeningWorld(World):
                 # If tradequests are disabled, place trade items directly in their proper location
                 if not self.multiworld.tradequest[self.player] and isinstance(location, LinksAwakeningLocation) and isinstance(location.ladxr_item, TradeSequenceItem):
                     item = next(i for i in self.trade_items if i.item_data.ladxr_id == location.ladxr_item.default_item)
-                    location.place_locked_item(item)                   
-
+                    location.place_locked_item(item)
 
         for dungeon_index in range(0, 9):
-            print(dungeon_index)
             locs = dungeon_locations_by_dungeon[dungeon_index]
             locs = [loc for loc in locs if not loc.item]
             self.multiworld.random.shuffle(locs)
