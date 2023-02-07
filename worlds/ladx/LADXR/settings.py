@@ -75,7 +75,7 @@ class Settings:
             if filename.endswith(".bin") or filename.endswith(".png"):
                 gfx_options.append((filename, filename + ">", filename[:-4]))
             if filename.endswith(".bdiff"):
-                gfx_options.append((filename, filename + ">", filename[:-5]))
+                gfx_options.append((filename, filename + ">", filename[:-6]))
 
         self.__all = [
             Setting('seed', 'Main', '<', 'Seed', placeholder='Leave empty for random seed', default="", multiworld=False,
