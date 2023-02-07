@@ -15,7 +15,7 @@ class ShopItem(ItemInfo):
     def patch(self, rom, option, *, multiworld=None):
         mw_text = ""
         if multiworld:
-            mw_text = f" for player {rom.player_names[multiworld]}"
+            mw_text = f" for player {rom.player_names[multiworld - 1]}"
 
         if self.__index == 0:
             rom.patch(0x04, 0x37C5, "08", "%02X" % (CHEST_ITEMS[option]))

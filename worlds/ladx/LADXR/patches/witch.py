@@ -12,22 +12,22 @@ def updateWitch(rom):
     # Change what happens when you trade the toadstool with the witch
     #  Note that the 2nd byte of this code gets patched with the item to give from the witch.
     rom.patch(0x05, 0x08D4, 0x08F0, ASM("""
-        ld  e, $09 ; load the item to give the first time
-
         ; Get the room flags and mark the witch as done.
         ld  hl, $DAA2
         ld  a, [hl]
         and $30
         set 4, [hl]
         set 5, [hl]
-        jr  z, skip
+        jr  z, item
+powder:
         ld  e, $09 ; give powder every time after the first time.
-skip:
         ld  a, e
         ldh [$F1], a
-        ld  a, $02
+        ld  a, $11
         rst 8
-        ld  a, $03
+        jp $48F0
+item:
+        ld   a, $0E
         rst 8
     """), fill_nop=True)
 

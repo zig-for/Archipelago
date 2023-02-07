@@ -78,7 +78,7 @@ MainJumpTable:
         dw   GiveItemAndMessageForRoomMultiworld  ; E
         dw   RenderOwlStatueItem                  ; F
         dw   UpdateInventoryMenu                  ; 10
-
+        dw   LocalOnlyItemAndMessage              ; 11
 StartGameMarinMessage:
         ; Injection to reset our frame counter
         call $27D0 ; Enable SRAM
@@ -199,7 +199,10 @@ WriteToVRAM:
         jr   nz, WriteToVRAM
         ld   [hl], b
         ret
-
+LocalOnlyItemAndMessage:
+        call GiveItemFromChest
+        call ItemMessage
+        ret
     """ + open(os.path.join(my_path, "bank3e.asm/multiworld.asm"), "rt").read()
         + open(os.path.join(my_path, "bank3e.asm/link.asm"), "rt").read()
         + open(os.path.join(my_path, "bank3e.asm/chest.asm"), "rt").read()
