@@ -16,6 +16,7 @@ from .LADXR.logic import Logic as LAXDRLogic
 from .LADXR.main import get_parser
 from .LADXR.settings import Settings as LADXRSettings
 from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
+from .LADXR.locations.instrument import Instrument
 from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
                         create_regions_from_ladxr, get_locations_to_id)
 from .Options import links_awakening_options
@@ -80,18 +81,8 @@ class LinksAwakeningWorld(World):
         self.player_options = {
             option: getattr(self.multiworld, option)[self.player] for option in self.option_definitions
         }
-        self.laxdr_options = LADXRSettings()
-        for option in self.player_options.values():
-            if not hasattr(option, 'to_ladxr_option'):
-                continue
-            name, value = option.to_ladxr_option(self.player_options)
-            if value == "true":
-                value = 1
-            elif value == "false":
-                value = 0
-                
-            if name:
-                self.laxdr_options.set( f"{name}={value}")
+        self.laxdr_options = LADXRSettings(self.player_options)
+        
         self.laxdr_options.validate()
         world_setup = LADXRWorldSetup()
         world_setup.randomize(self.laxdr_options, self.multiworld.random)
@@ -124,7 +115,7 @@ class LinksAwakeningWorld(World):
         for region in regions:
             for loc in region.locations:
                 if loc.event:
-                    loc.place_locked_item(self.create_event(loc.ladxr_item.OPTIONS[0]))
+                    loc.place_locked_item(self.create_event(loc.ladxr_item.event))
         
         # Connect Windfish -> Victory
         windfish = self.multiworld.get_region("Windfish", self.player)
@@ -163,27 +154,29 @@ class LinksAwakeningWorld(World):
                         continue
                     if isinstance(item.item_data, DungeonItemData):
                         if item.item_data.dungeon_item_type == DungeonItemType.INSTRUMENT:
-                            search_string = f"INSTRUMENT{item.item_data.dungeon_index}"
                             # Find instrument, lock
                             # TODO: we should be able to pinpoint the region we want, save a lookup table please
                             found = False
                             for r in self.multiworld.get_regions():
                                 if r.player != self.player:
                                     continue
-
+                                if r.dungeon_index != item.item_data.dungeon_index:
+                                    continue
                                 for loc in r.locations:
                                     if not isinstance(loc, LinksAwakeningLocation):
                                         continue
-                                    if len(loc.ladxr_item.OPTIONS) == 1 and loc.ladxr_item.OPTIONS[0] == search_string:
-                                        loc.place_locked_item(item)
-                                        found = True
+                                    if not isinstance(loc.ladxr_item, Instrument):
+                                        continue
+                                    loc.place_locked_item(item)
+                                    print(f"Placed instrument at {loc}")
+                                    found = True
+                                    break
                                 if found:
                                     break                            
                         else:
                             self.prefill_dungeon_items.append(item)
-                        continue
-
-                    self.multiworld.itempool.append(item)
+                    else:
+                        self.multiworld.itempool.append(item)
 
     def pre_fill(self):
         dungeon_locations = []
@@ -214,7 +207,7 @@ class LinksAwakeningWorld(World):
 
             # Set aside dungeon locations
             if r.dungeon_index:
-                dungeon_locations += r.locations
+                dungeon_locations += [loc for loc in r.locations if not loc.item]
                 for location in r.locations:
                     if location.name == "Pit Button Chest (Tail Cave)":
                         # Don't place dungeon items on pit button chest, to reduce chance of the filler blowing up

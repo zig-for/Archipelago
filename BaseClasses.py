@@ -424,6 +424,8 @@ class MultiWorld():
 
     def push_item(self, location: Location, item: Item, collect: bool = True):
         assert location.can_fill(self.state, item, False), f"Cannot place {item} into {location}."
+        assert not location.item, location
+        assert not item.location, item
         location.item = item
         item.location = location
         if collect:

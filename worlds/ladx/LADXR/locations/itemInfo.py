@@ -1,9 +1,9 @@
 import typing
 from ..checkMetadata import checkMetadataTable
+from .constants import *
 
 
 class ItemInfo:
-    OPTIONS = []
     MULTIWORLD = False
 
     def __init__(self, room=None, extra=None):
@@ -14,6 +14,8 @@ class ItemInfo:
         self.metadata = checkMetadataTable.get(self.nameId, checkMetadataTable["None"])
         self.forced_item = None
         self.custom_item_name = None
+        
+        self.event = None
     @property
     def location(self):
         return self._location
@@ -25,26 +27,7 @@ class ItemInfo:
         return self.OPTIONS
 
     def configure(self, options):
-        if options.dungeon_items in {'localkeys', 'localnightmarekey', 'keysanity', 'smallkeys'}:
-            # Add items that can be anywhere due to dungeon items setting
-            self.OPTIONS = self.OPTIONS.copy()
-            for n in range(10):
-                if options.dungeon_items != 'smallkeys':
-                    self.OPTIONS += ["MAP%d" % (n), "COMPASS%d" % (n), "STONE_BEAK%d" % (n)]
-                if options.dungeon_items in {'localnightmarekey', 'keysanity', 'smallkeys'}:
-                    self.OPTIONS += ["KEY%d" % (n)]
-                if options.dungeon_items == 'keysanity':
-                    self.OPTIONS += ["NIGHTMARE_KEY%d" % (n)]
-
-        if self._location.dungeon is not None and options.dungeon_items in {'', 'localkeys', 'localnightmarekey', 'keysy', 'smallkeys'}:
-            # Add items specific to this dungeon
-            self.OPTIONS = self.OPTIONS.copy()
-            d = self._location.dungeon
-            if options.dungeon_items in {'', 'keysy', 'smallkeys'}:
-                self.OPTIONS += ["MAP%d" % (d), "COMPASS%d" % (d), "STONE_BEAK%d" % (d)]
-            if options.dungeon_items in {'', 'localkeys'}:
-                self.OPTIONS += ["KEY%d" % (d)]
-            self.OPTIONS += ["NIGHTMARE_KEY%d" % (d)]
+        pass
 
     def read(self, rom):
         raise NotImplementedError()

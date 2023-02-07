@@ -172,14 +172,14 @@ class ItemPool:
                     self.remove("STONE_BEAK%d" % (n + 1))
                     self.add("KEY%d" % (n +1))
 
-        if settings.dungeon_items == 'keysy':
-            for n in range(9):
-                for amount, item_name in ((9, "KEY"), (1, "NIGHTMARE_KEY")):
-                    item_name = "%s%d" % (item_name, n + 1)
-                    if item_name in self.__pool:
-                        self.add(RUPEES_20, self.__pool[item_name])
-                        self.remove(item_name, self.__pool[item_name])
-                    self.add(item_name, amount)
+        # if settings.dungeon_items == 'keysy':
+        #     for n in range(9):
+        #         for amount, item_name in ((9, "KEY"), (1, "NIGHTMARE_KEY")):
+        #             item_name = "%s%d" % (item_name, n + 1)
+        #             if item_name in self.__pool:
+        #                 self.add(RUPEES_20, self.__pool[item_name])
+        #                 self.remove(item_name, self.__pool[item_name])
+        #             self.add(item_name, amount)
 
         if settings.goal == "seashells":
             for n in range(8):
@@ -246,15 +246,15 @@ class ItemPool:
             self.remove(RUPEES_100, 3)
             self.add(RUPEES_500, 3)
 
-        # In multiworld, put a bit more rupees in the seed, this helps with generation (2nd shop item)
-        #   As we cheat and can place rupees for the wrong player.
-        if settings.multiworld:
-            rupees20 = self.__pool.get(RUPEES_20, 0)
-            self.add(RUPEES_50, rupees20 // 2)
-            self.remove(RUPEES_20, rupees20 // 2)
-            rupees50 = self.__pool.get(RUPEES_50, 0)
-            self.add(RUPEES_200, rupees50 // 5)
-            self.remove(RUPEES_50, rupees50 // 5)
+        # # In multiworld, put a bit more rupees in the seed, this helps with generation (2nd shop item)
+        # #   As we cheat and can place rupees for the wrong player.
+        # if settings.multiworld:
+        #     rupees20 = self.__pool.get(RUPEES_20, 0)
+        #     self.add(RUPEES_50, rupees20 // 2)
+        #     self.remove(RUPEES_20, rupees20 // 2)
+        #     rupees50 = self.__pool.get(RUPEES_50, 0)
+        #     self.add(RUPEES_200, rupees50 // 5)
+        #     self.remove(RUPEES_50, rupees50 // 5)
         
     def __randomizeRupees(self, options, rnd):
         # Remove rupees from the item pool and replace them with other items to create more variety

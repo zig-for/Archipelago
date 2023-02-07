@@ -102,6 +102,38 @@ class BossShuffle(Choice):
     default = none
 
 
+class DungeonItemShuffle(Choice):
+    option_original_dungeon = 0
+    option_own_dungeons = 1
+    option_own_world = 2
+    option_any_world = 3
+    option_different_world = 4
+    option_delete = 5
+    #option_start_with = 6
+    alias_true = 3
+    alias_false = 0
+
+class ShuffleNightmareKeys(DungeonItemShuffle):
+    """
+    Shuffle Nightmare Keys
+    """
+class ShuffleSmallKeys(DungeonItemShuffle):
+    """
+    Shuffle Small Keys
+    """
+class ShuffleMaps(DungeonItemShuffle):
+    """
+    Shuffle Dungeon Maps
+    """
+class ShuffleCompasses(DungeonItemShuffle):
+    """
+    Shuffle Dungeon Compasses
+    """
+class ShuffleOwlBeaks(DungeonItemShuffle):
+    """
+    Shuffle Owl Beaks
+    """
+
 class Goal(Choice, LADXROption):
     """
     [Instruments] The Wind Fish's Egg will only open if you have the required number of Instruments of the Sirens, and play the Ballad of the Wind Fish.
@@ -308,4 +340,9 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'link_palette': LinkPalette,
     'trendy_game': TrendyGame,
     'palette': Palette,
+    'shuffle_nightmare_keys': ShuffleNightmareKeys,
+    'shuffle_small_keys': ShuffleSmallKeys,
+    'shuffle_maps': ShuffleMaps,
+    'shuffle_compasses': ShuffleCompasses,
+    'shuffle_owl_beaks': ShuffleOwlBeaks,
 }

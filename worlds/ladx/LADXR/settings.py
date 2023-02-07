@@ -68,12 +68,13 @@ class Setting:
 
 
 class Settings:
-    def __init__(self, multiworld_count=None):
+    def __init__(self, ap_options):
         gfx_options = [('', '', 'Default')]
         #gfx_path = os.path.join(os.path.dirname(__file__), "gfx")
         #for filename in sorted(os.listdir(gfx_path)):
         #    if filename.endswith(".bin"):
         #        gfx_options.append((filename, filename + ">", filename[:-4]))
+
 
         self.__all = [
             Setting('seed', 'Main', '<', 'Seed', placeholder='Leave empty for random seed', default="", multiworld=False,
@@ -119,17 +120,6 @@ Spoiler logs can not be generated for ROMs generated with race mode enabled, and
 [Normal], requires magnifier to get the boomerang.
 [Trade], allows to trade an inventory item for a random other inventory item boomerang is shuffled.
 [Gift], You get a random gift of any item, and the boomerang is shuffled."""),
-            Setting('dungeon_items', 'Gameplay', 'D', 'Dungeon items', options=[('', '', 'Standard'),
-                                                                          ('smallkeys', 's', 'Small keys'),
-                                                                          ('localkeys', 'L', 'Map/Compass/Beaks'),
-                                                                          ('localnightmarekey', 'N', 'MCB + SmallKeys'),
-                                                                          ('keysanity', 'K', 'Keysanity'),
-                                                                          ('keysy', 'k', 'Keysy')], default='',
-                description="""Sets if dungeon items can only be in their respective dungeon, or everywhere.
-[Standard] dungeon items are only in their dungeon.
-[Maps/.../..] specified items can be anywhere
-[Keysanity] all dungeon items can be anywhere.
-[Keysy] no keys, key doors are already open."""),
             Setting('randomstartlocation', 'Gameplay', 'r', 'Random start location', default=False,
                 description='Randomize where your starting house is located'),
             Setting('dungeonshuffle', 'Gameplay', 'u', 'Dungeon shuffle', default=False,
@@ -226,24 +216,25 @@ Note, some entrances can lead into water, use the warp-to-home from the save&qui
                 aesthetic=True),
         ]
         self.__by_key = {s.key: s for s in self.__all}
-        self.__multiworld_count = multiworld_count
-        self.__multiworld_settings = []
 
         # Make sure all short keys are unique
         short_keys = set()
         for s in self.__all:
             assert s.short_key not in short_keys, s.label
             short_keys.add(s.short_key)
+            self.ap_options = ap_options
 
-    @property
-    def multiworld(self):  # returns the amount of multiworld players.
-        if self.__multiworld_settings:
-            return len(self.__multiworld_settings)
-        return self.__multiworld_count
+        for option in self.ap_options.values():
+            if not hasattr(option, 'to_ladxr_option'):
+                continue
+            name, value = option.to_ladxr_option(self.ap_options)
+            if value == "true":
+                value = 1
+            elif value == "false":
+                value = 0
 
-    @property
-    def multiworld_settings(self):
-        return self.__multiworld_settings
+            if name:
+                self.set( f"{name}={value}")
 
     def __getattr__(self, item):
         return self.__by_key[item].value
