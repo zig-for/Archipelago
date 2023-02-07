@@ -10,13 +10,23 @@ class ShopItem(ItemInfo):
         super().__init__(0x2A1)
 
     def patch(self, rom, option, *, multiworld=None):
-        assert multiworld is None
+        mw_text = ""
+        if multiworld:
+            mw_text = f" for player {multiworld}"
         if self.__index == 0:
             rom.patch(0x04, 0x37C5, "08", "%02X" % (CHEST_ITEMS[option]))
-            rom.texts[0x030] = formatText("Deluxe {%s} 200 {RUPEES}!" % (option), ask="Buy  No Way")
+            rom.texts[0x030] = formatText(f"Deluxe {{%s}} 200 {{RUPEES}}{mw_text}!" % (option), ask="Buy  No Way")
+            rom.banks[0x3E][0x3800 + 0x2A1] = CHEST_ITEMS[option]
+            if multiworld:
+                rom.banks[0x3E][0x3300 + 0x2A1] = multiworld
         elif self.__index == 1:
             rom.patch(0x04, 0x37C6, "02", "%02X" % (CHEST_ITEMS[option]))
-            rom.texts[0x02C] = formatText("{%s} Only 980 {RUPEES}!" % (option), ask="Buy  No Way")
+            rom.texts[0x02C] = formatText(f"{{%s}} Only 980 {{RUPEES}}{mw_text}!" % (option), ask="Buy  No Way")
+            
+            rom.banks[0x3E][0x3800 + 0x2A7] = CHEST_ITEMS[option]
+            multiworld = 1
+            if multiworld:
+                rom.banks[0x3E][0x3300 + 0x2A7] = multiworld
 
     def read(self, rom):
         value = rom.banks[0x04][0x37C5 + self.__index]

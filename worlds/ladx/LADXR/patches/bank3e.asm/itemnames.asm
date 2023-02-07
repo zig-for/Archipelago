@@ -117,7 +117,7 @@ ItemNamePointers:
     dw ItemNameRupees500
     dw ItemNameSeashell
     dw ItemNameMessage
-    dw ItemNameNone
+    dw ItemNameGel
     dw ItemNameKey1
     dw ItemNameKey2
     dw ItemNameKey3
@@ -316,6 +316,8 @@ ItemNameRupees500:
     db m"Got 500 {RUPEES}", $ff
 ItemNameSeashell:
     db m"Got a {SEASHELL}", $ff
+ItemNameGel:
+    db m"Got a Zol Attack", $ff
 ItemNameMessage:
     db m"Got ... nothing?", $ff
 ItemNameKey1:
