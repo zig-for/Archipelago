@@ -228,6 +228,7 @@ Note, some entrances can lead into water, use the warp-to-home from the save&qui
             if not hasattr(option, 'to_ladxr_option'):
                 continue
             name, value = option.to_ladxr_option(self.ap_options)
+            print(name, value)
             if value == "true":
                 value = 1
             elif value == "false":
@@ -235,7 +236,7 @@ Note, some entrances can lead into water, use the warp-to-home from the save&qui
 
             if name:
                 self.set( f"{name}={value}")
-
+    
     def __getattr__(self, item):
         return self.__by_key[item].value
 
