@@ -6,8 +6,6 @@ from ..assembler import ASM
 
 class ShopItem(ItemInfo):
     def __init__(self, index):
-        self.MULTIWORLD = True
-
         self.__index = index
         # TODO: pass in the alternate index for shop 2
         super().__init__(0x2A1)
@@ -18,6 +16,7 @@ class ShopItem(ItemInfo):
             mw_text = f" for player {rom.player_names[multiworld - 1]}"
 
         if self.__index == 0:
+            # Old index, maybe not needed any more
             rom.patch(0x04, 0x37C5, "08", "%02X" % (CHEST_ITEMS[option]))
             rom.texts[0x030] = formatText(f"Deluxe {{%s}} 200 {{RUPEES}}{mw_text}!" % (option), ask="Buy  No Way")
             rom.banks[0x3E][0x3800 + 0x2A1] = CHEST_ITEMS[option]

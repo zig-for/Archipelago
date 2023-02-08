@@ -3,7 +3,6 @@ from .constants import *
 patched_already = {}
 
 class DroppedKey(ItemInfo):
-    MULTIWORLD = True
     default_item = None
 
     def __init__(self, room=None):

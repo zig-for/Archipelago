@@ -4,7 +4,7 @@ from .constants import *
 
 
 class ItemInfo:
-    MULTIWORLD = False
+    MULTIWORLD = True
 
     def __init__(self, room=None, extra=None):
         self.item = None

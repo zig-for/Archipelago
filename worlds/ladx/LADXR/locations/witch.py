@@ -4,7 +4,6 @@ from .itemInfo import ItemInfo
 
 class Witch(ItemInfo):
     def __init__(self):
-        self.MULTIWORLD = True
         super().__init__(0x2A2)
 
     def configure(self, options):

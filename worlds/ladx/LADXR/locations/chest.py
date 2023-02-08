@@ -4,8 +4,6 @@ from ..assembler import ASM
 
 
 class Chest(ItemInfo):
-    MULTIWORLD = True
-
     def __init__(self, room):
         super().__init__(room)
         self.addr = room + 0x560

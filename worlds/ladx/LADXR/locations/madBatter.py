@@ -3,8 +3,6 @@ from .constants import *
 
 
 class MadBatter(ItemInfo):
-    MULTIWORLD = True
-
     def configure(self, options):
         return
 
