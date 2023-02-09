@@ -296,13 +296,15 @@ class GfxMod(FreeText, LADXROption):
 
     def __init__(self, value: str):
         super().__init__(value)
-        for file in os.listdir(GfxMod.__spriteDir):
-            filename = file.split('.', 1)[0]
-            GfxMod.__spriteFiles[file] = [file]
-            if filename in GfxMod.__spriteFiles:
-                GfxMod.__spriteFiles[filename].append(file)
-            else:
-                GfxMod.__spriteFiles[filename] = [file]
+        if not GfxMod.__spriteFiles:
+            for file in os.listdir(GfxMod.__spriteDir):
+                if file.endswith(".bin") or file.endswith(".bdiff") or file.endswith(".png") or file.endswith(".bmp"):
+                    filename = file.split('.', 1)[0]
+                    GfxMod.__spriteFiles[file] = [file]
+                    if filename in GfxMod.__spriteFiles:
+                        GfxMod.__spriteFiles[filename].append(file)
+                    else:
+                        GfxMod.__spriteFiles[filename] = [file]
 
     def to_ladxr_option(self, all_options):
         import warnings
@@ -313,7 +315,7 @@ class GfxMod(FreeText, LADXROption):
                 logger.warning(f"{self.value} does not uniquely identify a file. Possible matches: {GfxMod.__spriteFiles[self.value]}. Using {GfxMod.__spriteFiles[self.value][0]}")
                 return self.ladxr_name, GfxMod.__spriteFiles[self.value][0]
             return self.ladxr_name, GfxMod.__spriteFiles[self.value][0]
-        logger.warning(f"{self.value} is not found. Falling back to default sprite.")
+        logger.warning(f"Spritesheet {self.value} not found. Falling back to default sprite.")
         return None, None
 
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {

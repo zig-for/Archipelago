@@ -7,7 +7,16 @@ import bsdiff4
 
 def imageTo2bpp(filename):
     import PIL.Image
+    baseimg = PIL.Image.new('P', (1,1))
+    baseimg.putpalette((
+        128, 0, 128,
+        0, 0, 0,
+        128, 128, 128,
+        255, 255, 255,
+    ))
     img = PIL.Image.open(filename)
+    img = img.quantize(colors=4, palette=baseimg)
+    print (f"Palette: {img.getpalette()}")
     assert (img.size[0] % 8) == 0
     tileheight = 8 if img.size[1] == 8 else 16
     assert (img.size[1] % tileheight) == 0
