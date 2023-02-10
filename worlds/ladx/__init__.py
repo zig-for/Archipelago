@@ -1,25 +1,27 @@
-# world/mygame/__init__.py
-
-from .LADXR.locations.keyLocation import KeyLocation as LAXDRKeyLocation
-from .LADXR.locations.tradeSequence import TradeSequenceItem
-from .Options import links_awakening_options  # the options we defined earlier
-from .Items import LinksAwakeningItem, DungeonItemData, DungeonItemType, links_awakening_items, ItemName, ladxr_item_to_la_item_name, links_awakening_items_by_name # data used below to add items to the World
-from .Locations import get_locations_to_id, create_regions_from_ladxr, LinksAwakeningLocation, links_awakening_dungeon_names, LinksAwakeningRegion, prefilled_events
-from worlds.AutoWorld import WebWorld, World
-from BaseClasses import Location, Entrance, Item, RegionType, ItemClassification, Tutorial
-from Utils import get_options, output_path
-from .Common import *
-from Fill import fill_restrictive
+import binascii
 import os
-from .LADXR.rom import ROM
+
+from BaseClasses import Entrance, Item, ItemClassification, Location, Tutorial
+from Fill import fill_restrictive
+from worlds.AutoWorld import WebWorld, World
+
+from .Common import *
+from .Items import (DungeonItemData, DungeonItemType, LinksAwakeningItem,
+                    ladxr_item_to_la_item_name, links_awakening_items,
+                    links_awakening_items_by_name)
+from .LADXR import generator
+from .LADXR.itempool import ItemPool as LADXRItemPool
+from .LADXR.locations.tradeSequence import TradeSequenceItem
 from .LADXR.logic import Logic as LAXDRLogic
+from .LADXR.main import get_parser
 from .LADXR.settings import Settings as LADXRSettings
 from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
-from .LADXR.itempool import ItemPool as LADXRItemPool
-from Utils import get_options
-import binascii
+from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
+                        create_regions_from_ladxr, get_locations_to_id)
+from .Options import links_awakening_options
 from .Rom import LADXDeltaPatch
-#from worlds.generic.Rules import add_rule, set_rule, forbid_item
+
+DEVELOPER_MODE = False
 
 class LinksAwakeningWebWorld(WebWorld):
     tutorials = [Tutorial(
@@ -43,7 +45,7 @@ class LinksAwakeningWorld(World):
     # data_version is used to signal that items, locations or their names
     # changed. Set this to 0 during development so other games' clients do not
     # cache any texts, then increase by 1 for each release that makes changes.
-    data_version = 0
+    data_version = 1
 
     # ID of first item and location, could be hard-coded but code may be easier
     # to read with this as a propery.
@@ -74,11 +76,7 @@ class LinksAwakeningWorld(World):
     def create_item(self, item: str) -> LinksAwakeningItem:
         assert(False)
 
-    def generate_output(self, output_directory: str):
-        # assert(False)
-        pass
-
-    def generate_default_ladxr_logic(self):
+    def convert_ap_options_to_ladxr_logic(self):
         self.player_options = {
             option: getattr(self.multiworld, option)[self.player] for option in self.option_definitions
         }
@@ -102,13 +100,12 @@ class LinksAwakeningWorld(World):
 
 
     def create_regions(self) -> None:
-        # Add regions to the multiworld. "Menu" is the required starting point.
-        # Arguments to Region() are name, type, human_readable_name, player, world
-        self.generate_default_ladxr_logic()
-
+        # Initialize
+        self.convert_ap_options_to_ladxr_logic()
         regions = create_regions_from_ladxr(self.player, self.multiworld, self.ladxr_logic)
         self.multiworld.regions += regions
 
+        # Connect Menu -> Start
         start = None
         for region in regions:
             if region.name == "Start House":
@@ -117,17 +114,19 @@ class LinksAwakeningWorld(World):
 
         assert(start)
 
-        r = LinksAwakeningRegion("Menu", None, "Menu", self.player, self.multiworld)        
-        r.exits = [Entrance(self.player, "Start Game", r)]
-        r.exits[0].connect(start)
+        menu_region = LinksAwakeningRegion("Menu", None, "Menu", self.player, self.multiworld)        
+        menu_region.exits = [Entrance(self.player, "Start Game", menu_region)]
+        menu_region.exits[0].connect(start)
         
-        self.multiworld.regions.append(r)
+        self.multiworld.regions.append(menu_region)
 
+        # Place RAFT, other access events
         for region in regions:
             for loc in region.locations:
                 if loc.event:
                     loc.place_locked_item(self.create_event(loc.ladxr_item.OPTIONS[0]))
         
+        # Connect Windfish -> Victory
         windfish = self.multiworld.get_region("Windfish", self.player)
         l = Location(self.player, "Windfish", parent=windfish)
         windfish.locations = [l]
@@ -137,18 +136,14 @@ class LinksAwakeningWorld(World):
         self.multiworld.completion_condition[self.player] = lambda state: state.has("An Alarm Clock", player=self.player)
 
     def create_item(self, item_name: str):
-        # This is called when AP wants to create an item by name (for plando) or
-        # when you call it from your own code.
-        item_data = self.item_name_to_data[item_name]
-
-        return LinksAwakeningItem(item_data, self, self.player)
+        return LinksAwakeningItem(self.item_name_to_data[item_name], self, self.player)
 
     def create_event(self, event: str):
-        # while we are at it, we can also add a helper to create events
         return Item(event, ItemClassification.progression, None, self.player)
 
     def create_items(self) -> None:    
-        exclude = [item for item in self.multiworld.precollected_items[self.player]]
+        exclude = [item.name for item in self.multiworld.precollected_items[self.player]]
+        print(exclude)
         self.prefill_dungeon_items = []
         self.trade_items = []
         for ladx_item_name, count in self.ladxr_itempool.items():
@@ -159,7 +154,7 @@ class LinksAwakeningWorld(World):
             for _ in range(count):
                 if item_name in exclude:
                     exclude.remove(item_name)  # this is destructive. create unique list above
-                    self.multiworld.itempool.append(self.create_item("nothing"))
+                    self.multiworld.itempool.append(self.create_item("Master Stalfos' Message"))
                 else:
                     item = self.create_item(item_name)
 
@@ -191,11 +186,11 @@ class LinksAwakeningWorld(World):
                     self.multiworld.itempool.append(item)
 
     def pre_fill(self):
-        from BaseClasses import CollectionState
         dungeon_locations = []
         local_only_locations = []
         all_state = self.multiworld.get_all_state(use_cache=False)
         
+        # Add special case for trendy shop access
         trendy_region = self.multiworld.get_region("Trendy Shop", self.player)
         event_location = Location(self.player, "Can Play Trendy Game", parent=trendy_region)
         trendy_region.locations.insert(0, event_location)
@@ -216,24 +211,34 @@ class LinksAwakeningWorld(World):
         for r in self.multiworld.get_regions():
             if r.player != self.player:
                 continue
+
+            # Set aside dungeon locations
             if r.dungeon_index:
                 dungeon_locations += r.locations
                 for location in r.locations:
                     if location.name == "Pit Button Chest (Tail Cave)":
                         # Don't place dungeon items on pit button chest, to reduce chance of the filler blowing up
                         dungeon_locations.remove(location)
+                    # Properly fill locations within dungeon
                     location.dungeon = r.dungeon_index
+
+                    # Tell the filler that if we're placing a dungeon item, restrict it to the dungeon the item associates with
+                    # This will need changed once keysanity is implemented
                     orig_rule = location.item_rule
                     location.item_rule = lambda item, orig_rule=orig_rule: \
                         (not isinstance(item, DungeonItemData) or item.dungeon_index == location.dungeon) and orig_rule(item)
 
-            for loc in r.locations:
-                if not self.multiworld.tradequest[self.player] and isinstance(loc, LinksAwakeningLocation) and isinstance(loc.ladxr_item, TradeSequenceItem):
-                    item = next(i for i in self.trade_items if i.item_data.ladxr_id == loc.ladxr_item.default_item)
-                    loc.place_locked_item(item)                   
-                elif isinstance(loc, LinksAwakeningLocation) and not loc.ladxr_item.MULTIWORLD and not loc.item:
-                    local_only_locations.append(loc)
+            for location in r.locations:
+                # If tradequests are disabled, place trade items directly in their proper location
+                if not self.multiworld.tradequest[self.player] and isinstance(location, LinksAwakeningLocation) and isinstance(location.ladxr_item, TradeSequenceItem):
+                    item = next(i for i in self.trade_items if i.item_data.ladxr_id == location.ladxr_item.default_item)
+                    location.place_locked_item(item)                   
+                # Handle local only locations
+                # this code may be unneccessary, early local fill is disabled right now
+                elif isinstance(location, LinksAwakeningLocation) and not location.ladxr_item.MULTIWORLD and not location.item:
+                    local_only_locations.append(location)
 
+        # Fill dungeon items first, to not torture the fill algo
         dungeon_items = sorted(self.prefill_dungeon_items, key=lambda item: item.item_data.dungeon_item_type)
         self.multiworld.random.shuffle(dungeon_locations)
         fill_restrictive(self.multiworld, all_state, dungeon_locations, dungeon_items, lock=True)
@@ -246,28 +251,26 @@ class LinksAwakeningWorld(World):
             self.multiworld.random.shuffle(local_only_locations)
 
             # Shuffle the pool first
-            # extra disabled to suss out self locking trade items
-            # self.multiworld.random.shuffle(self.multiworld.itempool)
+            self.multiworld.random.shuffle(self.multiworld.itempool)
             fill_restrictive(self.multiworld, all_state, local_only_locations, self.multiworld.itempool, lock=False, single_player_placement=True)
-    def post_fill(self):
-
-        #print("post_fill")
-        pass
 
     name_cache = {}
 
+    # Tries to associate an icon from another game with an icon we have
     def guess_icon_for_other_world(self, other):
         if not self.name_cache:
-            from .LADXR.locations.faceKey import FaceKey
-            sample_key = FaceKey()
             forbidden = [
                 "TRADING",
                 "ITEM",
                 "BAD",
                 "SINGLE",
                 "UPGRADE",
+                "BLUE",
+                "RED",
+                "NOTHING",
+                "MESSAGE",
             ]
-            for item in sample_key.OPTIONS:
+            for item in ladxr_item_to_la_item_name.keys():
                 self.name_cache[item] = item
                 splits = item.split("_")
                 self.name_cache["".join(splits)] = item
@@ -295,14 +298,21 @@ class LinksAwakeningWorld(World):
                 'ENERGYTANK': 'HEART_CONTAINER',
                 'MISSILE': 'ARROW',
                 'BOMBS': 'BOMB',
-                # TODO: instruments because we can
+                'BLUEBOOMERANG': 'BOOMERANG',
+                'MAGICMIRROR': 'TRADING_ITEM_MAGNIFYING_GLASS',
+                'MIRROR': 'TRADING_ITEM_MAGNIFYING_GLASS',
+                'MESSAGE': 'TRADING_ITEM_LETTER',
+                # TODO: Also use AP item name
             }
+            for name in others.values():
+                assert name in self.name_cache, name
+
             self.name_cache.update(others)
             
         
         uppered = other.upper()
         if "BIG KEY" in uppered:
-            return self.name_cache['BIGKEY']
+            return 'NIGHTMARE_KEY'
         possibles = other.upper().split(" ")
         rejoined = "".join(possibles)
         if rejoined in self.name_cache:
@@ -340,30 +350,15 @@ class LinksAwakeningWorld(World):
                     # Kind of kludge, make it possible for the location to differentiate between local and remote items
                     loc.ladxr_item.location_owner = self.player
 
-        # How to generate the mod or ROM highly depends on the game
-        # if the mod is written in Lua, Jinja can be used to fill a template
-        # if the mod reads a json file, `json.dump()` can be used to generate that
-        # code below is a dummy
-        
-        # point to a ROM specified by the installation
-        #src = Utils.get_options()["mygame_options"]["rom_file"]
-        # or point to worlds/mygame/data/mod_template
-        #src = os.path.join(os.path.dirname(__file__), "data", "mod_template")
-        # generate output path
-
         rom_path = "Legend of Zelda, The - Link's Awakening DX (USA, Europe) (SGB Enhanced).gbc"
         out_name = f"AP-{self.multiworld.seed_name}-P{self.player}-{self.multiworld.player_name[self.player]}.gbc"
         out_file = os.path.join(output_directory, out_name)
 
         rompath = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.gbc")
 
-
-        #out_file = os.path.join("D:\\dev\\Archipelago", out_name)
         out_file = out_name
         print(out_file)
-        from .LADXR import generator 
 
-        from .LADXR.main import get_parser
         parser = get_parser()
         args = parser.parse_args([rom_path, "-o", out_file, "--dump"])
 
@@ -387,7 +382,8 @@ class LinksAwakeningWorld(World):
         patch = LADXDeltaPatch(os.path.splitext(rompath)[0]+LADXDeltaPatch.patch_file_ending, player=self.player,
                                 player_name=self.multiworld.player_name[self.player], patched_path=rompath)
         patch.write()
-        # os.unlink(rompath)
+        if not DEVELOPER_MODE:
+            os.unlink(rompath)
 
     def generate_multi_key(self):
         return bytes.fromhex(self.multiworld.seed_name) + self.player.to_bytes(2, 'big')

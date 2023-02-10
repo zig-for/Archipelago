@@ -87,7 +87,7 @@ def fill_restrictive(world: MultiWorld, base_state: CollectionState, locations: 
                         placed_item.location = None
                         swap_state = sweep_from_pool(base_state, [placed_item])
                         # swap_state assumes we can collect placed item before item_to_place
-                        if ((not single_player_placement or location.player == item_to_place.player)) \
+                        if (not single_player_placement or location.player == item_to_place.player) \
                                 and location.can_fill(swap_state, item_to_place, perform_access_check):
 
                             # Verify that placing this item won't reduce available locations, which could happen with rules
@@ -139,14 +139,7 @@ def fill_restrictive(world: MultiWorld, base_state: CollectionState, locations: 
             logging.warning(
                 f'Not all items placed. Game beatable anyway. (Could not place {unplaced_items})')
         else:
-            if len(unplaced_items) == 1:
-                    
-                for location in locations:
-                    
-                    print(f"location: {location} single_player_placement: {single_player_placement} location.can_fill: {location.can_fill(maximum_exploration_state, item_to_place, perform_access_check)}")
-            print(maximum_exploration_state.prog_items)
-
-            raise FillError(f'No more spots to place {unplaced_items} via fill_restrictive, locations {locations} are invalid. '
+            raise FillError(f'No more spots to place {unplaced_items}, locations {locations} are invalid. '
                             f'Already placed {len(placements)}: {", ".join(str(place) for place in placements)}')
 
     itempool.extend(unplaced_items)
@@ -210,7 +203,7 @@ def remaining_fill(world: MultiWorld,
 
     if unplaced_items and locations:
         # There are leftover unplaceable items and locations that won't accept them
-        raise FillError(f'No more spots to place {unplaced_items} via remaining_fill, locations {locations} are invalid. '
+        raise FillError(f'No more spots to place {unplaced_items}, locations {locations} are invalid. '
                         f'Already placed {len(placements)}: {", ".join(str(place) for place in placements)}')
 
     itempool.extend(unplaced_items)

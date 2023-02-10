@@ -4,7 +4,6 @@ import typing
 from enum import IntEnum
 from .LADXR.locations.constants import CHEST_ITEMS
 
-
 class ItemData(typing.NamedTuple):
     item_name: str
     ladxr_id: str
@@ -173,8 +172,7 @@ class ItemName:
     TRADING_ITEM_SCALE = "Scale"
     TRADING_ITEM_MAGNIFYING_GLASS = "Magnifying Glass"
 
-def trade_item_prog(world, player):
-    return ItemClassification.progression 
+trade_item_prog = ItemClassification.progression 
 
 links_awakening_items = [
     ItemData(ItemName.POWER_BRACELET, "POWER_BRACELET", ItemClassification.progression),
@@ -220,7 +218,7 @@ links_awakening_items = [
     ItemData(ItemName.HEART_CONTAINER, "HEART_CONTAINER", ItemClassification.useful),
     #ItemData(ItemName.BAD_HEART_CONTAINER, "BAD_HEART_CONTAINER", ItemClassification.trap),
     ItemData(ItemName.TOADSTOOL, "TOADSTOOL", ItemClassification.progression),
-    #DungeonItemData(ItemName.KEY, "KEY", ItemClassification.progression),
+    DungeonItemData(ItemName.KEY, "KEY", ItemClassification.progression),
     DungeonItemData(ItemName.KEY1, "KEY1", ItemClassification.progression),
     DungeonItemData(ItemName.KEY2, "KEY2", ItemClassification.progression),
     DungeonItemData(ItemName.KEY3, "KEY3", ItemClassification.progression),
@@ -240,7 +238,7 @@ links_awakening_items = [
     DungeonItemData(ItemName.NIGHTMARE_KEY7, "NIGHTMARE_KEY7", ItemClassification.progression),
     DungeonItemData(ItemName.NIGHTMARE_KEY8, "NIGHTMARE_KEY8", ItemClassification.progression),
     DungeonItemData(ItemName.NIGHTMARE_KEY9, "NIGHTMARE_KEY9", ItemClassification.progression),
-    #DungeonItemData(ItemName.MAP, "MAP", ItemClassification.filler),
+    DungeonItemData(ItemName.MAP, "MAP", ItemClassification.filler),
     DungeonItemData(ItemName.MAP1, "MAP1", ItemClassification.filler),
     DungeonItemData(ItemName.MAP2, "MAP2", ItemClassification.filler),
     DungeonItemData(ItemName.MAP3, "MAP3", ItemClassification.filler),
@@ -250,7 +248,7 @@ links_awakening_items = [
     DungeonItemData(ItemName.MAP7, "MAP7", ItemClassification.filler),
     DungeonItemData(ItemName.MAP8, "MAP8", ItemClassification.filler),
     DungeonItemData(ItemName.MAP9, "MAP9", ItemClassification.filler),
-    #DungeonItemData(ItemName.COMPASS, "COMPASS", ItemClassification.filler),
+    DungeonItemData(ItemName.COMPASS, "COMPASS", ItemClassification.filler),
     DungeonItemData(ItemName.COMPASS1, "COMPASS1", ItemClassification.filler),
     DungeonItemData(ItemName.COMPASS2, "COMPASS2", ItemClassification.filler),
     DungeonItemData(ItemName.COMPASS3, "COMPASS3", ItemClassification.filler),
@@ -260,7 +258,7 @@ links_awakening_items = [
     DungeonItemData(ItemName.COMPASS7, "COMPASS7", ItemClassification.filler),
     DungeonItemData(ItemName.COMPASS8, "COMPASS8", ItemClassification.filler),
     DungeonItemData(ItemName.COMPASS9, "COMPASS9", ItemClassification.filler),
-    #DungeonItemData(ItemName.STONE_BEAK, "STONE_BEAK", ItemClassification.filler),
+    DungeonItemData(ItemName.STONE_BEAK, "STONE_BEAK", ItemClassification.filler),
     DungeonItemData(ItemName.STONE_BEAK1, "STONE_BEAK1", ItemClassification.filler),
     DungeonItemData(ItemName.STONE_BEAK2, "STONE_BEAK2", ItemClassification.filler),
     DungeonItemData(ItemName.STONE_BEAK3, "STONE_BEAK3", ItemClassification.filler),
