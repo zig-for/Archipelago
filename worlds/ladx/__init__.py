@@ -16,6 +16,7 @@ from .LADXR.logic import Logic as LAXDRLogic
 from .LADXR.main import get_parser
 from .LADXR.settings import Settings as LADXRSettings
 from .LADXR.worldSetup import WorldSetup as LADXRWorldSetup
+from .LADXR.locations.constants import CHEST_ITEMS
 from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
                         create_regions_from_ladxr, get_locations_to_id)
 from .Options import links_awakening_options
@@ -295,7 +296,7 @@ class LinksAwakeningWorld(World):
                 'BOSSHEARTCONTAINER': 'HEART_CONTAINER',
                 'HEARTCONTAINER': 'HEART_CONTAINER',
                 'ENERGYTANK': 'HEART_CONTAINER',
-                'MISSILE': 'ARROW',
+                'MISSILE': 'SINGLE_ARROW',
                 'BOMBS': 'BOMB',
                 'BLUEBOOMERANG': 'BOOMERANG',
                 'MAGICMIRROR': 'TRADING_ITEM_MAGNIFYING_GLASS',
@@ -305,7 +306,7 @@ class LinksAwakeningWorld(World):
             }
             for name in others.values():
                 assert name in self.name_cache, name
-
+                assert name in CHEST_ITEMS, name
             self.name_cache.update(others)
             
         
