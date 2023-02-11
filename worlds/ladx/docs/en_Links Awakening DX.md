@@ -23,7 +23,7 @@ certain items to your own world.
 
 ## What does another world's item look like in Link's Awakening?
 
-The game will try to pick an appropriate sprite for the item (a LttP sword will be a sword!) - it may however be a little odd (a Missile Pack may be a single arrow).
+The game will try to pick an appropriate sprite for the item (a LttP sword will be a sword!) - it may, however, be a little odd (a Missile Pack may be a single arrow).
 
 If there's no appropriate sprite, a Letter will be shown.
 
