@@ -81,7 +81,7 @@ You only have to do these steps once. Note, RetroArch 1.9.x will not work as it 
 ### Connect to the Archipelago Server
 
 The patch file which launched your client should have automatically connected you to the AP Server. There are a few
-reasons this may not happen however, including if the game is hosted on the website but was generated elsewhere. If the
+reasons this may not happen, however, including if the game is hosted on the website but was generated elsewhere. If the
 client window shows "Server Status: Not Connected", simply ask the host for the address of the server, and copy/paste it
 into the "Server" input field then press enter.
 
