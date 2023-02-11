@@ -1,3 +1,11 @@
+import ModuleUpdate
+ModuleUpdate.update()
+
+import Utils
+
+if __name__ == "__main__":
+    Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
+
 import asyncio
 import base64
 import binascii
@@ -11,7 +19,7 @@ import urllib
 
 import colorama
 
-import Utils
+
 from CommonClient import (CommonContext, get_base_parser, gui_enabled, logger,
                           server_loop)
 from NetUtils import ClientStatus
@@ -21,7 +29,6 @@ from worlds.ladx.ItemTracker import ItemTracker
 from worlds.ladx.LADXR.checkMetadata import checkMetadataTable
 from worlds.ladx.Locations import get_locations_to_id, meta_to_name
 from worlds.ladx.Tracker import LocationTracker, MagpieBridge
-
 
 class GameboyException(Exception):
     pass
@@ -413,7 +420,8 @@ def create_task_log_exception(awaitable) -> asyncio.Task:
         try:
             return await awaitable
         except Exception as e:
-            logger.exception(e)
+            #logger.exception(e)
+            pass
     return asyncio.create_task(_log_exception(awaitable))
 
 
@@ -439,21 +447,10 @@ class LinksAwakeningContext(CommonContext):
 
     def run_gui(self) -> None:
         import webbrowser
-
-        from kivy.lang import Builder
+        import kvui
+        from kvui import Button, GameManager
         from kivy.uix.image import Image
 
-        from kvui import Button, GameManager
-
-        w = Builder.load_string("""
-Button:
-    text: ""
-    size: 30, 30
-    size_hint_x: None
-    Image: 
-        size: 16, 16
-        center: self.parent.center
-""")
         class LADXManager(GameManager):
             logging_pairs = [
                 ("Client", "Archipelago"),
@@ -606,8 +603,6 @@ async def main():
     await ctx.shutdown()
 
 if __name__ == '__main__':
-    Utils.init_logging("LinksAwakeningContext", exception_logger="Client")
-
     colorama.init()
     asyncio.run(main())
     colorama.deinit()
