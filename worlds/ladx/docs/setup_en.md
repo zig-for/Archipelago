@@ -4,8 +4,8 @@
 
 - [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases). Make sure to check the box for `Links Awakening DX`
 - Hardware or software capable of loading and playing SNES ROM files
-    - Currently only [RetroArch](https://retroarch.com?page=platforms) 1.10.3 or newer) is supported
-    - Bizhawk support will come at a later date
+    - Currently only [RetroArch](https://retroarch.com?page=platforms) 1.10.3 or newer) is supported.
+    - Bizhawk support will come at a later date.
 - Your American 1.0 ROM file, probably named `Legend of Zelda, The - Link's Awakening DX (USA, Europe) (SGB Enhanced).gbc`
 
 ## Installation Procedures
