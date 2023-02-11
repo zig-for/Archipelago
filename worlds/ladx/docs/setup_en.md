@@ -49,7 +49,7 @@ If you would like to validate your config file to make sure it works, you may do
 2. You will be presented with a "Seed Info" page.
 3. Click the "Create New Room" link.
 4. You will be presented with a server page, from which you can download your patch file.
-5. Double-click on your patch file, and Links Awakening DX will launch automatically, and create your ROM from the patch file
+5. Double-click on your patch file, and Links Awakening DX will launch automatically, and create your ROM from the patch file.
 6. Since this is a single-player game, you will no longer need the client, so feel free to close it.
 
 ## Joining a MultiWorld Game
