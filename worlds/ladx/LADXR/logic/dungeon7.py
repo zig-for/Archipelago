@@ -33,10 +33,7 @@ class Dungeon7:
         beamos_horseheads = Location(dungeon=7).add(DungeonChest(0x220)).connect(beamos_horseheads_area, POWER_BRACELET) # 100 rupee chest / medicine chest (DX) behind boss door
         pre_boss = Location(dungeon=7).connect(beamos_horseheads_area, HOOKSHOT) # raised plateau before boss staircase
         boss = Location(dungeon=7).add(HeartContainer(0x223), Instrument(0x22c)).connect(pre_boss, r.boss_requirements[world_setup.boss_mapping[6]])
-
-        if options.dungeon_items not in {'localnightmarekey', 'keysanity', 'keysy', 'smallkeys'}:
-            first_key.items[0].forced_item = KEY7
-            
+                
         if options.logic == 'glitched' or options.logic == 'hell':
             topright_pillar_area.connect(entrance, AND(FEATHER, SWORD)) # superjump in the center to get on raised blocks, superjump in switch room to right side to walk down. center superjump has to be low so sword added
             toprightF1_chest.connect(topright_pillar_area, FEATHER) # superjump from F1 switch room

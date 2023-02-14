@@ -82,7 +82,7 @@ generator:
   race: 0
   # List of options that can be plando'd. Can be combined, for example "bosses, items"
   # Available options: bosses, items, texts, connections
-  plando_options: "bosses"
+  plando_options: "items"
 sni_options:
   # Set this to your SNI folder location if you want the MultiClient to attempt an auto start, does nothing if not found
   sni_path: "SNI"
@@ -96,6 +96,7 @@ lttp_options:
 ladx_options:
   # File name of the Link's Awakening DX rom
   rom_file: "Legend of Zelda, The - Link's Awakening DX (USA, Europe) (SGB Enhanced).gbc"
+
 lufia2ac_options:
   # File name of the US rom
   rom_file: "Lufia II - Rise of the Sinistrals (USA).sfc"
@@ -151,3 +152,4 @@ zillion_options:
   # RetroArch doesn't make it easy to launch a game from the command line.
   # You have to know the path to the emulator core library on the user's computer.
   rom_start: "retroarch"
+

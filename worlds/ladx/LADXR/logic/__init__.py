@@ -84,11 +84,11 @@ class Logic:
             else:
                 world.nightmare.connect(world.egg, AND(egg_trigger, COUNTS([INSTRUMENT1, INSTRUMENT2, INSTRUMENT3, INSTRUMENT4, INSTRUMENT5, INSTRUMENT6, INSTRUMENT7, INSTRUMENT8], goal)))
 
-        if configuration_options.dungeon_items == 'keysy':
-            for n in range(9):
-                for count in range(9):
-                    world.start.add(KeyLocation("KEY%d" % (n + 1)))
-                world.start.add(KeyLocation("NIGHTMARE_KEY%d" % (n + 1)))
+        # if configuration_options.dungeon_items == 'keysy':
+        #     for n in range(9):
+        #         for count in range(9):
+        #             world.start.add(KeyLocation("KEY%d" % (n + 1)))
+        #         world.start.add(KeyLocation("NIGHTMARE_KEY%d" % (n + 1)))
 
         self.world = world
         self.start = world.start

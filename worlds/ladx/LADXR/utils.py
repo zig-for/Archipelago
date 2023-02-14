@@ -135,6 +135,8 @@ _NAMES = {
     TRADING_ITEM_NECKLACE: "Necklace",
     TRADING_ITEM_SCALE: "Scale",
     TRADING_ITEM_MAGNIFYING_GLASS: "Magnifying Lens",
+    GEL: "Slimy Surprise",
+    MESSAGE: "A Special Message From Our Sponsors"
 }
 
 

@@ -82,11 +82,14 @@ hasNoBombs:
     # We do not have enough room at the shovel/bow buy entry to handle this
     # So jump to a bit where we have some more space to work, as there is some dead code in the shop.
     rom.patch(0x04, 0x3AA9, 0x3AAE, ASM("jp $7AC3"), fill_nop=True)
+
+    # Patch over the "you stole it" dialog
+    rom.patch(0x00, 0x1A1C, 0x1A21, ASM("""ld   a, $C9
+       call   $2385"""), fill_nop=True)
     rom.patch(0x04, 0x3AC3, 0x3AD8, ASM("""
+        ; No room override needed, we're in the proper room
         ; Call our chest item giving code.
-        ld   a, [$77C5]
-        ldh  [$F1], a
-        ld   a, $02
+        ld   a, $0E
         rst  8
         ; Update the room status to mark first item as bought
         ld   hl, $DAA1
@@ -97,10 +100,11 @@ hasNoBombs:
     """), fill_nop=True)
     rom.patch(0x04, 0x3A73, 0x3A7E, ASM("jp $7A91"), fill_nop=True)
     rom.patch(0x04, 0x3A91, 0x3AA9, ASM("""
+        ; Override the room - luckily nothing will go wrong here if we leave it as is
+        ld a, $A7
+        ldh  [$F6], a
         ; Call our chest item giving code.
-        ld   a, [$77C6]
-        ldh  [$F1], a
-        ld   a, $02
+        ld   a, $0E
         rst  8
         ; Update the room status to mark second item as bought
         ld   hl, $DAA1

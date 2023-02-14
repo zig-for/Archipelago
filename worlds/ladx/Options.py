@@ -61,39 +61,31 @@ class Boomerang(Choice):
     gift = 1
     default = gift
 
-# TODO: I know we have helper classes for this
-# this is the worst way to do this but I'm mechanically translating to Archipelago parlance
-# Break apart before merge
-class DungeonItemsShuffle(Choice):
-    """Sets if dungeon items can only be in their respective dungeon, or everywhere.
-    [Standard] dungeon items are only in their dungeon.
-    [Maps/.../..] specified items can be anywhere
-    [Keysanity] all dungeon items can be anywhere.
-    [Keysy] no keys, key doors are already open."""
-    standard = 0
-    smallkeys = 1
-    localkeys = 2
-    localnightmarekey = 3
-    keysanity = 4
-    keysy = 5
-
-    default = standard
-
 # TODO: translate to lttp parlance
-class EntranceShuffle(Choice):
-    """Randomizes where overworld entrances lead to.
+class EntranceShuffle(Choice, LADXROption):
+    """
+    [WARNING] Experimental, may break generation
+    Randomizes where overworld entrances lead to.
     [Simple] Single-entrance caves/houses that have items are shuffled amongst each other.
     [Advanced] Simple, but two-way connector caves are shuffled in their own pool as well.
     [Expert] Advanced, but caves/houses without items are also shuffled into the Simple entrance pool.
     [Insanity] Expert, but the Raft Minigame hut and Mamu's cave are added to the non-connector pool.
     If random start location and/or dungeon shuffle is enabled, then these will be shuffled with all the non-connector entrance pool.
     Note, some entrances can lead into water, use the warp-to-home from the save&quit menu to escape this."""
-    none = 0
-    simple = 1
-    advanced = 2
-    expert = 3    
-    insanity = 4
-    default = none
+    option_none = 0
+    option_simple = 1
+    option_advanced = 2
+    option_expert = 3    
+    option_insanity = 4
+    default = option_none
+    ladxr_name = "entranceshuffle"
+
+class DungeonShuffle(DefaultOffToggle, LADXROption):
+    """
+    [WARNING] Experimental, may break generation
+    Randomizes
+    """
+    ladxr_name = "dungeonshuffle"
 
 class BossShuffle(Choice):
     none = 0
@@ -102,6 +94,42 @@ class BossShuffle(Choice):
     default = none
 
 
+class DungeonItemShuffle(Choice):
+    option_original_dungeon = 0
+    option_own_dungeons = 1
+    option_own_world = 2
+    option_any_world = 3
+    option_different_world = 4
+    #option_delete = 5
+    #option_start_with = 6
+    alias_true = 3
+    alias_false = 0
+
+class ShuffleNightmareKeys(DungeonItemShuffle):
+    """
+    Shuffle Nightmare Keys
+    """
+    ladxr_item = "NIGHTMARE_KEY"
+class ShuffleSmallKeys(DungeonItemShuffle):
+    """
+    Shuffle Small Keys
+    """
+    ladxr_item = "KEY"
+class ShuffleMaps(DungeonItemShuffle):
+    """
+    Shuffle Dungeon Maps
+    """
+    ladxr_item = "MAP"
+class ShuffleCompasses(DungeonItemShuffle):
+    """
+    Shuffle Dungeon Compasses
+    """
+    ladxr_item = "COMPASS"
+class ShuffleStoneBeaks(DungeonItemShuffle):
+    """
+    Shuffle Owl Beaks
+    """
+    ladxr_item = "STONE_BEAK"
 class Goal(Choice, LADXROption):
     """
     [Instruments] The Wind Fish's Egg will only open if you have the required number of Instruments of the Sirens, and play the Ballad of the Wind Fish.
@@ -274,8 +302,16 @@ class TrendyGame(Choice):
     option_harder = 3
     option_hardest = 4
     option_impossible = 5
-    default = option_harder
+    default = option_normal
 
+class Palette(Choice):
+    option_normal = 0
+    option_1bit = 1
+    option_2bit = 2
+    option_greyscale = 3
+    option_pink = 4
+    option_inverted = 5
+    
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'logic': Logic,
     # 'heartpiece': DefaultOnToggle, # description='Includes heart pieces in the item pool'),                
@@ -286,10 +322,9 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'witch': DefaultOnToggle, # description='Adds both the toadstool and the reward for giving the toadstool to the witch to the item pool'),                
     # 'rooster': DefaultOnToggle, # description='Adds the rooster to the item pool. Without this option, the rooster spot is still a check giving an item. But you will never find the rooster. Any rooster spot is accessible without rooster by other means.'),                
     # 'boomerang': Boomerang,
-    # 'dungeonitemshuffle': DungeonItemsShuffle,
     # 'randomstartlocation': DefaultOffToggle, # 'Randomize where your starting house is located'),
-    # 'dungeonshuffle': DefaultOffToggle, # 'Randomizes the dungeon that each dungeon entrance leads to'),
-    # 'entranceshuffle': EntranceShuffle,
+    'experimental_dungeon_shuffle': DungeonShuffle, # 'Randomizes the dungeon that each dungeon entrance leads to'),
+    'experimental_entrance_shuffle': EntranceShuffle,
     # 'bossshuffle': BossShuffle,
     # 'minibossshuffle': BossShuffle,
     'goal': Goal,
@@ -299,4 +334,10 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'overworld': Overworld,
     'link_palette': LinkPalette,
     'trendy_game': TrendyGame,
+    'palette': Palette,
+    'shuffle_nightmare_keys': ShuffleNightmareKeys,
+    'shuffle_small_keys': ShuffleSmallKeys,
+    'shuffle_maps': ShuffleMaps,
+    'shuffle_compasses': ShuffleCompasses,
+    'shuffle_stone_beaks': ShuffleStoneBeaks,
 }
