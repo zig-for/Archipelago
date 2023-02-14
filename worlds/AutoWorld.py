@@ -292,11 +292,37 @@ class World(metaclass=AutoWorldRegister):
     def get_pre_fill_items(self) -> List["Item"]:
         return []
 
+    progression_mapping: Dict[str, Dict[int, str]]
+
     # following methods should not need to be overridden.
     def collect(self, state: "CollectionState", item: "Item") -> bool:
         name = self.collect_item(state, item)
         if name:
-            state.prog_items[name, self.player] += 1
+            if name in self.progression_mapping:
+                # If this is a progressive item, grant one level, and grant the corresponding alias
+                new_level = state.prog_items[name, self.player] + 1
+                print(name, self.progression_mapping[name])
+                new_alias = self.progression_mapping[name][new_level]
+                state.prog_items[new_alias, self.player] += 1
+                state.prog_items[name, self.player] = new_level
+            else:
+                # this could be pre-mapped
+                for progressive_name, aliases in self.progression_mapping.items():
+                    for alias_level, alias_name in aliases.items():
+                        # If this is an alias to a progressive item...
+                        if alias_name == name:
+                            progressive_level = state.prog_items[progressive_name, self.player]
+                            # ...and better than what we have
+                            if alias_level > progressive_level:
+                                # Grant that level of progression
+                                state.prog_items[progressive_name, self.player] = alias_level
+                                # and grant the aliases up to that level
+                                for level in range(1, alias_level + 1):
+                                    if not state.prog_items[aliases[level], self.player]:
+                                        state.prog_items[aliases[level], self.player] = 1
+
+                # Otherwise, just give the item                                
+                state.prog_items[name, self.player] += 1
             return True
         return False
 
