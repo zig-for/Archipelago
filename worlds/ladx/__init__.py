@@ -47,7 +47,7 @@ class LinksAwakeningWorld(World):
     # data_version is used to signal that items, locations or their names
     # changed. Set this to 0 during development so other games' clients do not
     # cache any texts, then increase by 1 for each release that makes changes.
-    data_version = 1
+    data_version = 0
 
     # ID of first item and location, could be hard-coded but code may be easier
     # to read with this as a propery.
@@ -400,7 +400,7 @@ class LinksAwakeningWorld(World):
             self.player_options,
             bytes.fromhex(self.multiworld.seed_name),
             self.ladxr_logic,
-            rnd=self.multiworld.random,
+            rnd=self.multiworld.per_slot_randoms[self.player],
             player_name=name_for_rom,
             player_names=all_names,
             player_id = self.player)

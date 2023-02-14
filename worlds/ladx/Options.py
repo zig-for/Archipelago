@@ -302,7 +302,7 @@ class TrendyGame(Choice):
     option_harder = 3
     option_hardest = 4
     option_impossible = 5
-    default = option_harder
+    default = option_normal
 
 class Palette(Choice):
     option_normal = 0
