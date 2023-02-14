@@ -301,7 +301,6 @@ class World(metaclass=AutoWorldRegister):
             if name in self.progression_mapping:
                 # If this is a progressive item, grant one level, and grant the corresponding alias
                 new_level = state.prog_items[name, self.player] + 1
-                print(name, self.progression_mapping[name])
                 new_alias = self.progression_mapping[name][new_level]
                 state.prog_items[new_alias, self.player] += 1
                 state.prog_items[name, self.player] = new_level
@@ -316,10 +315,10 @@ class World(metaclass=AutoWorldRegister):
                             if alias_level > progressive_level:
                                 # Grant that level of progression
                                 state.prog_items[progressive_name, self.player] = alias_level
-                                # and grant the aliases up to that level
-                                for level in range(1, alias_level + 1):
-                                    if not state.prog_items[aliases[level], self.player]:
-                                        state.prog_items[aliases[level], self.player] = 1
+                            # grant the aliases up to that level
+                            for level in range(1, alias_level + 1):
+                                state.prog_items[aliases[level], self.player] += 1
+                            return True
 
                 # Otherwise, just give the item                                
                 state.prog_items[name, self.player] += 1
@@ -327,11 +326,37 @@ class World(metaclass=AutoWorldRegister):
         return False
 
     def remove(self, state: "CollectionState", item: "Item") -> bool:
+        def subtract_item(item_name):
+            state.prog_items[item_name, self.player] -= 1
+            if state.prog_items[item_name, self.player] < 1:
+                del (state.prog_items[item_name, self.player])
+        
         name = self.collect_item(state, item, True)
         if name:
-            state.prog_items[name, self.player] -= 1
-            if state.prog_items[name, self.player] < 1:
-                del (state.prog_items[name, self.player])
+            # If we're removing a progressive item, it's as simple as decrementing and removing the old alias
+            if name in self.progression_mapping:
+                new_alias = self.progression_mapping[name][state.prog_items[name, self.player] - 1]
+                subtract_item(new_alias)
+                subtract_item(name)
+            else:
+                for progressive_name, aliases in self.progression_mapping.items():
+                    for alias_level, alias_name in aliases.items():
+                        # If we're removing a non progressive item
+                        if alias_name == name:
+                            # Remove this item and all the ones below it
+                            for level in range(1, alias_level + 1):
+                                subtract_item(aliases[level])
+                            
+                            biggest_level = 0
+                            # Recalculate the progressive level
+                            for inner_alias_level, inner_alias_name in aliases.items():
+                                if state.prog_items[inner_alias_name, self.player]:
+                                    biggest_level = inner_alias_level
+
+                            state.prog_items[progressive_name, self.player] = biggest_level
+                            return True
+                # Else, just remove the item
+                subtract_item(name)
             return True
         return False
 
