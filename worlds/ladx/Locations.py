@@ -1,4 +1,4 @@
-from BaseClasses import Region, RegionType, Entrance, Location
+from BaseClasses import Region, Entrance, Location
 from worlds.AutoWorld import LogicMixin
 
 
@@ -108,7 +108,7 @@ class LinksAwakeningRegion(Region):
     ladxr_region = None
 
     def __init__(self, name, ladxr_region, hint, player, world):
-        super().__init__(name, RegionType.Generic, hint, player, world)
+        super().__init__(name, player, world, hint)
         if ladxr_region:
             self.ladxr_region = ladxr_region
             if ladxr_region.dungeon:
