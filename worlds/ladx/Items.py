@@ -270,7 +270,7 @@ links_awakening_items = [
     DungeonItemData(ItemName.STONE_BEAK9, "STONE_BEAK9", ItemClassification.filler),
     ItemData(ItemName.SONG1, "SONG1", ItemClassification.progression),
     ItemData(ItemName.SONG2, "SONG2", ItemClassification.useful),
-    ItemData(ItemName.SONG3, "SONG3", ItemClassification.progression),  # TODO
+    ItemData(ItemName.SONG3, "SONG3", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT1, "INSTRUMENT1", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT2, "INSTRUMENT2", ItemClassification.progression),
     DungeonItemData(ItemName.INSTRUMENT3, "INSTRUMENT3", ItemClassification.progression),
