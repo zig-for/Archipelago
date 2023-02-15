@@ -302,6 +302,3 @@ ladxr_item_to_la_item_name = {
 links_awakening_items_by_name = {
     item.item_name : item for item in links_awakening_items
 }
-
-for item in links_awakening_items_by_name.values():
-    print(item.item_name, Common.BASE_ID + item.item_id)
