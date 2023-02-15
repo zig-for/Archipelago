@@ -194,6 +194,7 @@ class World(metaclass=AutoWorldRegister):
         self.player = player
 
     def generate_reverse_progression_mappings(self):
+        self.progression_reverse_mapping = {}
         for progression_name, group in self.progression_mapping.items():
             if group.grant_lower_aliases_on_collect:
                 for level, alias in enumerate(group.aliases):
@@ -311,14 +312,16 @@ class World(metaclass=AutoWorldRegister):
     def collect(self, state: "CollectionState", item: "Item") -> bool:
         name = self.collect_item(state, item)
         if name:
-            if item.advancement and name in self.progression_mapping:
+            # Precondition - item.advancement is true
+
+            if name in self.progression_mapping:
                 # If this is a progressive item, grant one level, and grant the corresponding alias
                 new_level = state.prog_items[name, self.player] + 1
                 new_alias = self.progression_mapping[name].aliases[new_level - 1] # zero indexing
                 state.prog_items[new_alias, self.player] += 1
                 state.prog_items[name, self.player] = new_level
                 # If this is an alias to a progressive item that grants lower items...
-            elif item.advancement and name in self.progression_reverse_mapping:
+            elif name in self.progression_reverse_mapping:
                 progressive_name, alias_level = self.progression_reverse_mapping[name]
                 alias_level += 1
                 progressive_level = state.prog_items[progressive_name, self.player]
