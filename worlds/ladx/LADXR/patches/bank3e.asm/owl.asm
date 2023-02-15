@@ -47,12 +47,13 @@ GetRoomStatusAddressInHL:
 
 RenderOwlStatueItem:
     ldh  a, [$F6] ; map room
+    
+    ; Add 2 to room to set room pointer to an empty room for trade items
     add a, 2
     ldh [$F6], a
-
     call RenderItemForRoom
- 
     ldh  a, [$F6] ; map room
+    ; ...and undo it
     sub a, 2
     ldh [$F6], a
     ret

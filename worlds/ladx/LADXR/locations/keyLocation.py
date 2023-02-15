@@ -6,7 +6,7 @@ class KeyLocation(ItemInfo):
 
     def __init__(self, key):
         super().__init__()
-        self.OPTIONS = [key]
+        self.event = key
 
     def patch(self, rom, option, *, multiworld=None):
         pass

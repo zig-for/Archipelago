@@ -211,7 +211,7 @@ noWrapDown:
         x = 0x50
         y = 0x7f
 
-    rom.patch(0x01, 0x3E20, 0x4000, ASM("""
+    rom.patch(0x01, 0x3E20, 0x3E6B, ASM("""
         ; First, handle save & quit
         cp   $01
         jp   z, $40F9
@@ -254,7 +254,16 @@ noWrapDown:
         jp   $40BE  ; return to normal "return to game" handling
     """ % (type, map, room, x, y)), fill_nop=True)
 
-
+   # Patch the RAM clear not to delete our custom dialog when we screen transition
+    rom.patch(0x01, 0x042C, "C629", "6B7E")
+    rom.patch(0x01, 0x3E6B, 0x3FFF, ASM("""
+        ld bc, $A0
+        call $29DC
+        ld bc, $1200
+        ld hl, $C100
+        call $29DF
+        ret
+    """), fill_nop=True)
     # Patch the S&Q screen to have 3 options.
     be = BackgroundEditor(rom, 0x0D)
     for n in range(2, 18):

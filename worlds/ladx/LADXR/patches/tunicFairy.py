@@ -21,23 +21,17 @@ giveItems:
         ld  [$DDE1], a
     """), fill_nop=True)
     rom.patch(0x36, 0x1139, 0x1144, ASM("""
-        ld  a, [$51BF]
-        ldh [$F1], a
-        ld  a, $02
-        rst 8
-        ld  a, $03
+        ld  a, $04
+        ldh [$F6], a
+        ld  a, $0E
         rst 8
     """), fill_nop=True)
 
     rom.patch(0x36, 0x1162, 0x1192, ASM("""
-        ld  a, [$51C0]
-        ldh [$F1], a
-        ld  a, $02
+        ld  a, $01
+        ldh [$F6], a
+        ld  a, $0E
         rst 8
-        ld  a, $03
-        rst 8
-        call $3B12
-        ret
     """), fill_nop=True)
 
     rom.patch(0x36, 0x119D, 0x11A2, "", fill_nop=True)

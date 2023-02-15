@@ -63,7 +63,7 @@ from ..Options import TrendyGame, Palette
 def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=None, player_name=None, player_names=[], player_id = 0):
     print("Loading: %s" % (args.input_filename))
     rom = ROMWithTables(args.input_filename)
-
+    rom.player_names = player_names
     pymods = []
     if args.pymod:
         for pymod in args.pymod:
@@ -128,7 +128,10 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
     patches.core.fixWrongWarp(rom)
     patches.core.alwaysAllowSecretBook(rom)
     patches.core.injectMainLoop(rom)
-    if settings.dungeon_items in ('localnightmarekey', 'keysanity', 'smallkeys'):
+    
+    from ..Options import ShuffleSmallKeys, ShuffleNightmareKeys
+
+    if ap_settings["shuffle_small_keys"] != ShuffleSmallKeys.option_original_dungeon or  ap_settings["shuffle_nightmare_keys"] != ShuffleNightmareKeys.option_original_dungeon:
         patches.inventory.advancedInventorySubscreen(rom)
     patches.inventory.moreSlots(rom)
     if settings.witch:
@@ -174,8 +177,8 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
     elif settings.overworld == 'random':
         patches.overworld.patchOverworldTilesets(rom)
         mapgen.store_map(rom, logic.world.map)
-    if settings.dungeon_items == 'keysy':
-        patches.dungeon.removeKeyDoors(rom)
+    #if settings.dungeon_items == 'keysy':
+    #    patches.dungeon.removeKeyDoors(rom)
     # patches.reduceRNG.slowdownThreeOfAKind(rom)
     patches.reduceRNG.fixHorseHeads(rom)
     patches.bomb.onlyDropBombsWhenHaveBombs(rom)
