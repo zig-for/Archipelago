@@ -106,6 +106,11 @@ def call_stage(multiworld: "MultiWorld", method_name: str, *args: Any) -> None:
         if stage_callable:
             stage_callable(multiworld, *args)
 
+class ProgressionItemGroup:
+    def __init__(self, aliases, grant_lower_aliases_on_collect = True):
+        self.aliases = aliases
+        self.grant_lower_aliases_on_collect = grant_lower_aliases_on_collect
+
 
 class WebWorld:
     """Webhost integration"""
@@ -180,9 +185,19 @@ class World(metaclass=AutoWorldRegister):
     zip_path: ClassVar[Optional[pathlib.Path]] = None  # If loaded from a .apworld, this is the Path to it.
     __file__: ClassVar[str]  # path it was loaded from
 
+    # For now, must be set no later than __init__
+    progression_mapping: Dict[str, ProgressionItemGroup] = {}
+    progression_reverse_mapping: Dict[str, str] = {}
+
     def __init__(self, multiworld: "MultiWorld", player: int):
         self.multiworld = multiworld
         self.player = player
+
+    def generate_reverse_progression_mappings(self):
+        for progression_name, group in self.progression_mapping.items():
+            if group.grant_lower_aliases_on_collect:
+                for level, alias in enumerate(group.aliases):
+                    self.progression_reverse_mapping[alias] = (progression_name, level)
 
     # overridable methods that get called by Main.py, sorted by execution order
     # can also be implemented as a classmethod and called "stage_<original_name>",
@@ -277,7 +292,7 @@ class World(metaclass=AutoWorldRegister):
         logging.warning(f"World {self} is generating a filler item without custom filler pool.")
         return self.multiworld.random.choice(tuple(self.item_name_to_id.keys()))
 
-    # decent place to implement progressive items, in most cases can stay as-is
+    # possible place to implement progressive items, in most cases can stay as-is
     def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Optional[str]:
         """Collect an item name into state. For speed reasons items that aren't logically useful get skipped.
         Collect None to skip item.
@@ -292,34 +307,29 @@ class World(metaclass=AutoWorldRegister):
     def get_pre_fill_items(self) -> List["Item"]:
         return []
 
-    progression_mapping: Dict[str, Dict[int, str]]
-
     # following methods should not need to be overridden.
     def collect(self, state: "CollectionState", item: "Item") -> bool:
         name = self.collect_item(state, item)
         if name:
-            if name in self.progression_mapping:
+            if item.advancement and name in self.progression_mapping:
                 # If this is a progressive item, grant one level, and grant the corresponding alias
                 new_level = state.prog_items[name, self.player] + 1
-                new_alias = self.progression_mapping[name][new_level]
+                new_alias = self.progression_mapping[name].aliases[new_level - 1] # zero indexing
                 state.prog_items[new_alias, self.player] += 1
                 state.prog_items[name, self.player] = new_level
+                # If this is an alias to a progressive item that grants lower items...
+            elif item.advancement and name in self.progression_reverse_mapping:
+                progressive_name, alias_level = self.progression_reverse_mapping[name]
+                alias_level += 1
+                progressive_level = state.prog_items[progressive_name, self.player]
+                # ...and better than what we have
+                if alias_level > progressive_level:
+                    # Grant that level of progression
+                    state.prog_items[progressive_name, self.player] = alias_level
+                # grant the aliases up to that level
+                for level in range(alias_level):
+                    state.prog_items[self.progression_mapping[progressive_name].aliases[level], self.player] += 1
             else:
-                # this could be pre-mapped
-                for progressive_name, aliases in self.progression_mapping.items():
-                    for alias_level, alias_name in aliases.items():
-                        # If this is an alias to a progressive item...
-                        if alias_name == name:
-                            progressive_level = state.prog_items[progressive_name, self.player]
-                            # ...and better than what we have
-                            if alias_level > progressive_level:
-                                # Grant that level of progression
-                                state.prog_items[progressive_name, self.player] = alias_level
-                            # grant the aliases up to that level
-                            for level in range(1, alias_level + 1):
-                                state.prog_items[aliases[level], self.player] += 1
-                            return True
-
                 # Otherwise, just give the item                                
                 state.prog_items[name, self.player] += 1
             return True
@@ -334,27 +344,26 @@ class World(metaclass=AutoWorldRegister):
         name = self.collect_item(state, item, True)
         if name:
             # If we're removing a progressive item, it's as simple as decrementing and removing the old alias
-            if name in self.progression_mapping:
-                new_alias = self.progression_mapping[name][state.prog_items[name, self.player] - 1]
-                subtract_item(new_alias)
+            if item.advancement and name in self.progression_mapping:
                 subtract_item(name)
-            else:
-                for progressive_name, aliases in self.progression_mapping.items():
-                    for alias_level, alias_name in aliases.items():
-                        # If we're removing a non progressive item
-                        if alias_name == name:
-                            # Remove this item and all the ones below it
-                            for level in range(1, alias_level + 1):
-                                subtract_item(aliases[level])
-                            
-                            biggest_level = 0
-                            # Recalculate the progressive level
-                            for inner_alias_level, inner_alias_name in aliases.items():
-                                if state.prog_items[inner_alias_name, self.player]:
-                                    biggest_level = inner_alias_level
+                new_alias = self.progression_mapping[name].aliases[state.prog_items[name, self.player] - 1] # zero indexing
+                subtract_item(new_alias)
+            elif item.advancement and name in self.progression_reverse_mapping:
+                progressive_name, level = self.progression_reverse_mapping[name]
+                group = self.progression_reverse_mapping[progressive_name]
+                # If we're removing a non progressive item
+                # Remove this item and all the ones below it
+                for level in range(level):
+                    subtract_item(group.aliases[level])
+                
+                biggest_level = 0
+                # Recalculate the progressive level
+                for inner_alias_level, inner_alias_name in enumerate(group.aliases):
+                    if state.prog_items[inner_alias_name, self.player]:
+                        biggest_level = inner_alias_level + 1 # zero indexing
 
-                            state.prog_items[progressive_name, self.player] = biggest_level
-                            return True
+                state.prog_items[progressive_name, self.player] = biggest_level
+            else:
                 # Else, just remove the item
                 subtract_item(name)
             return True

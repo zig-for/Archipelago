@@ -5,7 +5,7 @@ import threading
 import typing
 
 import Utils
-from BaseClasses import Item, CollectionState, Tutorial
+from BaseClasses import Item, Tutorial
 from .Dungeons import create_dungeons
 from .EntranceShuffle import link_entrances, link_inverted_entrances, plando_connect, \
     indirect_connections, indirect_connections_inverted, indirect_connections_not_inverted
@@ -15,13 +15,12 @@ from .Items import item_init_table, item_name_groups, item_table, GetBeemizerIte
 from .Options import alttp_options, smallkey_shuffle
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
-from .Client import ALTTPSNIClient
 from .Rom import LocalRom, patch_rom, patch_race_rom, check_enemizer, patch_enemizer, apply_rom_settings, \
     get_hash_string, get_base_rom_path, LttPDeltaPatch
 from .Rules import set_rules
 from .Shops import create_shops, ShopSlotFill
 from .SubClasses import ALttPItem
-from worlds.AutoWorld import World, WebWorld, LogicMixin
+from worlds.AutoWorld import World, WebWorld, LogicMixin, ProgressionItemGroup
 from .StateHelpers import can_buy_unlimited
 
 lttp_logger = logging.getLogger("A Link to the Past")
@@ -141,25 +140,25 @@ class ALTTPWorld(World):
     create_items = generate_itempool
 
     progression_mapping = {
-        "Progressive Sword": {
-            1: "Fighter Sword",
-            2: "Master Sword",
-            3: "Tempered Sword",
-            4: "Golden Sword",
-        },
-        "Progressive Glove": {
-            1: "Power Glove",
-            2: "Titans Mitts",
-        },
-        "Progressive Shield": {
-            1: "Blue Shield",
-            2: "Red Shield",
-            3: "Mirror Shield",
-        },
-        "Progressive Bow": {
-            1: "Bow",
-            2: "Silver Bow",
-        }
+        "Progressive Sword": ProgressionItemGroup([
+            "Fighter Sword",
+            "Master Sword",
+            "Tempered Sword",
+            "Golden Sword",
+        ]),
+        "Progressive Glove": ProgressionItemGroup([
+            "Power Glove",
+            "Titans Mitts",
+        ]),
+        "Progressive Shield": ProgressionItemGroup([
+            "Blue Shield",
+            "Red Shield",
+            "Mirror Shield",
+        ]),
+        "Progressive Bow": ProgressionItemGroup([
+            "Bow",
+            "Silver Bow",
+        ]),
     }
 
     enemizer_path: str = Utils.get_options()["generator"]["enemizer_path"] \
@@ -172,6 +171,7 @@ class ALTTPWorld(World):
         self.rom_name_available_event = threading.Event()
         self.has_progressive_bows = False
         super(ALTTPWorld, self).__init__(*args, **kwargs)
+        self.generate_reverse_progression_mappings()
 
     @classmethod
     def stage_assert_generate(cls, world):
@@ -303,12 +303,6 @@ class ALTTPWorld(World):
         else:
             raise FillError('Unable to place dungeon prizes')
 
-
-    
-
-
-    
-        
     @classmethod
     def stage_pre_fill(cls, world):
         from .Dungeons import fill_dungeons_restrictive
