@@ -3,11 +3,20 @@ from ..utils import formatText, setReplacementName
 from ..roomEditor import RoomEditor
 from .. import entityData
 import os
-
+import bsdiff4
 
 def imageTo2bpp(filename):
     import PIL.Image
+    baseimg = PIL.Image.new('P', (1,1))
+    baseimg.putpalette((
+        128, 0, 128,
+        0, 0, 0,
+        128, 128, 128,
+        255, 255, 255,
+    ))
     img = PIL.Image.open(filename)
+    img = img.quantize(colors=4, palette=baseimg)
+    print (f"Palette: {img.getpalette()}")
     assert (img.size[0] % 8) == 0
     tileheight = 8 if img.size[1] == 8 else 16
     assert (img.size[1] % tileheight) == 0
@@ -55,6 +64,8 @@ def gfxMod(rom, filename):
         updateGraphics(rom, 0x2C, 0, open(filename, "rb").read())
     elif ext in (".png", ".bmp"):
         updateGraphics(rom, 0x2C, 0, imageTo2bpp(filename))
+    elif ext == ".bdiff":
+        updateGraphics(rom, 0x2C, 0, prepatch(rom, 0x2C, 0, filename))
     elif ext == ".json":
         import json
         data = json.load(open(filename, "rt"))
@@ -94,6 +105,16 @@ def createGfxImage(rom, filename):
                         img.putpixel((tx*8+x, bank_nr * 32 * 8 + ty*16+y), c)
     img.save(filename)
 
+def prepatch(rom, bank, offset, filename):
+    bank_count = 8
+    base_sheet = []
+    result = []
+    for bank_nr in range(bank_count):
+        base_sheet[0x4000 * bank_nr:0x4000 * (bank_nr + 1) - 1] = rom.banks[0x2C + bank_nr]
+    with open(filename, "rb") as patch:
+        file = patch.read()
+        result = bsdiff4.patch(src_bytes=bytes(base_sheet), patch_bytes=file)
+    return result
 
 def noSwordMusic(rom):
     # Skip no-sword music override
