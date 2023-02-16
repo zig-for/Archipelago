@@ -186,8 +186,8 @@ class World(metaclass=AutoWorldRegister):
     __file__: ClassVar[str]  # path it was loaded from
 
     # For now, must be set no later than __init__
-    progression_mapping: Dict[str, ProgressionItemGroup] = {}
-    progression_reverse_mapping: Dict[str, str] = {}
+    progression_mapping: ClassVar[Dict[str, ProgressionItemGroup]] = {}
+    progression_reverse_mapping: ClassVar[Dict[str, str]] = {}
 
     def __init__(self, multiworld: "MultiWorld", player: int):
         self.multiworld = multiworld
