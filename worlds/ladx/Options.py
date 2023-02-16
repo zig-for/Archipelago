@@ -335,7 +335,6 @@ class GfxMod(FreeText, LADXROption):
                         GfxMod.__spriteFiles[filename] = [file]
 
     def to_ladxr_option(self, all_options):
-        import warnings
         if self.value == -1:
             return None, None
         elif self.value in GfxMod.__spriteFiles:
@@ -343,7 +342,7 @@ class GfxMod(FreeText, LADXROption):
                 logger.warning(f"{self.value} does not uniquely identify a file. Possible matches: {GfxMod.__spriteFiles[self.value]}. Using {GfxMod.__spriteFiles[self.value][0]}")
                 return self.ladxr_name, GfxMod.__spriteFiles[self.value][0]
             return self.ladxr_name, GfxMod.__spriteFiles[self.value][0]
-        logger.warning(f"Spritesheet {self.value} not found. Falling back to default sprite.")
+        logger.error(f"Spritesheet {self.value} not found. Falling back to default sprite.")
         return None, None
 
 class Palette(Choice):

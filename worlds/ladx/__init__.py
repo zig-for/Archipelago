@@ -385,11 +385,10 @@ class LinksAwakeningWorld(World):
 
         rompath = os.path.join(output_directory, f"{self.multiworld.get_out_file_name_base(self.player)}.gbc")
 
-        out_file = out_name
-        print(out_file)
+
 
         parser = get_parser()
-        args = parser.parse_args([rom_path, "-o", out_file, "--dump"])
+        args = parser.parse_args([rom_path, "-o", out_name, "--dump"])
 
         name_for_rom = self.multiworld.player_name[self.player]
 
