@@ -1,7 +1,12 @@
+import os.path
 import typing
-from Options import Choice, Option, Toggle, DefaultOnToggle, Range
+import logging
+from Options import Choice, Option, Toggle, DefaultOnToggle, Range, FreeText
 
 DefaultOffToggle = Toggle
+
+logger = logging.getLogger("Link's Awakening Logger")
+
 
 class LADXROption:
     def to_ladxr_option(self, all_options):
@@ -9,6 +14,7 @@ class LADXROption:
             return None, None
         
         return (self.ladxr_name, self.name_lookup[self.value].replace("_", ""))
+
 
 class Logic(Choice, LADXROption):
     """Affects where items are allowed to be placed.
@@ -304,6 +310,42 @@ class TrendyGame(Choice):
     option_impossible = 5
     default = option_normal
 
+class GfxMod(FreeText, LADXROption):
+    """
+    options here correlate with sprite and name files in data/sprites/ladx
+    """
+    display_name = "GFX Modification"
+    ladxr_name = "gfxmod"
+    normal = ''
+    default = ''
+
+    __spriteFiles: typing.Dict[str, typing.List[str]] = {}
+    __spriteDir = os.path.join('data', 'sprites','ladx')
+
+    def __init__(self, value: str):
+        super().__init__(value)
+        if not GfxMod.__spriteFiles:
+            for file in os.listdir(GfxMod.__spriteDir):
+                if file.endswith(".bin") or file.endswith(".bdiff") or file.endswith(".png") or file.endswith(".bmp"):
+                    filename = file.split('.', 1)[0]
+                    GfxMod.__spriteFiles[file] = [file]
+                    if filename in GfxMod.__spriteFiles:
+                        GfxMod.__spriteFiles[filename].append(file)
+                    else:
+                        GfxMod.__spriteFiles[filename] = [file]
+
+    def to_ladxr_option(self, all_options):
+        import warnings
+        if self.value == -1:
+            return None, None
+        elif self.value in GfxMod.__spriteFiles:
+            if len(GfxMod.__spriteFiles[self.value]) > 1:
+                logger.warning(f"{self.value} does not uniquely identify a file. Possible matches: {GfxMod.__spriteFiles[self.value]}. Using {GfxMod.__spriteFiles[self.value][0]}")
+                return self.ladxr_name, GfxMod.__spriteFiles[self.value][0]
+            return self.ladxr_name, GfxMod.__spriteFiles[self.value][0]
+        logger.warning(f"Spritesheet {self.value} not found. Falling back to default sprite.")
+        return None, None
+
 class Palette(Choice):
     option_normal = 0
     option_1bit = 1
@@ -334,6 +376,7 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     # 'overworld': Overworld,
     'link_palette': LinkPalette,
     'trendy_game': TrendyGame,
+    'gfxmod': GfxMod,
     'palette': Palette,
     'shuffle_nightmare_keys': ShuffleNightmareKeys,
     'shuffle_small_keys': ShuffleSmallKeys,

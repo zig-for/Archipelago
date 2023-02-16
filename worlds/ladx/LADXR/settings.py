@@ -70,10 +70,12 @@ class Setting:
 class Settings:
     def __init__(self, ap_options):
         gfx_options = [('', '', 'Default')]
-        #gfx_path = os.path.join(os.path.dirname(__file__), "gfx")
-        #for filename in sorted(os.listdir(gfx_path)):
-        #    if filename.endswith(".bin"):
-        #        gfx_options.append((filename, filename + ">", filename[:-4]))
+        gfx_path = os.path.join("data", "sprites", "ladx")
+        for filename in sorted(os.listdir(gfx_path)):
+            if filename.endswith(".bin") or filename.endswith(".png") or filename.endswith(".bmp"):
+                gfx_options.append((filename, filename + ">", filename[:-4]))
+            if filename.endswith(".bdiff"):
+                gfx_options.append((filename, filename + ">", filename[:-6]))
 
 
         self.__all = [
