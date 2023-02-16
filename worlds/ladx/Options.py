@@ -2,6 +2,7 @@ import os.path
 import typing
 import logging
 from Options import Choice, Option, Toggle, DefaultOnToggle, Range, FreeText
+from collections import defaultdict
 
 DefaultOffToggle = Toggle
 
@@ -319,20 +320,19 @@ class GfxMod(FreeText, LADXROption):
     normal = ''
     default = ''
 
-    __spriteFiles: typing.Dict[str, typing.List[str]] = {}
+    __spriteFiles: typing.DefaultDict[str, typing.List[str]] = defaultdict(list)
     __spriteDir = os.path.join('data', 'sprites','ladx')
 
+    extensions = [".bin", ".bdiff", ".png", ".bmp"]
     def __init__(self, value: str):
         super().__init__(value)
         if not GfxMod.__spriteFiles:
+            os.path.splitext
             for file in os.listdir(GfxMod.__spriteDir):
-                if file.endswith(".bin") or file.endswith(".bdiff") or file.endswith(".png") or file.endswith(".bmp"):
-                    filename = file.split('.', 1)[0]
-                    GfxMod.__spriteFiles[file] = [file]
-                    if filename in GfxMod.__spriteFiles:
-                        GfxMod.__spriteFiles[filename].append(file)
-                    else:
-                        GfxMod.__spriteFiles[filename] = [file]
+                name, extension = os.path.splitext(file)
+                if extension in self.extensions:
+                    GfxMod.__spriteFiles[name].append(file)
+                    
 
     def to_ladxr_option(self, all_options):
         if self.value == -1:
