@@ -5,7 +5,7 @@ import threading
 import typing
 
 import Utils
-from BaseClasses import Item, CollectionState, Tutorial
+from BaseClasses import Item, Tutorial
 from .Dungeons import create_dungeons
 from .EntranceShuffle import link_entrances, link_inverted_entrances, plando_connect, \
     indirect_connections, indirect_connections_inverted, indirect_connections_not_inverted
@@ -15,13 +15,12 @@ from .Items import item_init_table, item_name_groups, item_table, GetBeemizerIte
 from .Options import alttp_options, smallkey_shuffle
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
-from .Client import ALTTPSNIClient
 from .Rom import LocalRom, patch_rom, patch_race_rom, check_enemizer, patch_enemizer, apply_rom_settings, \
     get_hash_string, get_base_rom_path, LttPDeltaPatch
 from .Rules import set_rules
 from .Shops import create_shops, ShopSlotFill
 from .SubClasses import ALttPItem
-from worlds.AutoWorld import World, WebWorld, LogicMixin
+from worlds.AutoWorld import World, WebWorld, LogicMixin, ProgressionItemGroup
 from .StateHelpers import can_buy_unlimited
 
 lttp_logger = logging.getLogger("A Link to the Past")
@@ -140,6 +139,28 @@ class ALTTPWorld(World):
 
     create_items = generate_itempool
 
+    progression_mapping = {
+        "Progressive Sword": ProgressionItemGroup([
+            "Fighter Sword",
+            "Master Sword",
+            "Tempered Sword",
+            "Golden Sword",
+        ]),
+        "Progressive Glove": ProgressionItemGroup([
+            "Power Glove",
+            "Titans Mitts",
+        ]),
+        "Progressive Shield": ProgressionItemGroup([
+            "Blue Shield",
+            "Red Shield",
+            "Mirror Shield",
+        ]),
+        "Progressive Bow": ProgressionItemGroup([
+            "Bow",
+            "Silver Bow",
+        ]),
+    }
+
     enemizer_path: str = Utils.get_options()["generator"]["enemizer_path"] \
         if os.path.isabs(Utils.get_options()["generator"]["enemizer_path"]) \
         else Utils.local_path(Utils.get_options()["generator"]["enemizer_path"])
@@ -150,6 +171,7 @@ class ALTTPWorld(World):
         self.rom_name_available_event = threading.Event()
         self.has_progressive_bows = False
         super(ALTTPWorld, self).__init__(*args, **kwargs)
+        self.generate_reverse_progression_mappings()
 
     @classmethod
     def stage_assert_generate(cls, world):
@@ -244,86 +266,6 @@ class ALTTPWorld(World):
             world.register_indirect_condition(world.get_region(region_name, player),
                                               world.get_entrance(entrance_name, player))
 
-
-    def collect_item(self, state: CollectionState, item: Item, remove=False):
-        item_name = item.name
-        if item_name.startswith('Progressive '):
-            if remove:
-                if 'Sword' in item_name:
-                    if state.has('Golden Sword', item.player):
-                        return 'Golden Sword'
-                    elif state.has('Tempered Sword', item.player):
-                        return 'Tempered Sword'
-                    elif state.has('Master Sword', item.player):
-                        return 'Master Sword'
-                    elif state.has('Fighter Sword', item.player):
-                        return 'Fighter Sword'
-                    else:
-                        return None
-                elif 'Glove' in item.name:
-                    if state.has('Titans Mitts', item.player):
-                        return 'Titans Mitts'
-                    elif state.has('Power Glove', item.player):
-                        return 'Power Glove'
-                    else:
-                        return None
-                elif 'Shield' in item_name:
-                    if state.has('Mirror Shield', item.player):
-                        return 'Mirror Shield'
-                    elif state.has('Red Shield', item.player):
-                        return 'Red Shield'
-                    elif state.has('Blue Shield', item.player):
-                        return 'Blue Shield'
-                    else:
-                        return None
-                elif 'Bow' in item_name:
-                    if state.has('Silver Bow', item.player):
-                        return 'Silver Bow'
-                    elif state.has('Bow', item.player):
-                        return 'Bow'
-                    else:
-                        return None
-            else:
-                if 'Sword' in item_name:
-                    if state.has('Golden Sword', item.player):
-                        pass
-                    elif state.has('Tempered Sword', item.player) and self.multiworld.difficulty_requirements[
-                        item.player].progressive_sword_limit >= 4:
-                        return 'Golden Sword'
-                    elif state.has('Master Sword', item.player) and self.multiworld.difficulty_requirements[
-                        item.player].progressive_sword_limit >= 3:
-                        return 'Tempered Sword'
-                    elif state.has('Fighter Sword', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_sword_limit >= 2:
-                        return 'Master Sword'
-                    elif self.multiworld.difficulty_requirements[item.player].progressive_sword_limit >= 1:
-                        return 'Fighter Sword'
-                elif 'Glove' in item_name:
-                    if state.has('Titans Mitts', item.player):
-                        return
-                    elif state.has('Power Glove', item.player):
-                        return 'Titans Mitts'
-                    else:
-                        return 'Power Glove'
-                elif 'Shield' in item_name:
-                    if state.has('Mirror Shield', item.player):
-                        return
-                    elif state.has('Red Shield', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 3:
-                        return 'Mirror Shield'
-                    elif state.has('Blue Shield', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 2:
-                        return 'Red Shield'
-                    elif self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 1:
-                        return 'Blue Shield'
-                elif 'Bow' in item_name:
-                    if state.has('Silver Bow', item.player):
-                        return
-                    elif state.has('Bow', item.player) and (self.multiworld.difficulty_requirements[item.player].progressive_bow_limit >= 2
-                                                            or self.multiworld.logic[item.player] == 'noglitches'
-                                                            or self.multiworld.swordless[item.player]): # modes where silver bow is always required for ganon
-                        return 'Silver Bow'
-                    elif self.multiworld.difficulty_requirements[item.player].progressive_bow_limit >= 1:
-                        return 'Bow'
-        elif item.advancement:
-            return item_name
 
     def pre_fill(self):
         from Fill import fill_restrictive, FillError

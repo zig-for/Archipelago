@@ -1515,3 +1515,5 @@ def set_bunny_rules(world: MultiWorld, player: int, inverted: bool):
                 if location.name in bunny_accessible_locations:
                     continue
                 add_rule(location, get_rule_to_add(entrance.connected_region, location))
+
+

@@ -20,8 +20,8 @@ def can_buy(state: CollectionState, item: str, player: int) -> bool:
 
 def can_shoot_arrows(state: CollectionState, player: int) -> bool:
     if state.multiworld.retro_bow[player]:
-        return (state.has('Bow', player) or state.has('Silver Bow', player)) and can_buy(state, 'Single Arrow', player)
-    return state.has('Bow', player) or state.has('Silver Bow', player)
+        return (state.has('Bow', player)) and can_buy(state, 'Single Arrow', player)
+    return state.has('Bow', player)
 
 def has_triforce_pieces(state: CollectionState, player: int) -> bool:
     count = state.multiworld.treasure_hunt_count[player]
@@ -32,9 +32,12 @@ def has_crystals(state: CollectionState, count: int, player: int) -> bool:
     return found >= count
 
 def can_lift_rocks(state: CollectionState, player: int):
-    return state.has('Power Glove', player) or state.has('Titans Mitts', player)
+    return state.has('Power Glove', player)
 
 def can_lift_heavy_rocks(state: CollectionState, player: int) -> bool:
+    if state.has('Titans Mitts', player):
+        assert(state.has('Power Glove', player))
+        assert(state.count('Progressive Glove', player) == 2)
     return state.has('Titans Mitts', player)
 
 def bottle_count(state: CollectionState, player: int) -> int:
@@ -93,14 +96,10 @@ def can_retrieve_tablet(state: CollectionState, player: int) -> bool:
                                                     state.has("Hammer", player)))
 
 def has_sword(state: CollectionState, player: int) -> bool:
-    return state.has('Fighter Sword', player) \
-            or state.has('Master Sword', player) \
-            or state.has('Tempered Sword', player) \
-            or state.has('Golden Sword', player)
+    return state.count('Progressive Sword', player) > 0
 
 def has_beam_sword(state: CollectionState, player: int) -> bool:
-    return state.has('Master Sword', player) or state.has('Tempered Sword', player) or state.has('Golden Sword',
-                                                                                                player)
+    return state.has('Master Sword', player)
 
 def has_melee_weapon(state: CollectionState, player: int) -> bool:
     return has_sword(state, player) or state.has('Hammer', player)
