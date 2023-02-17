@@ -327,7 +327,6 @@ class GfxMod(FreeText, LADXROption):
     def __init__(self, value: str):
         super().__init__(value)
         if not GfxMod.__spriteFiles:
-            os.path.splitext
             for file in os.listdir(GfxMod.__spriteDir):
                 name, extension = os.path.splitext(file)
                 if extension in self.extensions:
