@@ -337,9 +337,9 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
             for channel in range(3):
                 color[channel] = color[channel] * 31 // 0xbc
         
-
+    
     palette = ap_settings["palette"]
-    if palette != Palette.option_normal:
+    if palette != Palette.option_normal or True:
         ranges = {
             # Object palettes
             # Overworld palettes
@@ -370,6 +370,7 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
                 word >>= 5
                 blue  = word & 0b11111
                 return (red, green, blue)
+
             def rgb_to_bin(r, g, b):
                 return (b << 10) | (g << 5) | r
 
@@ -406,7 +407,10 @@ def generateRom(args, settings, ap_settings, seed, logic, rnd=None, multiworld=N
                     # gray=int(0.299*r+0.587*g+0.114*b)
                     gray = (r + g + b) // 3
                     r = g = b = gray
-
+                if address == 0x1518+6:
+                    r = 30
+                    g = 15
+                    b = 10
                 packed = rgb_to_bin(r, g, b)
                 rom.banks[bank][address] = packed & 0xFF
                 rom.banks[bank][address + 1] = packed >> 8
