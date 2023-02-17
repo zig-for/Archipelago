@@ -318,7 +318,7 @@ class GfxMod(FreeText, LADXROption):
     display_name = "GFX Modification"
     ladxr_name = "gfxmod"
     normal = ''
-    default = ''
+    default = 'Link'
 
     __spriteFiles: typing.DefaultDict[str, typing.List[str]] = defaultdict(list)
     __spriteDir = os.path.join('data', 'sprites','ladx')
@@ -335,7 +335,7 @@ class GfxMod(FreeText, LADXROption):
                     
 
     def to_ladxr_option(self, all_options):
-        if self.value == -1:
+        if self.value == -1 or self.value == "Link":
             return None, None
         elif self.value in GfxMod.__spriteFiles:
             if len(GfxMod.__spriteFiles[self.value]) > 1:
