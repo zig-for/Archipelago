@@ -240,7 +240,6 @@ class RAGameboy():
 
         # TODO: transform to bytes
         if splits[2][:2] == "-1" or splits[0] != "READ_CORE_MEMORY":
-            print(splits)
             raise BadRetroArchResponse()
         return bytearray.fromhex(splits[2])
 
