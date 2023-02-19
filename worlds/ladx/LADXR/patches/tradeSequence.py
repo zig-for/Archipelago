@@ -292,6 +292,8 @@ notSideScroll:
     # """), fill_nop=True)
     rom.patch(0x07, 0x159F, 0x15B9, ASM("""
         ldh  a, [$F6] ; map room
+        cp $B2
+        jr nz, NotYipYip
         add a, 2 ; Add 2 to room to set room pointer to an empty room for trade items
         ldh [$F6], a
         ld   a, $0e ; giveItemMultiworld
@@ -299,6 +301,11 @@ notSideScroll:
         ldh  a, [$F6] ; map room
         sub a, 2 ; ...and undo it
         ldh [$F6], a
+        jr Done
+    NotYipYip:
+        ld   a, $0e ; giveItemMultiworld
+        rst  8
+    Done:
     """), fill_nop=True)
 
 

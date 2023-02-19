@@ -47,7 +47,8 @@ GetRoomStatusAddressInHL:
 
 RenderOwlStatueItem:
     ldh  a, [$F6] ; map room
-    
+    cp $B2
+    jr nz, .NotYipYip
     ; Add 2 to room to set room pointer to an empty room for trade items
     add a, 2
     ldh [$F6], a
@@ -57,4 +58,6 @@ RenderOwlStatueItem:
     sub a, 2
     ldh [$F6], a
     ret
-
+.NotYipYip:
+    call RenderItemForRoom
+    ret
