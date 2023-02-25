@@ -82,7 +82,7 @@ class LinksAwakeningWorld(World):
         self.player_options = {
             option: getattr(self.multiworld, option)[self.player] for option in self.option_definitions
         }
-        print(self.player_options)
+
         self.laxdr_options = LADXRSettings(self.player_options)
         
         self.laxdr_options.validate()
