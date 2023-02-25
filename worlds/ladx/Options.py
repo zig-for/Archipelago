@@ -81,9 +81,9 @@ class EntranceShuffle(Choice, LADXROption):
     Note, some entrances can lead into water, use the warp-to-home from the save&quit menu to escape this."""
     option_none = 0
     option_simple = 1
-    option_advanced = 2
-    option_expert = 3    
-    option_insanity = 4
+    #option_advanced = 2
+    #option_expert = 3    
+    #option_insanity = 4
     default = option_none
     ladxr_name = "entranceshuffle"
 
