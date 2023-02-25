@@ -141,8 +141,6 @@ class Item:
         if oldValue != self.value:
             self.diff += self.value - (oldValue or 0)
 
-            #if self.diff != 0:
-            #    print(f'Found {self.id}: {"+" if self.diff > 0 else ""}{self.diff}')
 class ItemTracker:
     def __init__(self, gameboy) -> None:
         self.gameboy = gameboy
