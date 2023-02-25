@@ -345,19 +345,20 @@ class LinksAwakeningClient():
         if not self.tracker.has_start_item():
             return
 
-        item_id -= LABaseID
+        # Spin until we either:
+        # get an exception from a bad read (emu shut down or reset)
+        # beat the game
+        # the client handles the last pending item
+        status = (await self.gameboy.async_read_memory_safe(LAClientConstants.wLinkStatusBits))[0]
+        while not (await self.is_victory()) and status & 1 == 1:
+            time.sleep(0.1)
+            status = (await self.gameboy.async_read_memory_safe(LAClientConstants.wLinkStatusBits))[0]
 
+        item_id -= LABaseID
         # The player name table only goes up to 100, so don't go past that
         # Even if it didn't, the remote player _index_ byte is just a byte, so 255 max
         if from_player > 100:
             from_player = 100
-
-        # 2. write
-        status = (await self.gameboy.async_read_memory_safe(LAClientConstants.wLinkStatusBits))[0]
-        # TODO: check safety value
-        while not (await self.is_victory()) and status & 1 == 1:
-            time.sleep(0.1)
-            status = (await self.gameboy.async_read_memory_safe(LAClientConstants.wLinkStatusBits))[0]
 
         next_index += 1
         self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [
