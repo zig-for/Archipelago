@@ -317,7 +317,6 @@ class LinksAwakeningClient():
                             await asyncio.sleep(1.0)
                             continue
                     except (BlockingIOError, TimeoutError) as e:
-                        logger.info(e)
                         await asyncio.sleep(0.1)
                         pass
                 logger.info(f"Connected to Retroarch {version} {info}")
@@ -341,13 +340,10 @@ class LinksAwakeningClient():
         self.item_tracker = ItemTracker(self.gameboy)
         self.gps_tracker = GpsTracker(self.gameboy)
 
-    # TODO: this needs to be async and queueing
-    def recved_item_from_ap(self, item_id, from_player, next_index):
+    async def recved_item_from_ap(self, item_id, from_player, next_index):
         # Don't allow getting an item until you've got your first check
         if not self.tracker.has_start_item():
             return
-
-        # logger.info(f"next index was {next_index}")
 
         item_id -= LABaseID
 
@@ -357,20 +353,17 @@ class LinksAwakeningClient():
             from_player = 100
 
         # 2. write
-        status = self.gameboy.read_memory(LAClientConstants.wLinkStatusBits)[0]
+        status = (await self.gameboy.async_read_memory_safe(LAClientConstants.wLinkStatusBits))[0]
         # TODO: check safety value
-        while status & 1 == 1:
+        while not (await self.is_victory()) and status & 1 == 1:
             time.sleep(0.1)
-            status = self.gameboy.read_memory(
-                LAClientConstants.wLinkStatusBits)[0]
-            # print(f"Waiting on client {status}")
+            status = (await self.gameboy.async_read_memory_safe(LAClientConstants.wLinkStatusBits))[0]
 
         next_index += 1
         self.gameboy.write_memory(LAClientConstants.wLinkGiveItem, [
                                   item_id, from_player])
         status |= 1
-        status = self.gameboy.write_memory(
-            LAClientConstants.wLinkStatusBits, [status])
+        status = self.gameboy.write_memory(LAClientConstants.wLinkStatusBits, [status])
         self.gameboy.write_memory(LAClientConstants.wRecvIndex, [next_index])
 
     async def wait_for_game_ready(self):
@@ -379,6 +372,9 @@ class LinksAwakeningClient():
             pass
         logger.info("Ready!")
     last_index = 0
+
+    async def is_victory(self):
+        return (await self.gameboy.read_memory_cache([LAClientConstants.wGameplayType]))[LAClientConstants.wGameplayType] == 1
 
     async def main_tick(self, item_get_cb, win_cb, deathlink_cb):
         await self.tracker.readChecks(item_get_cb)
@@ -404,7 +400,7 @@ class LinksAwakeningClient():
             self.pending_deathlink = False
             self.deathlink_debounce = True
 
-        if (await self.gameboy.read_memory_cache([LAClientConstants.wGameplayType]))[LAClientConstants.wGameplayType] == 1:
+        if await self.is_victory():
             await win_cb()
 
         recv_index = (await self.gameboy.async_read_memory_safe(LAClientConstants.wRecvIndex))[0]
@@ -412,7 +408,7 @@ class LinksAwakeningClient():
         # Play back one at a time
         if recv_index in self.recvd_checks:
             item = self.recvd_checks[recv_index]
-            self.recved_item_from_ap(item.item, item.player, recv_index)
+            await self.recved_item_from_ap(item.item, item.player, recv_index)
 
 
 def create_task_log_exception(awaitable) -> asyncio.Task:
