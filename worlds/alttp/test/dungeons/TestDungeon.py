@@ -22,7 +22,7 @@ class TestDungeon(unittest.TestCase):
         self.multiworld.set_default_common_options()
         self.starting_regions = []  # Where to start exploring
         self.remove_exits = []      # Block dungeon exits
-        self.multiworld.difficulty_requirements[1] = difficulties['normal']
+        self.multiworld.worlds[1].difficulty_requirements = difficulties['normal']
         create_regions(self.multiworld, 1)
         self.multiworld.worlds[1].create_dungeons()
         create_shops(self.multiworld, 1)

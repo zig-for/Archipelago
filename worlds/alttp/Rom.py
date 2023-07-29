@@ -1031,7 +1031,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     # Byrna residual magic cost
     rom.write_bytes(0x45C42, [0x04, 0x02, 0x01])
 
-    difficulty = world.difficulty_requirements[player]
+    difficulty = world.worlds[player].difficulty_requirements
 
     # Set overflow items for progressive equipment
     rom.write_bytes(0x180090,
@@ -1414,7 +1414,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
             for address in keys[item.name]:
                 equip[address] = min(equip[address] + 1, 99)
         elif item.name in bottles:
-            if equip[0x34F] < world.difficulty_requirements[player].progressive_bottle_limit:
+            if equip[0x34F] < world.worlds[player].difficulty_requirements.progressive_bottle_limit:
                 equip[0x35C + equip[0x34F]] = bottles[item.name]
                 equip[0x34F] += 1
         elif item.name in rupees:
@@ -2384,7 +2384,7 @@ def write_strings(rom, world, player):
             ' %s?' % hint_text(silverarrows[0]).replace('Ganon\'s', 'my')) if silverarrows else '?\nI think not!'
     tt['ganon_phase_3_no_silvers'] = 'Did you find the silver arrows%s' % silverarrow_hint
     tt['ganon_phase_3_no_silvers_alt'] = 'Did you find the silver arrows%s' % silverarrow_hint
-    if world.worlds[player].has_progressive_bows and (world.difficulty_requirements[player].progressive_bow_limit >= 2 or (
+    if world.worlds[player].has_progressive_bows and (world.worlds[player].difficulty_requirements.progressive_bow_limit >= 2 or (
             world.swordless[player] or world.logic[player] == 'noglitches')):
         prog_bow_locs = world.find_item_locations('Progressive Bow', player, True)
         world.per_slot_randoms[player].shuffle(prog_bow_locs)

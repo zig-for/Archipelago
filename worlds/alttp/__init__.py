@@ -12,7 +12,7 @@ from .EntranceShuffle import link_entrances, link_inverted_entrances, plando_con
 from .InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from .ItemPool import generate_itempool, difficulties
 from .Items import item_init_table, item_name_groups, item_table, GetBeemizerItem
-from .Options import alttp_options, smallkey_shuffle, Goal, Mode
+from .Options import alttp_options, smallkey_shuffle, Goal, Mode, Logic
 from .Options import TriforcePiecesAvailable, TriforcePiecesPercentage, TriforcePiecesMode, TriforcePiecesRequired, TriforcePiecesExtra
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
@@ -249,6 +249,10 @@ class ALTTPWorld(World):
     has_progressive_bows: bool
     dungeons: typing.Dict[str, Dungeon]
     clock_mode: typing.Optional[str] = None
+    difficulty_requirements: typing.NamedTuple = None
+    #required_medallions: dict
+    #dark_room_logic: Dict[int, str]
+    #restrict_dungeon_item_on_boss: Dict[int, bool]
 
     def __init__(self, *args, **kwargs):
         self.dungeon_local_item_names = set()
@@ -318,7 +322,7 @@ class ALTTPWorld(World):
                 if option == "original_dungeon":
                     self.dungeon_specific_item_names |= self.item_name_groups[option.item_name_group]
 
-        world.difficulty_requirements[player] = difficulties[world.difficulty[player]]
+        self.difficulty_requirements = difficulties[world.difficulty[player]]
 
         # enforce pre-defined local items.
         if world.goal[player] in [Goal.option_localtriforcehunt, Goal.option_localganontriforcehunt]:
@@ -375,6 +379,8 @@ class ALTTPWorld(World):
 
     def collect_item(self, state: CollectionState, item: Item, remove=False):
         item_name = item.name
+        difficulty_requirements = self.multiworld.worlds[item.player].difficulty_requirements
+
         if item_name.startswith('Progressive '):
             if remove:
                 if 'Sword' in item_name:
@@ -415,15 +421,13 @@ class ALTTPWorld(World):
                 if 'Sword' in item_name:
                     if state.has('Golden Sword', item.player):
                         pass
-                    elif state.has('Tempered Sword', item.player) and self.multiworld.difficulty_requirements[
-                        item.player].progressive_sword_limit >= 4:
+                    elif state.has('Tempered Sword', item.player) and difficulty_requirements.progressive_sword_limit >= 4:
                         return 'Golden Sword'
-                    elif state.has('Master Sword', item.player) and self.multiworld.difficulty_requirements[
-                        item.player].progressive_sword_limit >= 3:
+                    elif state.has('Master Sword', item.player) and difficulty_requirements.progressive_sword_limit >= 3:
                         return 'Tempered Sword'
-                    elif state.has('Fighter Sword', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_sword_limit >= 2:
+                    elif state.has('Fighter Sword', item.player) and difficulty_requirements.progressive_sword_limit >= 2:
                         return 'Master Sword'
-                    elif self.multiworld.difficulty_requirements[item.player].progressive_sword_limit >= 1:
+                    elif difficulty_requirements.progressive_sword_limit >= 1:
                         return 'Fighter Sword'
                 elif 'Glove' in item_name:
                     if state.has('Titans Mitts', item.player):
@@ -435,20 +439,20 @@ class ALTTPWorld(World):
                 elif 'Shield' in item_name:
                     if state.has('Mirror Shield', item.player):
                         return
-                    elif state.has('Red Shield', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 3:
+                    elif state.has('Red Shield', item.player) and difficulty_requirements.progressive_shield_limit >= 3:
                         return 'Mirror Shield'
-                    elif state.has('Blue Shield', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 2:
+                    elif state.has('Blue Shield', item.player) and difficulty_requirements.progressive_shield_limit >= 2:
                         return 'Red Shield'
-                    elif self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 1:
+                    elif difficulty_requirements.progressive_shield_limit >= 1:
                         return 'Blue Shield'
                 elif 'Bow' in item_name:
                     if state.has('Silver Bow', item.player):
                         return
-                    elif state.has('Bow', item.player) and (self.multiworld.difficulty_requirements[item.player].progressive_bow_limit >= 2
-                                                            or self.multiworld.logic[item.player] == 'noglitches'
+                    elif state.has('Bow', item.player) and (difficulty_requirements.progressive_bow_limit >= 2
+                                                            or self.multiworld.logic[item.player] == Logic.option_noglitches
                                                             or self.multiworld.swordless[item.player]): # modes where silver bow is always required for ganon
                         return 'Silver Bow'
-                    elif self.multiworld.difficulty_requirements[item.player].progressive_bow_limit >= 1:
+                    elif difficulty_requirements.progressive_bow_limit >= 1:
                         return 'Bow'
         elif item.advancement:
             return item_name

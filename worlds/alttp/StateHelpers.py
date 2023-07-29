@@ -48,7 +48,7 @@ def can_lift_heavy_rocks(state: CollectionState, player: int) -> bool:
 
 
 def bottle_count(state: CollectionState, player: int) -> int:
-    return min(state.multiworld.difficulty_requirements[player].progressive_bottle_limit,
+    return min(state.multiworld.worlds[player].difficulty_requirements.progressive_bottle_limit,
                 state.count_group("Bottles", player))
 
 
@@ -59,7 +59,7 @@ def has_hearts(state: CollectionState, player: int, count: int) -> int:
 
 def heart_count(state: CollectionState, player: int) -> int:
     # Warning: This only considers items that are marked as advancement items
-    diff = state.multiworld.difficulty_requirements[player]
+    diff = state.multiworld.worlds[player].difficulty_requirements
     return min(state.item_count('Boss Heart Container', player), diff.boss_heart_container_limit) \
             + state.item_count('Sanctuary Heart Container', player) \
             + min(state.item_count('Piece of Heart', player), diff.heart_piece_limit) // 4 \

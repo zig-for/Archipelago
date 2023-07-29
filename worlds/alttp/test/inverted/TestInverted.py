@@ -21,7 +21,7 @@ class TestInverted(TestBase):
             setattr(args, name, {1: option.from_any(option.default)})
         self.multiworld.set_options(args)
         self.multiworld.set_default_common_options()
-        self.multiworld.difficulty_requirements[1] = difficulties['normal']
+        self.multiworld.worlds[1].difficulty_requirements = difficulties['normal']
         self.multiworld.mode[1] = Mode.option_inverted
         create_inverted_regions(self.multiworld, 1)
         self.multiworld.worlds[1].create_dungeons()

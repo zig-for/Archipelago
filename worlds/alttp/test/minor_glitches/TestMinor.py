@@ -24,7 +24,7 @@ class TestMinor(TestBase):
         self.multiworld.set_options(args)
         self.multiworld.set_default_common_options()
         self.multiworld.logic[1] = Logic.option_minorglitches
-        self.multiworld.difficulty_requirements[1] = difficulties['normal']
+        self.multiworld.worlds[1].difficulty_requirements = difficulties['normal']
         self.multiworld.worlds[1].er_seed = 0
         self.multiworld.worlds[1].create_regions()
         self.multiworld.worlds[1].create_items()

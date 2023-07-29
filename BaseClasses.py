@@ -47,10 +47,6 @@ class MultiWorld():
     debug_types = False
     player_name: Dict[int, str]
     _region_cache: Dict[int, Dict[str, Region]]
-    difficulty_requirements: dict
-    required_medallions: dict
-    dark_room_logic: Dict[int, str]
-    restrict_dungeon_item_on_boss: Dict[int, bool]
     plando_texts: List[Dict[str, str]]
     plando_items: List[List[Dict[str, Any]]]
     plando_connections: List
@@ -152,7 +148,6 @@ class MultiWorld():
             set_player_attr('can_access_trock_big_chest', None)
             set_player_attr('can_access_trock_middle', None)
             set_player_attr('fix_fake_world', True)
-            set_player_attr('difficulty_requirements', None)
             set_player_attr('boss_shuffle', 'none')
             set_player_attr('enemy_health', 'default')
             set_player_attr('enemy_damage', 'default')
