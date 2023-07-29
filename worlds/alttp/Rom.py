@@ -36,7 +36,7 @@ from .Text import KingsReturn_texts, Sanctuary_texts, Kakariko_texts, Blacksmith
     SickKid_texts, FluteBoy_texts, Zora_texts, MagicShop_texts, Sahasrahla_names
 from .Items import ItemFactory, item_table, item_name_groups, progression_items
 from .EntranceShuffle import door_addresses
-from .Options import smallkey_shuffle
+from .Options import smallkey_shuffle, Goal, DungeonCounters
 
 try:
     from maseya import z3pr
@@ -300,7 +300,7 @@ def patch_enemizer(world, rom: LocalRom, enemizercli, output_directory):
         'AllowEnemyZeroDamage': True,
         'ShuffleEnemyDamageGroups': multiworld.enemy_damage[player] != 'default',
         'EnemyDamageChaosMode': multiworld.enemy_damage[player] == 'chaos',
-        'EasyModeEscape': multiworld.mode[player] == "standard",
+        'EasyModeEscape': multiworld.mode[player] == Mode.option_standard,
         'EnemiesAbsorbable': False,
         'AbsorbableSpawnRate': 10,
         'AbsorbableTypes': {
@@ -366,16 +366,16 @@ def patch_enemizer(world, rom: LocalRom, enemizercli, output_directory):
             'MiseryMire': world.dungeons["Misery Mire"].boss.enemizer_name,
             'TurtleRock': world.dungeons["Turtle Rock"].boss.enemizer_name,
             'GanonsTower1':
-                world.dungeons["Ganons Tower" if multiworld.mode[player] != 'inverted' else
+                world.dungeons["Ganons Tower" if multiworld.mode[player] != Mode.option_inverted else
                                "Inverted Ganons Tower"].bosses['bottom'].enemizer_name,
             'GanonsTower2':
-                world.dungeons["Ganons Tower" if multiworld.mode[player] != 'inverted' else
+                world.dungeons["Ganons Tower" if multiworld.mode[player] != Mode.option_inverted else
                                "Inverted Ganons Tower"].bosses['middle'].enemizer_name,
             'GanonsTower3':
-                world.dungeons["Ganons Tower" if multiworld.mode[player] != 'inverted' else
+                world.dungeons["Ganons Tower" if multiworld.mode[player] != Mode.option_inverted else
                                "Inverted Ganons Tower"].bosses['top'].enemizer_name,
             'GanonsTower4': 'Agahnim2',
-            'Ganon': 'Ganon',
+            Goal.option_ganon: Goal.option_ganon,
         }
     }
 
@@ -880,7 +880,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
                 else:
                     # patch door table
                     rom.write_byte(0xDBB73 + exit.addresses, exit.target)
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         patch_shuffled_dark_sanc(world, rom, player)
 
     write_custom_shops(rom, world, player)
@@ -929,11 +929,11 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         rom.write_byte(0x51DE, 0x00)
 
     # set open mode:
-    if world.mode[player] in ['open', 'inverted']:
+    if world.mode[player] in [Mode.option_open, Mode.option_inverted]:
         rom.write_byte(0x180032, 0x01)  # open mode
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         set_inverted_mode(world, player, rom)
-    elif world.mode[player] == 'standard':
+    elif world.mode[player] == Mode.option_standard:
         rom.write_byte(0x180032, 0x00)  # standard mode
 
     uncle_location = world.get_location('Link\'s Uncle', player)
@@ -953,7 +953,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         rom.write_bytes(0x6D323, [0x00, 0x00, 0xe4, 0xff, 0x08, 0x0E])
 
     # set light cones
-    rom.write_byte(0x180038, 0x01 if world.mode[player] == "standard" else 0x00)
+    rom.write_byte(0x180038, 0x01 if world.mode[player] == Mode.option_standard else 0x00)
     rom.write_byte(0x180039, 0x01 if world.light_world_light_cone else 0x00)
     rom.write_byte(0x18003A, 0x01 if world.dark_world_light_cone else 0x00)
 
@@ -1253,7 +1253,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         player] else 0x00)  # Toggle whether to be in real/fake dark world when dying in a DW dungeon before killing aga1
     # Lock or unlock aga tower door during escape sequence.
     rom.write_byte(0x180169, 0x00)
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         rom.write_byte(0x180169, 0x02)  # lock aga/ganon tower door with crystals in inverted
     rom.write_byte(0x180171,
                    0x01 if world.ganon_at_pyramid[player] else 0x00)  # Enable respawning on pyramid after ganon death
@@ -1457,14 +1457,14 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_bytes(0x183000, equip[0x340:])
     rom.write_bytes(0x271A6, equip[0x340:0x340 + 60])
 
-    rom.write_byte(0x18004A, 0x00 if world.mode[player] != 'inverted' else 0x01)  # Inverted mode
+    rom.write_byte(0x18004A, 0x00 if world.mode[player] != Mode.option_inverted else 0x01)  # Inverted mode
     rom.write_byte(0x18005D, 0x00)  # Hammer always breaks barrier
     rom.write_byte(0x2AF79, 0xD0 if world.mode[
-                                        player] != 'inverted' else 0xF0)  # vortexes: Normal  (D0=light to dark, F0=dark to light, 42 = both)
+                                        player] != Mode.option_inverted else 0xF0)  # vortexes: Normal  (D0=light to dark, F0=dark to light, 42 = both)
     rom.write_byte(0x3A943, 0xD0 if world.mode[
-                                        player] != 'inverted' else 0xF0)  # Mirror: Normal  (D0=Dark to Light, F0=light to dark, 42 = both)
+                                        player] != Mode.option_inverted else 0xF0)  # Mirror: Normal  (D0=Dark to Light, F0=light to dark, 42 = both)
     rom.write_byte(0x3A96D, 0xF0 if world.mode[
-                                        player] != 'inverted' else 0xD0)  # Residual Portal: Normal  (F0= Light Side, D0=Dark Side, 42 = both (Darth Vader))
+                                        player] != Mode.option_inverted else 0xD0)  # Residual Portal: Normal  (F0= Light Side, D0=Dark Side, 42 = both (Darth Vader))
     rom.write_byte(0x3A9A7, 0xD0)  # Residual Portal: Normal  (D0= Light Side, F0=Dark Side, 42 = both (Darth Vader))
     if 'u' in world.shop_shuffle[player]:
         rom.write_bytes(0x180080,
@@ -1477,15 +1477,15 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
                               (0x02 if 'bombs' in world.escape_assist[player] else 0x00) |
                               (0x04 if 'magic' in world.escape_assist[player] else 0x00)))  # Escape assist
 
-    if world.goal[player] in ['pedestal', 'triforcehunt', 'localtriforcehunt', 'icerodhunt']:
+    if world.goal[player] in [Goal.option_pedestal, Goal.option_triforcehunt, Goal.option_localtriforcehunt, Goal.option_icerodhunt]:
         rom.write_byte(0x18003E, 0x01)  # make ganon invincible
-    elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+    elif world.goal[player] in [Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt]:
         rom.write_byte(0x18003E, 0x05)  # make ganon invincible until enough triforce pieces are collected
-    elif world.goal[player] in ['ganonpedestal']:
+    elif world.goal[player] in [Goal.option_ganonpedestal]:
         rom.write_byte(0x18003E, 0x06)
-    elif world.goal[player] in ['bosses']:
+    elif world.goal[player] in [Goal.option_bosses]:
         rom.write_byte(0x18003E, 0x02)  # make ganon invincible until all bosses are beat
-    elif world.goal[player] in ['crystals']:
+    elif world.goal[player] in [Goal.option_crystals]:
         rom.write_byte(0x18003E, 0x04)  # make ganon invincible until all crystals
     else:
         rom.write_byte(0x18003E, 0x03)  # make ganon invincible until all crystals and aga 2 are collected
@@ -1502,7 +1502,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     # c - enabled for inside compasses
     # s - enabled for inside small keys
     # block HC upstairs doors in rain state in standard mode
-    rom.write_byte(0x18008A, 0x01 if world.mode[player] == "standard" and world.shuffle[player] != 'vanilla' else 0x00)
+    rom.write_byte(0x18008A, 0x01 if world.mode[player] == Mode.option_standard and world.shuffle[player] != 'vanilla' else 0x00)
 
     rom.write_byte(0x18016A, 0x10 | ((0x01 if world.smallkey_shuffle[player] else 0x00)
                                      | (0x02 if world.compass_shuffle[player] else 0x00)
@@ -1512,11 +1512,11 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_byte(0x18003B, 0x01 if world.map_shuffle[player] else 0x00)  # maps showing crystals on overworld
 
     # compasses showing dungeon count
-    if world.clock_mode[player] or not world.dungeon_counters[player]:
+    if world.clock_mode[player] or not world.dungeon_counters[player] == DungeonCounters.option_off:
         rom.write_byte(0x18003C, 0x00)  # Currently must be off if timer is on, because they use same HUD location
-    elif world.dungeon_counters[player] is True:
+    elif world.dungeon_counters[player] == DungeonCounters.option_on:
         rom.write_byte(0x18003C, 0x02)  # always on
-    elif world.compass_shuffle[player] or world.dungeon_counters[player] == 'pickup':
+    elif world.compass_shuffle[player] or world.dungeon_counters[player] == DungeonCounters.option_pickup:
         rom.write_byte(0x18003C, 0x01)  # show on pickup
     else:
         rom.write_byte(0x18003C, 0x00)
@@ -1600,7 +1600,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_bytes(0x180185, [0, 0, 0])  # Uncle respawn refills (magic, bombs, arrows)
     rom.write_bytes(0x180188, [0, 0, 0])  # Zelda respawn refills (magic, bombs, arrows)
     rom.write_bytes(0x18018B, [0, 0, 0])  # Mantle respawn refills (magic, bombs, arrows)
-    if world.mode[player] == 'standard' and uncle_location.item and uncle_location.item.player == player:
+    if world.mode[player] == Mode.option_standard and uncle_location.item and uncle_location.item.player == player:
         if uncle_location.item.name in {'Bow', 'Progressive Bow'}:
             rom.write_byte(0x18004E, 1)  # Escape Fill (arrows)
             rom.write_int16(0x180183, 300)  # Escape fill rupee bow
@@ -1629,7 +1629,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
 
     # allow smith into multi-entrance caves in appropriate shuffles
     if world.shuffle[player] in ['restricted', 'full', 'crossed', 'insanity', 'madness'] or (
-            world.shuffle[player] == 'simple' and world.mode[player] == 'inverted'):
+            world.shuffle[player] == 'simple' and world.mode[player] == Mode.option_inverted):
         rom.write_byte(0x18004C, 0x01)
 
     # set correct flag for hera basement item
@@ -2173,7 +2173,7 @@ def write_strings(rom, world, player):
         tt['kakariko_flophouse_man_no_flippers'] = 'I really hate mowing my yard.\n{PAGEBREAK}\nI should move.'
         tt['kakariko_flophouse_man'] = 'I really hate mowing my yard.\n{PAGEBREAK}\nI should move.'
 
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         tt['sign_village_of_outcasts'] = 'attention\nferal ducks sighted\nhiding in statues\n\nflute players beware\n'
 
     def hint_text(dest, ped_hint=False):
@@ -2219,7 +2219,7 @@ def write_strings(rom, world, player):
             entrances_to_hint = {}
             entrances_to_hint.update(InconvenientDungeonEntrances)
             if world.shuffle_ganon:
-                if world.mode[player] == 'inverted':
+                if world.mode[player] == Mode.option_inverted:
                     entrances_to_hint.update({'Inverted Ganons Tower': 'The sealed castle door'})
                 else:
                     entrances_to_hint.update({'Ganons Tower': 'Ganon\'s Tower'})
@@ -2255,14 +2255,14 @@ def write_strings(rom, world, player):
             if world.shuffle[player] not in ['simple', 'restricted', 'restricted_legacy']:
                 entrances_to_hint.update(ConnectorEntrances)
                 entrances_to_hint.update(DungeonEntrances)
-                if world.mode[player] == 'inverted':
+                if world.mode[player] == Mode.option_inverted:
                     entrances_to_hint.update({'Inverted Agahnims Tower': 'The dark mountain tower'})
                 else:
                     entrances_to_hint.update({'Agahnims Tower': 'The sealed castle door'})
             elif world.shuffle[player] == 'restricted':
                 entrances_to_hint.update(ConnectorEntrances)
             entrances_to_hint.update(OtherEntrances)
-            if world.mode[player] == 'inverted':
+            if world.mode[player] == Mode.option_inverted:
                 entrances_to_hint.update({'Inverted Dark Sanctuary': 'The dark sanctuary cave'})
                 entrances_to_hint.update({'Inverted Big Bomb Shop': 'The old hero\'s dark home'})
                 entrances_to_hint.update({'Inverted Links House': 'The old hero\'s light home'})
@@ -2272,7 +2272,7 @@ def write_strings(rom, world, player):
             if world.shuffle[player] in ['insanity', 'madness_legacy', 'insanity_legacy']:
                 entrances_to_hint.update(InsanityEntrances)
                 if world.shuffle_ganon:
-                    if world.mode[player] == 'inverted':
+                    if world.mode[player] == Mode.option_inverted:
                         entrances_to_hint.update({'Inverted Pyramid Entrance': 'The extra castle passage'})
                     else:
                         entrances_to_hint.update({'Pyramid Ledge': 'The pyramid ledge'})
@@ -2414,17 +2414,17 @@ def write_strings(rom, world, player):
     else:
         tt['sign_ganons_tower'] = f'You need {world.crystals_needed_for_gt[player]} crystals to enter.'
 
-    if world.goal[player] == 'bosses':
+    if world.goal[player] == Goal.option_bosses:
         tt['sign_ganon'] = 'You need to kill all bosses, Ganon last.'
-    elif world.goal[player] == 'ganonpedestal':
+    elif world.goal[player] == Goal.option_ganonpedestal:
         tt['sign_ganon'] = 'You need to pull the pedestal to defeat Ganon.'
-    elif world.goal[player] == "ganon":
+    elif world.goal[player] == Goal.option_ganon:
         if world.crystals_needed_for_ganon[player] == 1:
             tt['sign_ganon'] = 'You need a crystal to beat Ganon and have beaten Agahnim atop Ganons Tower.'
         else:
             tt['sign_ganon'] = f'You need {world.crystals_needed_for_ganon[player]} crystals to beat Ganon and ' \
                                f'have beaten Agahnim atop Ganons Tower'
-    elif world.goal[player] == "icerodhunt":
+    elif world.goal[player] == Goal.option_icerodhunt:
         tt['sign_ganon'] = 'Go find the Ice Rod and Kill Trinexx, then talk to Murahdahla... Ganon is invincible!'
         tt['ganon_fall_in_alt'] = 'Why are you even here?\n You can\'t even hurt me! Go kill Trinexx instead.'
         tt['ganon_phase_3_alt'] = 'Seriously? Go Away, I will not Die.'
@@ -2446,10 +2446,10 @@ def write_strings(rom, world, player):
     tt['sahasrahla_quest_have_master_sword'] = Sahasrahla2_texts[local_random.randint(0, len(Sahasrahla2_texts) - 1)]
     tt['blind_by_the_light'] = Blind_texts[local_random.randint(0, len(Blind_texts) - 1)]
 
-    if world.goal[player] in ['triforcehunt', 'localtriforcehunt', 'icerodhunt']:
+    if world.goal[player] in [Goal.option_triforcehunt, Goal.option_localtriforcehunt, Goal.option_icerodhunt]:
         tt['ganon_fall_in_alt'] = 'Why are you even here?\n You can\'t even hurt me! Get the Triforce Pieces.'
         tt['ganon_phase_3_alt'] = 'Seriously? Go Away, I will not Die.'
-        if world.goal[player] == 'triforcehunt' and world.players > 1:
+        if world.goal[player] == Goal.option_triforcehunt and world.players > 1:
             tt['sign_ganon'] = 'Go find the Triforce pieces with your friends... Ganon is invincible!'
         else:
             tt['sign_ganon'] = 'Go find the Triforce pieces... Ganon is invincible!'
@@ -2463,7 +2463,7 @@ def write_strings(rom, world, player):
                                "invisibility.\n\n\n\n… … …\n\nWait! you can see me? I knew I should have\n" \
                                "hidden in  a hollow tree. If you bring\n%d Triforce piece out of %d, I can reassemble it." % \
                                (world.treasure_hunt_count[player], world.triforce_pieces_available[player])
-    elif world.goal[player] in ['pedestal']:
+    elif world.goal[player] in [Goal.option_pedestal]:
         tt['ganon_fall_in_alt'] = 'Why are you even here?\n You can\'t even hurt me! Your goal is at the pedestal.'
         tt['ganon_phase_3_alt'] = 'Seriously? Go Away, I will not Die.'
         tt['sign_ganon'] = 'You need to get to the pedestal... Ganon is invincible!'
@@ -2472,17 +2472,17 @@ def write_strings(rom, world, player):
         tt['ganon_fall_in_alt'] = 'You cannot defeat me until you finish your goal!'
         tt['ganon_phase_3_alt'] = 'Got wax in\nyour ears?\nI can not die!'
         if world.treasure_hunt_count[player] > 1:
-            if world.goal[player] == 'ganontriforcehunt' and world.players > 1:
+            if world.goal[player] == Goal.option_ganontriforcehunt and world.players > 1:
                 tt['sign_ganon'] = 'You need to find %d Triforce pieces out of %d with your friends to defeat Ganon.' % \
                                    (world.treasure_hunt_count[player], world.triforce_pieces_available[player])
-            elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+            elif world.goal[player] in [Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt]:
                 tt['sign_ganon'] = 'You need to find %d Triforce pieces out of %d to defeat Ganon.' % \
                                    (world.treasure_hunt_count[player], world.triforce_pieces_available[player])
         else:
-            if world.goal[player] == 'ganontriforcehunt' and world.players > 1:
+            if world.goal[player] == Goal.option_ganontriforcehunt and world.players > 1:
                 tt['sign_ganon'] = 'You need to find %d Triforce piece out of %d with your friends to defeat Ganon.' % \
                                    (world.treasure_hunt_count[player], world.triforce_pieces_available[player])
-            elif world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+            elif world.goal[player] in [Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt]:
                 tt['sign_ganon'] = 'You need to find %d Triforce piece out of %d to defeat Ganon.' % \
                                    (world.treasure_hunt_count[player], world.triforce_pieces_available[player])
 
@@ -2505,7 +2505,7 @@ def write_strings(rom, world, player):
     tt['tablet_bombos_book'] = bombos_text
 
     # inverted spawn menu changes
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         tt['menu_start_2'] = "{MENU}\n{SPEED0}\n≥@'s house\n Dark Chapel\n{CHOICE3}"
         tt['menu_start_3'] = "{MENU}\n{SPEED0}\n≥@'s house\n Dark Chapel\n Mountain Cave\n{CHOICE2}"
 

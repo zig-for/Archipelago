@@ -5,6 +5,7 @@ from typing import Optional, Union, List, Tuple, Callable, Dict, TYPE_CHECKING
 
 from Fill import FillError
 from .Options import LTTPBosses as Bosses
+from .Options import Goal
 from .StateHelpers import can_shoot_arrows, can_extend_magic, can_get_good_bee, has_sword, has_beam_sword, \
     has_melee_weapon, has_fire_source
 
@@ -215,7 +216,7 @@ def place_plando_bosses(world: "ALTTPWorld", bosses: List[str]) -> Tuple[List[st
 
 def can_place_boss(boss: str, dungeon_name: str, level: Optional[str] = None) -> bool:
     # blacklist approach
-    if boss in {"Agahnim", "Agahnim2", "Ganon"}:
+    if boss in {"Agahnim", "Agahnim2", Goal.option_ganon}:
         return False
 
     if dungeon_name == 'Ganons Tower':
@@ -245,7 +246,7 @@ for location in boss_location_table:
 
 def place_boss(world: "ALTTPWorld", boss: str, location: str, level: Optional[str]) -> None:
     player = world.player
-    if location == 'Ganons Tower' and world.multiworld.mode[player] == 'inverted':
+    if location == 'Ganons Tower' and world.multiworld.mode[player] == Mode.option_inverted:
         location = 'Inverted Ganons Tower'
     logging.debug('Placing boss %s at %s', boss, location + (' (' + level + ')' if level else ''))
     world.dungeons[location].bosses[level] = BossFactory(boss, player)
@@ -279,7 +280,7 @@ def place_bosses(world: "ALTTPWorld") -> None:
     remaining_locations.sort(key=lambda location: -int(restrictive_boss_locations[location]))
 
     all_bosses = sorted(boss_table.keys())  # sorted to be deterministic on older pythons
-    placeable_bosses = [boss for boss in all_bosses if boss not in ['Agahnim', 'Agahnim2', 'Ganon']]
+    placeable_bosses = [boss for boss in all_bosses if boss not in ['Agahnim', 'Agahnim2', Goal.option_ganon]]
 
     if boss_shuffle == Bosses.option_basic or boss_shuffle == Bosses.option_full:
         if boss_shuffle == Bosses.option_basic:  # vanilla bosses shuffled

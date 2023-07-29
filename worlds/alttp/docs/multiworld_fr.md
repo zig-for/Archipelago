@@ -134,7 +134,7 @@ Windows.
 4. Cliquez sur le bouton pour ouvrir un nouveau script Lua.
 5. Dirigez vous vers le dossier d'installation des utilitaires du MultiWorld, puis dans les dossiers suivants :  
    `QUsb2Snes/Qusb2Snes/LuaBridge`
-6. Sélectionnez `luabridge.lua` et cliquez sur "Open".
+6. Sélectionnez `luabridge.lua` et cliquez sur Mode.option_open.
 7. Remarquez qu'un nom vous a été assigné, et que l'interface Web affiche "SNES Device: Connected", avec ce même nom
    dans le coin en haut à gauche.
 

@@ -13,7 +13,7 @@ from .EntranceShuffle import link_entrances, link_inverted_entrances, plando_con
 from .InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from .ItemPool import generate_itempool, difficulties
 from .Items import item_init_table, item_name_groups, item_table, GetBeemizerItem
-from .Options import alttp_options, smallkey_shuffle
+from .Options import alttp_options, smallkey_shuffle, Goal, Mode
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
 from .Client import ALTTPSNIClient
@@ -275,7 +275,7 @@ class ALTTPWorld(World):
         player = self.player
         world = self.multiworld
 
-        if world.mode[player] == 'standard' \
+        if world.mode[player] == Mode.option_standard \
                 and world.smallkey_shuffle[player] \
                 and world.smallkey_shuffle[player] != smallkey_shuffle.option_universal \
                 and world.smallkey_shuffle[player] != smallkey_shuffle.option_own_dungeons \
@@ -311,7 +311,7 @@ class ALTTPWorld(World):
         world.difficulty_requirements[player] = difficulties[world.difficulty[player]]
 
         # enforce pre-defined local items.
-        if world.goal[player] in ["localtriforcehunt", "localganontriforcehunt"]:
+        if world.goal[player] in [Goal.option_localtriforcehunt, Goal.option_localganontriforcehunt]:
             world.local_items[player].value.add('Triforce Piece')
 
         # Not possible to place crystals outside boss prizes yet (might as well make it consistent with pendants too).
@@ -327,7 +327,7 @@ class ALTTPWorld(World):
         world.triforce_pieces_available[player] = max(world.triforce_pieces_available[player],
                                                       world.triforce_pieces_required[player])
 
-        if world.mode[player] != 'inverted':
+        if world.mode[player] != Mode.option_inverted:
             create_regions(world, player)
         else:
             create_inverted_regions(world, player)
@@ -342,7 +342,7 @@ class ALTTPWorld(World):
         old_random = world.random
         world.random = random.Random(self.er_seed)
 
-        if world.mode[player] != 'inverted':
+        if world.mode[player] != Mode.option_inverted:
             link_entrances(world, player)
             mark_light_world_regions(world, player)
             for region_name, entrance_name in indirect_connections_not_inverted.items():
@@ -530,7 +530,7 @@ class ALTTPWorld(World):
                                multiworld.quickswap[player],
                                multiworld.menuspeed[player].current_key,
                                multiworld.music[player],
-                               multiworld.sprite[player],
+                               multiworld.sprite[player].value,
                                None,
                                palettes_options, multiworld, player, True,
                                reduceflashing=multiworld.reduceflashing[player] or multiworld.is_race,
@@ -623,7 +623,7 @@ class ALTTPWorld(World):
             if not world.ganonstower_vanilla[player] or \
                     world.logic[player] in {'owglitches', 'hybridglitches', "nologic"}:
                 pass
-            elif 'triforcehunt' in world.goal[player] and ('local' in world.goal[player] or world.players == 1):
+            elif world.goal[player].is_local_triforce_hunt() or (world.goal[player].is_triforce_hunt() or world.players == 1):
                 trash_counts[player] = world.random.randint(world.crystals_needed_for_gt[player] * 2,
                                                             world.crystals_needed_for_gt[player] * 4)
             else:
@@ -661,7 +661,7 @@ class ALTTPWorld(World):
         spoiler_handle.write('Dark Room Logic:                 %s\n' % self.multiworld.dark_room_logic[self.player])
         spoiler_handle.write('Mode:                            %s\n' % self.multiworld.mode[self.player])
         spoiler_handle.write('Goal:                            %s\n' % self.multiworld.goal[self.player])
-        if "triforce" in self.multiworld.goal[self.player]:  # triforce hunt
+        if self.multiworld.goal[self.player].is_triforce_hunt():  # triforce hunt
             spoiler_handle.write("Pieces available for Triforce:   %s\n" %
                           self.multiworld.triforce_pieces_available[self.player])
             spoiler_handle.write("Pieces required for Triforce:    %s\n" %
@@ -709,9 +709,9 @@ class ALTTPWorld(World):
                     "Misery Mire": self.dungeons["Misery Mire"].boss.name,
                     "Turtle Rock": self.dungeons["Turtle Rock"].boss.name,
                     "Ganons Tower": "Agahnim 2",
-                    "Ganon": "Ganon"
+                    Goal.option_ganon: Goal.option_ganon
                 }
-                if self.multiworld.mode[self.player] != 'inverted':
+                if self.multiworld.mode[self.player] != Mode.option_inverted:
                     boss_map.update({
                         "Ganons Tower Basement":
                             self.dungeons["Ganons Tower"].bosses["bottom"].name,
@@ -767,7 +767,7 @@ class ALTTPWorld(World):
                 item)))
 
     def get_filler_item_name(self) -> str:
-        if self.multiworld.goal[self.player] == "icerodhunt":
+        if self.multiworld.goal[self.player] == Goal.option_icerodhunt:
             item = "Nothing"
         else:
             item = self.multiworld.random.choice(extras_list)

@@ -145,9 +145,9 @@ class TestDarkWorld(TestMinor):
             ["Pyramid Fairy - Right", True, ['Moon Pearl', 'Crystal 5', 'Crystal 6', 'Beat Agahnim 1', 'Progressive Glove', 'Hookshot', 'Magic Mirror']],
             ["Pyramid Fairy - Right", True, ['Moon Pearl', 'Crystal 5', 'Crystal 6', 'Beat Agahnim 1', 'Flippers', 'Hookshot', 'Magic Mirror']],
 
-            ["Ganon", False, []],
-            ["Ganon", False, [], ['Moon Pearl']],
-            ["Ganon", False, [], ['Beat Agahnim 2']],
+            [Goal.option_ganon, False, []],
+            [Goal.option_ganon, False, [], ['Moon Pearl']],
+            [Goal.option_ganon, False, [], ['Beat Agahnim 2']],
         ])
 
     def testMireArea(self):

@@ -10,7 +10,7 @@ from .Bosses import place_bosses
 from .Dungeons import get_dungeon_item_pool_player
 from .EntranceShuffle import connect_entrance
 from .Items import ItemFactory, GetBeemizerItem
-from .Options import smallkey_shuffle, compass_shuffle, bigkey_shuffle, map_shuffle, LTTPBosses
+from .Options import smallkey_shuffle, compass_shuffle, bigkey_shuffle, map_shuffle, LTTPBosses, Logic, Goal, Mode
 from .StateHelpers import has_triforce_pieces, has_melee_weapon
 
 # This file sets the item pools for various modes. Timed modes and triforce hunt are enforced first, and then extra items are specified per mode to fill in the remaining space.
@@ -230,22 +230,17 @@ def generate_itempool(world):
 
     if multiworld.difficulty[player] not in difficulties:
         raise NotImplementedError(f"Diffulty {multiworld.difficulty[player]}")
-    if multiworld.goal[player] not in {'ganon', 'pedestal', 'bosses', 'triforcehunt', 'localtriforcehunt', 'icerodhunt',
-                                  'ganontriforcehunt', 'localganontriforcehunt', 'crystals', 'ganonpedestal'}:
-        raise NotImplementedError(f"Goal {multiworld.goal[player]} for player {player}")
-    if multiworld.mode[player] not in {'open', 'standard', 'inverted'}:
-        raise NotImplementedError(f"Mode {multiworld.mode[player]} for player {player}")
     if multiworld.timer[player] not in {False, 'display', 'timed', 'timed-ohko', 'ohko', 'timed-countdown'}:
         raise NotImplementedError(f"Timer {multiworld.mode[player]} for player {player}")
 
     if multiworld.timer[player] in ['ohko', 'timed-ohko']:
         multiworld.can_take_damage[player] = False
-    if multiworld.goal[player] in ['pedestal', 'triforcehunt', 'localtriforcehunt', 'icerodhunt']:
+    if multiworld.goal[player].is_triforce_hunt():
         multiworld.push_item(multiworld.get_location('Ganon', player), ItemFactory('Nothing', player), False)
     else:
         multiworld.push_item(multiworld.get_location('Ganon', player), ItemFactory('Triforce', player), False)
 
-    if multiworld.goal[player] == 'icerodhunt':
+    if multiworld.goal[player] == Goal.option_icerodhunt:
         multiworld.progression_balancing[player].value = 0
         loc = multiworld.get_location('Turtle Rock - Boss', player)
         multiworld.push_item(loc, ItemFactory('Triforce Piece', player), False)
@@ -286,7 +281,7 @@ def generate_itempool(world):
         for item in itempool:
             multiworld.push_precollected(ItemFactory(item, player))
 
-    if multiworld.goal[player] in ['triforcehunt', 'localtriforcehunt', 'icerodhunt']:
+    if multiworld.goal[player] in [Goal.option_triforcehunt, Goal.option_localtriforcehunt, Goal.option_icerodhunt]:
         region = multiworld.get_region('Light World', player)
 
         loc = ALttPLocation(player, "Murahdahla", parent=region)
@@ -331,7 +326,7 @@ def generate_itempool(world):
     for item in precollected_items:
         multiworld.push_precollected(ItemFactory(item, player))
 
-    if multiworld.mode[player] == 'standard' and not has_melee_weapon(multiworld.state, player):
+    if multiworld.mode[player] == Mode.option_standard and not has_melee_weapon(multiworld.state, player):
         if "Link's Uncle" not in placed_items:
             found_sword = False
             found_bow = False
@@ -380,7 +375,7 @@ def generate_itempool(world):
                                 + difficulties[multiworld.difficulty[player]].extras[3]\
                                 + difficulties[multiworld.difficulty[player]].extras[4]
     multiworld.random.shuffle(dungeon_item_replacements)
-    if multiworld.goal[player] == 'icerodhunt':
+    if multiworld.goal[player] == Goal.option_icerodhunt:
         for item in dungeon_items:
             multiworld.itempool.append(ItemFactory(GetBeemizerItem(multiworld, player, 'Nothing'), player))
             multiworld.push_precollected(item)
@@ -398,9 +393,9 @@ def generate_itempool(world):
     # logic has some branches where having 4 hearts is one possible requirement (of several alternatives)
     # rather than making all hearts/heart pieces progression items (which slows down generation considerably)
     # We mark one random heart container as an advancement item (or 4 heart pieces in expert mode)
-    if multiworld.goal[player] != 'icerodhunt' and multiworld.difficulty[player] in ['easy', 'normal', 'hard'] and not (multiworld.custom and multiworld.customitemarray[30] == 0):
+    if multiworld.goal[player] != Goal.option_icerodhunt and multiworld.difficulty[player] in ['easy', 'normal', 'hard'] and not (multiworld.custom and multiworld.customitemarray[30] == 0):
         next(item for item in items if item.name == 'Boss Heart Container').classification = ItemClassification.progression
-    elif multiworld.goal[player] != 'icerodhunt' and multiworld.difficulty[player] in ['expert'] and not (multiworld.custom and multiworld.customitemarray[29] < 4):
+    elif multiworld.goal[player] != Goal.option_icerodhunt and multiworld.difficulty[player] in ['expert'] and not (multiworld.custom and multiworld.customitemarray[29] < 4):
         adv_heart_pieces = (item for item in items if item.name == 'Piece of Heart')
         for i in range(4):
             next(adv_heart_pieces).classification = ItemClassification.progression
@@ -468,7 +463,7 @@ take_any_locations.sort()
 
 def set_up_take_anys(world, player):
     # these are references, do not modify these lists in-place
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         take_any_locs = take_any_locations_inverted
     else:
         take_any_locs = take_any_locations
@@ -528,7 +523,7 @@ def get_pool_core(world, player: int):
     treasure_hunt_count = None
     treasure_hunt_icon = None
 
-    diff = ice_rod_hunt_difficulties[difficulty] if goal == 'icerodhunt' else difficulties[difficulty]
+    diff = ice_rod_hunt_difficulties[difficulty] if goal == Goal.option_icerodhunt else difficulties[difficulty]
     pool.extend(diff.alwaysitems)
 
     def place_item(loc, item):
@@ -536,7 +531,7 @@ def get_pool_core(world, player: int):
         placed_items[loc] = item
 
     # provide boots to major glitch dependent seeds
-    if logic in {'owglitches', 'hybridglitches', 'nologic'} and world.glitch_boots[player] and goal != 'icerodhunt':
+    if logic in {'owglitches', 'hybridglitches', 'nologic'} and world.glitch_boots[player] and goal != Goal.option_icerodhunt:
         precollected_items.append('Pegasus Boots')
         pool.remove('Pegasus Boots')
         pool.append('Rupees (20)')
@@ -587,7 +582,7 @@ def get_pool_core(world, player: int):
     if want_progressives(world.random):
         pool.extend(diff.progressivebow)
         world.worlds[player].has_progressive_bows = True
-    elif (swordless or logic == 'noglitches') and goal != 'icerodhunt':
+    elif (swordless or logic == 'noglitches') and goal != Goal.option_icerodhunt:
         swordless_bows = ['Bow', 'Silver Bow']
         if difficulty == "easy":
             swordless_bows *= 2
@@ -612,7 +607,7 @@ def get_pool_core(world, player: int):
         extraitems -= len(diff.timedohko)
         clock_mode = 'countdown-ohko'
     additional_pieces_to_place = 0
-    if 'triforcehunt' in goal:
+    if goal.is_triforce_hunt():
         pieces_in_core = min(extraitems, world.triforce_pieces_available[player])
         additional_pieces_to_place = world.triforce_pieces_available[player] - pieces_in_core
         pool.extend(["Triforce Piece"] * pieces_in_core)
@@ -630,7 +625,7 @@ def get_pool_core(world, player: int):
         else:
             break
 
-    if goal == 'pedestal':
+    if goal == Goal.option_pedestal:
         place_item('Master Sword Pedestal', 'Triforce')
         pool.remove("Rupees (20)")
 
@@ -639,8 +634,8 @@ def get_pool_core(world, player: int):
         pool = ['Rupees (5)' if item in replace else item for item in pool]
     if world.smallkey_shuffle[player] == smallkey_shuffle.option_universal:
         pool.extend(diff.universal_keys)
-        item_to_place = 'Small Key (Universal)' if goal != 'icerodhunt' else 'Nothing'
-        if mode == 'standard':
+        item_to_place = 'Small Key (Universal)' if goal != Goal.option_icerodhunt else 'Nothing'
+        if mode == Mode.option_standard:
             key_location = world.random.choice(
                 ['Secret Passage', 'Hyrule Castle - Boomerang Chest', 'Hyrule Castle - Map Chest',
                  'Hyrule Castle - Zelda\'s Chest', 'Sewers - Dark Cross'])
@@ -770,11 +765,11 @@ def make_custom_item_pool(world, player):
     elif timer == 'ohko':
         clock_mode = 'ohko'
 
-    if goal == 'pedestal':
+    if goal == Goal.option_pedestal:
         place_item('Master Sword Pedestal', 'Triforce')
         itemtotal = itemtotal + 1
 
-    if mode == 'standard':
+    if mode == Mode.option_standard:
         if world.smallkey_shuffle[player] == smallkey_shuffle.option_universal:
             key_location = world.random.choice(
                 ['Secret Passage', 'Hyrule Castle - Boomerang Chest', 'Hyrule Castle - Map Chest',

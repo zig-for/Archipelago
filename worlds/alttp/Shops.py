@@ -8,7 +8,7 @@ from Utils import int16_as_bytes
 from .SubClasses import ALttPLocation
 from .EntranceShuffle import door_addresses
 from .Items import item_name_groups, item_table, ItemFactory, trap_replaceable, GetBeemizerItem
-from .Options import smallkey_shuffle
+from .Options import smallkey_shuffle, Mode
 
 
 logger = logging.getLogger("Shops")
@@ -313,7 +313,7 @@ def create_shops(world, player: int):
                         new_items = new_dark_shop
                 keeper = world.random.choice([0xA0, 0xC1, 0xFF])
                 player_shop_table[name] = ShopData(typ, shop_id, keeper, custom, locked, new_items, sram_offset)
-    if world.mode[player] == "inverted":
+    if world.mode[player] == Mode.option_inverted:
         # make sure that blue potion is available in inverted, special case locked = None; lock when done.
         player_shop_table["Dark Lake Hylia Shop"] = \
             player_shop_table["Dark Lake Hylia Shop"]._replace(items=_inverted_hylia_shop_defaults, locked=None)
@@ -336,7 +336,7 @@ def create_shops(world, player: int):
                 loc.shop_slot = index
                 loc.locked = True
                 if single_purchase_slots.pop():
-                    if world.goal[player] != 'icerodhunt':
+                    if world.goal[player] != Goal.option_icerodhunt:
                         if world.random.random() < chance_100:
                             additional_item = 'Rupees (100)'
                         else:
@@ -443,7 +443,7 @@ def shuffle_shops(world, items, player: int):
     if 'u' in option:
         progressive = world.progressive[player]
         progressive = world.random.choice([True, False]) if progressive == 'grouped_random' else progressive == 'on'
-        progressive &= world.goal == 'icerodhunt'
+        progressive &= world.goal == Goal.option_icerodhunt
         new_items = ["Bomb Upgrade (+5)"] * 6
         new_items.append("Bomb Upgrade (+5)" if progressive else "Bomb Upgrade (+10)")
 
@@ -460,7 +460,7 @@ def shuffle_shops(world, items, player: int):
                 shop.clear_inventory()
                 capacityshop = shop
 
-        if world.goal[player] != 'icerodhunt':
+        if world.goal[player] != Goal.option_icerodhunt:
             for i, item in enumerate(items):
                 if item.name in trap_replaceable:
                     items[i] = ItemFactory(new_items.pop(), player)

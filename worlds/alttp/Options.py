@@ -1,33 +1,87 @@
 import typing
 
 from BaseClasses import MultiWorld
-from Options import Choice, Range, Option, Toggle, DefaultOnToggle, DeathLink, StartInventoryPool, PlandoBosses
-
+from Options import Choice, Range, Option, Toggle, DefaultOnToggle, DeathLink, StartInventoryPool, PlandoBosses, FreeText
 
 class Logic(Choice):
-    option_no_glitches = 0
-    option_minor_glitches = 1
-    option_overworld_glitches = 2
-    option_hybrid_major_glitches = 3
-    option_no_logic = 4
-    alias_owg = 2
-    alias_hmg = 3
+    # TODO: text
+    """
+    No Glitches:
+    Minor Glitches: May require Fake Flippers, Bunny Revival
+                    and Dark Room Navigation.
+    Overworld Glitches: May require overworld glitches.
+    Hybrid Major Glitches: May require both overworld and underworld clipping. 
+    No Logic: Distribute items without regard for
+                    item requirements.
+                             """
+    # TODO: go back and replace these to underscore versions
+    option_noglitches = 0
+    option_minorglitches = 1
+    option_owglitches = 2
+    option_hybridglitches = 3
+    option_nologic = 4
+    alias_owg = option_owglitches
+    alias_hmg = option_hybridglitches
+    alias_no_logic = option_nologic
+    alias_overworld_glitches = option_owglitches
+    alias_minor_glitches = option_minorglitches
+    alias_hybrid_major_glitches = option_hybridglitches
 
-
-class Objective(Choice):
-    option_crystals = 0
-    # option_pendants = 1
-    option_triforce_pieces = 2
-    option_pedestal = 3
-    option_bingo = 4
-
-
+    
 class Goal(Choice):
-    option_kill_ganon = 0
-    option_kill_ganon_and_gt_agahnim = 1
-    option_hand_in = 2
+    # TODO
+    """
+    ganon:         Collect all crystals, beat Agahnim 2 then
+                   defeat Ganon.
+    crystals:      Collect all crystals then defeat Ganon.
+    pedestal:      Places the Triforce at the Master Sword Pedestal.
+    ganonpedestal: Pull the Master Sword Pedestal, then defeat Ganon.
+    bosses:        Collect all crystals, pendants, beat both
+                   Agahnim fights and then defeat Ganon.
+    triforcehunt: Places 30 Triforce Pieces in the world, collect
+                   20 of them to beat the game.
+    local: Places 30 Triforce Pieces in your world, collect
+                   20 of them to beat the game.
+    ganontriforcehunt: Places 30 Triforce Pieces in the world, collect
+                   20 of them, then defeat Ganon.
+    localganontriforcehunt: Places 30 Triforce Pieces in your world,
+                   collect 20 of them, then defeat Ganon.
+    """
+    option_ganon = 0
+    option_pedestal = 1
+    option_bosses = 2
+    option_triforcehunt = 3
+    option_localtriforcehunt = 4
+    option_ganontriforcehunt = 5
+    option_localganontriforcehunt = 6
+    option_crystals = 7
+    option_ganonpedestal = 8
+    option_icerodhunt = 9
 
+    def is_triforce_hunt(self) -> bool:
+        return self.value in [Goal.option_triforcehunt,
+                              Goal.option_localtriforcehunt,
+                              Goal.option_ganontriforcehunt,
+                              Goal.option_localganontriforcehunt]
+    
+    def is_local_triforce_hunt(self) -> bool:
+        return self.value in [Goal.option_localtriforcehunt,
+                              Goal.option_localganontriforcehunt]
 
+#class ClockMode(Toggle):
+
+class Mode(Choice):
+    option_standard = 0
+    option_open = 1
+    option_inverted = 2
+    default = option_standard
+
+class DungeonCounters(Choice):
+    option_off = 0
+    option_pickup = 1
+    option_on = 2
+    default = option_pickup
+    
 class OpenPyramid(Choice):
     """Determines whether the hole at the top of pyramid is open.
     Goal will open the pyramid if the goal requires you to kill Ganon, without needing to kill Agahnim 2.
@@ -44,9 +98,9 @@ class OpenPyramid(Choice):
 
     def to_bool(self, world: MultiWorld, player: int) -> bool:
         if self.value == self.option_goal:
-            return world.goal[player] in {'crystals', 'ganontriforcehunt', 'localganontriforcehunt', 'ganonpedestal'}
+            return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal}
         elif self.value == self.option_auto:
-            return world.goal[player] in {'crystals', 'ganontriforcehunt', 'localganontriforcehunt', 'ganonpedestal'} \
+            return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal} \
             and (world.shuffle[player] in {'vanilla', 'dungeonssimple', 'dungeonsfull', 'dungeonscrossed'} or not
                  world.shuffle_ganon)
         elif self.value == self.option_open:
@@ -54,6 +108,10 @@ class OpenPyramid(Choice):
         else:
             return False
 
+class Sprite(FreeText):
+    """
+    TODO: probably broke this
+    """
 
 class DungeonItem(Choice):
     value: int
@@ -468,4 +526,9 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "death_link": DeathLink,
     "allow_collect": AllowCollect,
     "start_inventory_from_pool": StartInventoryPool,
+    "goal": Goal,
+    "logic": Logic,
+    "dungeon_counters": DungeonCounters,
+    "sprite": Sprite
+    
 }

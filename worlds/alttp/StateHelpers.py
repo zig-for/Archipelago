@@ -6,7 +6,7 @@ def is_not_bunny(state: CollectionState, region: LTTPRegion, player: int) -> boo
     if state.has('Moon Pearl', player):
         return True
 
-    return region.is_light_world if state.multiworld.mode[player] != 'inverted' else region.is_dark_world
+    return region.is_light_world if state.multiworld.mode[player] != Mode.option_inverted else region.is_dark_world
 
 
 def can_bomb_clip(state: CollectionState, region: LTTPRegion, player: int) -> bool:
@@ -144,19 +144,19 @@ def has_turtle_rock_medallion(state: CollectionState, player: int) -> bool:
 
 
 def can_boots_clip_lw(state: CollectionState, player: int) -> bool:
-    if state.multiworld.mode[player] == 'inverted':
+    if state.multiworld.mode[player] == Mode.option_inverted:
         return state.has('Pegasus Boots', player) and state.has('Moon Pearl', player)
     return state.has('Pegasus Boots', player)
 
 
 def can_boots_clip_dw(state: CollectionState, player: int) -> bool:
-    if state.multiworld.mode[player] != 'inverted':
+    if state.multiworld.mode[player] != Mode.option_inverted:
         return state.has('Pegasus Boots', player) and state.has('Moon Pearl', player)
     return state.has('Pegasus Boots', player)
 
 
 def can_get_glitched_speed_dw(state: CollectionState, player: int) -> bool:
     rules = [state.has('Pegasus Boots', player), any([state.has('Hookshot', player), has_sword(state, player)])]
-    if state.multiworld.mode[player] != 'inverted':
+    if state.multiworld.mode[player] != Mode.option_inverted:
         rules.append(state.has('Moon Pearl', player))
     return all(rules)

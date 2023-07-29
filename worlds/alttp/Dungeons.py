@@ -9,7 +9,7 @@ from Fill import fill_restrictive
 from .Bosses import BossFactory, Boss
 from .Items import ItemFactory
 from .Regions import lookup_boss_drops
-from .Options import smallkey_shuffle
+from .Options import smallkey_shuffle, Mode
 
 if typing.TYPE_CHECKING:
     from .SubClasses import ALttPLocation, ALttPItem
@@ -138,7 +138,7 @@ def create_dungeons(world: "ALTTPWorld"):
                       ItemFactory(['Small Key (Turtle Rock)'] * 4, player),
                       ItemFactory(['Map (Turtle Rock)', 'Compass (Turtle Rock)'], player))
 
-    if multiworld.mode[player] != 'inverted':
+    if multiworld.mode[player] != Mode.option_inverted:
         AT = make_dungeon('Agahnims Tower', 'Agahnim', ['Agahnims Tower', 'Agahnim 1'], None,
                           ItemFactory(['Small Key (Agahnims Tower)'] * 2, player), [])
         GT = make_dungeon('Ganons Tower', 'Agahnim2',

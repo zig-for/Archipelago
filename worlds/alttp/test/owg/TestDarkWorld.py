@@ -120,9 +120,9 @@ class TestDarkWorld(TestVanillaOWG):
             ["Pyramid Fairy - Right", True, ['Crystal 5', 'Crystal 6', 'Beat Agahnim 1', 'Flute', 'Magic Mirror']],
             ["Pyramid Fairy - Right", True, ['Crystal 5', 'Crystal 6', 'Beat Agahnim 1', 'Progressive Glove', 'Lamp', 'Magic Mirror']],
 
-            ["Ganon", False, []],
-            ["Ganon", False, [], ['Moon Pearl']],
-            ["Ganon", False, [], ['Beat Agahnim 2']],
+            [Goal.option_ganon, False, []],
+            [Goal.option_ganon, False, [], ['Moon Pearl']],
+            [Goal.option_ganon, False, [], ['Beat Agahnim 2']],
         ])
 
     def testWestDarkWorld(self):

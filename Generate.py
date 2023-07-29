@@ -18,7 +18,7 @@ import copy
 import Utils
 import Options
 from BaseClasses import seeddigits, get_seed, PlandoOptions
-from Main import main as ERmain
+from Main import main as main
 from settings import get_settings
 from Utils import parse_yamls, version_tuple, __version__, tuplize_version, user_path
 from worlds.alttp import Options as LttPOptions
@@ -53,6 +53,8 @@ def mystery_argparse():
                         help='List of options that can be set manually. Can be combined, for example "bosses, items"')
     parser.add_argument("--skip_prog_balancing", action="store_true",
                         help="Skip progression balancing step during generation.")
+    parser.add_argument("--no_zip", dest="zip", default=True, action="store_false",
+                        help="Skips creating a zip, and instead leaves a folder")
     args = parser.parse_args()
     if not os.path.isabs(args.weights_file_path):
         args.weights_file_path = os.path.join(args.player_files_path, args.weights_file_path)
@@ -66,7 +68,7 @@ def get_seed_name(random_source) -> str:
     return f"{random_source.randint(0, pow(10, seeddigits) - 1)}".zfill(seeddigits)
 
 
-def main(args=None, callback=ERmain):
+def main(args=None, callback=main):
     if not args:
         args, options = mystery_argparse()
     else:
@@ -345,15 +347,15 @@ def roll_meta_option(option_key, game: str, category_dict: Dict) -> Any:
             if options[option_key].supports_weighting:
                 return get_choice(option_key, category_dict)
             return category_dict[option_key]
-    if game == "A Link to the Past":  # TODO wow i hate this
-        if option_key in {"glitches_required", "dark_room_logic", "entrance_shuffle", "goals", "triforce_pieces_mode",
-                          "triforce_pieces_percentage", "triforce_pieces_available", "triforce_pieces_extra",
-                          "triforce_pieces_required", "shop_shuffle", "mode", "item_pool", "item_functionality",
-                          "boss_shuffle", "enemy_damage", "enemy_health", "timer", "countdown_start_time",
-                          "red_clock_time", "blue_clock_time", "green_clock_time", "dungeon_counters", "shuffle_prizes",
-                          "misery_mire_medallion", "turtle_rock_medallion", "sprite_pool", "sprite",
-                          "random_sprite_on_event"}:
-            return get_choice(option_key, category_dict)
+    # if game == "A Link to the Past":  # TODO wow i hate this
+    #     if option_key in {"glitches_required", "dark_room_logic", "entrance_shuffle", "goals", "triforce_pieces_mode",
+    #                       "triforce_pieces_percentage", "triforce_pieces_available", "triforce_pieces_extra",
+    #                       "triforce_pieces_required", "shop_shuffle", "mode", "item_pool", "item_functionality",
+    #                       "boss_shuffle", "enemy_damage", "enemy_health", "timer", "countdown_start_time",
+    #                       "red_clock_time", "blue_clock_time", "green_clock_time", "dungeon_counters", "shuffle_prizes",
+    #                       "misery_mire_medallion", "turtle_rock_medallion", "sprite_pool", "sprite",
+    #                       "random_sprite_on_event"}:
+    #         return get_choice(option_key, category_dict)
     raise Exception(f"Error generating meta option {option_key} for {game}.")
 
 
@@ -490,155 +492,9 @@ def roll_settings(weights: dict, plando_options: PlandoOptions = PlandoOptions.b
                         get_choice("exit", placement),
                         get_choice("direction", placement)
                     ))
-    elif ret.game == "A Link to the Past":
-        roll_alttp_settings(ret, game_weights, plando_options)
+
 
     return ret
-
-
-def roll_alttp_settings(ret: argparse.Namespace, weights, plando_options):
-    if "dungeon_items" in weights and get_choice_legacy('dungeon_items', weights, "none") != "none":
-        raise Exception(f"dungeon_items key in A Link to the Past was removed, but is present in these weights as {get_choice_legacy('dungeon_items', weights, False)}.")
-    glitches_required = get_choice_legacy('glitches_required', weights)
-    if glitches_required not in [None, 'none', 'no_logic', 'overworld_glitches', 'hybrid_major_glitches', 'minor_glitches']:
-        logging.warning("Only NMG, OWG, HMG and No Logic supported")
-        glitches_required = 'none'
-    ret.logic = {None: 'noglitches', 'none': 'noglitches', 'no_logic': 'nologic', 'overworld_glitches': 'owglitches',
-                 'minor_glitches': 'minorglitches', 'hybrid_major_glitches': 'hybridglitches'}[
-        glitches_required]
-
-    ret.dark_room_logic = get_choice_legacy("dark_room_logic", weights, "lamp")
-    if not ret.dark_room_logic:  # None/False
-        ret.dark_room_logic = "none"
-    if ret.dark_room_logic == "sconces":
-        ret.dark_room_logic = "torches"
-    if ret.dark_room_logic not in {"lamp", "torches", "none"}:
-        raise ValueError(f"Unknown Dark Room Logic: \"{ret.dark_room_logic}\"")
-
-    entrance_shuffle = get_choice_legacy('entrance_shuffle', weights, 'vanilla')
-    if entrance_shuffle.startswith('none-'):
-        ret.shuffle = 'vanilla'
-    else:
-        ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
-
-    goal = get_choice_legacy('goals', weights, 'ganon')
-
-    ret.goal = goals[goal]
-
-
-    extra_pieces = get_choice_legacy('triforce_pieces_mode', weights, 'available')
-
-    ret.triforce_pieces_required = LttPOptions.TriforcePieces.from_any(get_choice_legacy('triforce_pieces_required', weights, 20))
-
-    # sum a percentage to required
-    if extra_pieces == 'percentage':
-        percentage = max(100, float(get_choice_legacy('triforce_pieces_percentage', weights, 150))) / 100
-        ret.triforce_pieces_available = int(round(ret.triforce_pieces_required * percentage, 0))
-    # vanilla mode (specify how many pieces are)
-    elif extra_pieces == 'available':
-        ret.triforce_pieces_available = LttPOptions.TriforcePieces.from_any(
-            get_choice_legacy('triforce_pieces_available', weights, 30))
-    # required pieces + fixed extra
-    elif extra_pieces == 'extra':
-        extra_pieces = max(0, int(get_choice_legacy('triforce_pieces_extra', weights, 10)))
-        ret.triforce_pieces_available = ret.triforce_pieces_required + extra_pieces
-
-    # change minimum to required pieces to avoid problems
-    ret.triforce_pieces_available = min(max(ret.triforce_pieces_required, int(ret.triforce_pieces_available)), 90)
-
-    ret.shop_shuffle = get_choice_legacy('shop_shuffle', weights, '')
-    if not ret.shop_shuffle:
-        ret.shop_shuffle = ''
-
-    ret.mode = get_choice_legacy("mode", weights)
-
-    ret.difficulty = get_choice_legacy('item_pool', weights)
-
-    ret.item_functionality = get_choice_legacy('item_functionality', weights)
-
-
-    ret.enemy_damage = {None: 'default',
-                        'default': 'default',
-                        'shuffled': 'shuffled',
-                        'random': 'chaos', # to be removed
-                        'chaos': 'chaos',
-                        }[get_choice_legacy('enemy_damage', weights)]
-
-    ret.enemy_health = get_choice_legacy('enemy_health', weights)
-
-    ret.timer = {'none': False,
-                 None: False,
-                 False: False,
-                 'timed': 'timed',
-                 'timed_ohko': 'timed-ohko',
-                 'ohko': 'ohko',
-                 'timed_countdown': 'timed-countdown',
-                 'display': 'display'}[get_choice_legacy('timer', weights, False)]
-
-    ret.countdown_start_time = int(get_choice_legacy('countdown_start_time', weights, 10))
-    ret.red_clock_time = int(get_choice_legacy('red_clock_time', weights, -2))
-    ret.blue_clock_time = int(get_choice_legacy('blue_clock_time', weights, 2))
-    ret.green_clock_time = int(get_choice_legacy('green_clock_time', weights, 4))
-
-    ret.dungeon_counters = get_choice_legacy('dungeon_counters', weights, 'default')
-
-    ret.shuffle_prizes = get_choice_legacy('shuffle_prizes', weights, "g")
-
-    ret.required_medallions = [get_choice_legacy("misery_mire_medallion", weights, "random"),
-                               get_choice_legacy("turtle_rock_medallion", weights, "random")]
-
-    for index, medallion in enumerate(ret.required_medallions):
-        ret.required_medallions[index] = {"ether": "Ether", "quake": "Quake", "bombos": "Bombos", "random": "random"} \
-            .get(medallion.lower(), None)
-        if not ret.required_medallions[index]:
-            raise Exception(f"unknown Medallion {medallion} for {'misery mire' if index == 0 else 'turtle rock'}")
-
-    ret.plando_texts = {}
-    if PlandoOptions.texts in plando_options:
-        tt = TextTable()
-        tt.removeUnwantedText()
-        options = weights.get("plando_texts", [])
-        for placement in options:
-            if roll_percentage(get_choice_legacy("percentage", placement, 100)):
-                at = str(get_choice_legacy("at", placement))
-                if at not in tt:
-                    raise Exception(f"No text target \"{at}\" found.")
-                ret.plando_texts[at] = str(get_choice_legacy("text", placement))
-
-    ret.plando_connections = []
-    if PlandoOptions.connections in plando_options:
-        options = weights.get("plando_connections", [])
-        for placement in options:
-            if roll_percentage(get_choice_legacy("percentage", placement, 100)):
-                ret.plando_connections.append(PlandoConnection(
-                    get_choice_legacy("entrance", placement),
-                    get_choice_legacy("exit", placement),
-                    get_choice_legacy("direction", placement, "both")
-                ))
-
-    ret.sprite_pool = weights.get('sprite_pool', [])
-    ret.sprite = get_choice_legacy('sprite', weights, "Link")
-    if 'random_sprite_on_event' in weights:
-        randomoneventweights = weights['random_sprite_on_event']
-        if get_choice_legacy('enabled', randomoneventweights, False):
-            ret.sprite = 'randomon'
-            ret.sprite += '-hit' if get_choice_legacy('on_hit', randomoneventweights, True) else ''
-            ret.sprite += '-enter' if get_choice_legacy('on_enter', randomoneventweights, False) else ''
-            ret.sprite += '-exit' if get_choice_legacy('on_exit', randomoneventweights, False) else ''
-            ret.sprite += '-slash' if get_choice_legacy('on_slash', randomoneventweights, False) else ''
-            ret.sprite += '-item' if get_choice_legacy('on_item', randomoneventweights, False) else ''
-            ret.sprite += '-bonk' if get_choice_legacy('on_bonk', randomoneventweights, False) else ''
-            ret.sprite = 'randomonall' if get_choice_legacy('on_everything', randomoneventweights, False) else ret.sprite
-            ret.sprite = 'randomonnone' if ret.sprite == 'randomon' else ret.sprite
-
-            if (not ret.sprite_pool or get_choice_legacy('use_weighted_sprite_pool', randomoneventweights, False)) \
-                    and 'sprite' in weights:  # Use sprite as a weighted sprite pool, if a sprite pool is not already defined.
-                for key, value in weights['sprite'].items():
-                    if key.startswith('random'):
-                        ret.sprite_pool += ['random'] * int(value)
-                    else:
-                        ret.sprite_pool += [key] * int(value)
-
 
 if __name__ == '__main__':
     import atexit
