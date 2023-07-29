@@ -134,7 +134,6 @@ class MultiWorld():
 
             set_player_attr('_region_cache', {})
             set_player_attr('shuffle', "vanilla")
-            set_player_attr('item_functionality', 'normal')
             # dear god, fixme
             set_player_attr('required_medallions', ['Ether', 'Quake'])
             set_player_attr('swamp_patch_required', False)

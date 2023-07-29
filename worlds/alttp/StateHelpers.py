@@ -1,6 +1,6 @@
 from .SubClasses import LTTPRegion
 from BaseClasses import CollectionState
-
+from .Options import Mode, ItemFunctionality
 
 def is_not_bunny(state: CollectionState, region: LTTPRegion, player: int) -> bool:
     if state.has('Moon Pearl', player):
@@ -74,9 +74,9 @@ def can_extend_magic(state: CollectionState, player: int, smallmagic: int = 16,
     elif state.has('Magic Upgrade (1/2)', player):
         basemagic = 16
     if can_buy_unlimited(state, 'Green Potion', player) or can_buy_unlimited(state, 'Blue Potion', player):
-        if state.multiworld.item_functionality[player] == 'hard' and not fullrefill:
+        if state.multiworld.item_functionality[player] == ItemFunctionality.option_hard and not fullrefill:
             basemagic = basemagic + int(basemagic * 0.5 * bottle_count(state, player))
-        elif state.multiworld.item_functionality[player] == 'expert' and not fullrefill:
+        elif state.multiworld.item_functionality[player] == ItemFunctionality.option_expert and not fullrefill:
             basemagic = basemagic + int(basemagic * 0.25 * bottle_count(state, player))
         else:
             basemagic = basemagic + basemagic * bottle_count(state, player)

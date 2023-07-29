@@ -36,7 +36,7 @@ from .Text import KingsReturn_texts, Sanctuary_texts, Kakariko_texts, Blacksmith
     SickKid_texts, FluteBoy_texts, Zora_texts, MagicShop_texts, Sahasrahla_names
 from .Items import ItemFactory, item_table, item_name_groups, progression_items
 from .EntranceShuffle import door_addresses
-from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer
+from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer, ItemFunctionality
 
 try:
     from maseya import z3pr
@@ -963,7 +963,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_byte(0x18004F, 0x01)  # Byrna Invulnerability: on
 
     # handle item_functionality
-    if world.item_functionality[player] == 'hard':
+    if world.item_functionality[player] == ItemFunctionality.option_hard:
         rom.write_byte(0x180181, 0x01)  # Make silver arrows work only on ganon
         rom.write_byte(0x180182, 0x00)  # Don't auto equip silvers on pickup
         # Powdered Fairies Prize
@@ -983,7 +983,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         rom.write_int16(0x180036, world.rupoor_cost)
         # Set stun items
         rom.write_byte(0x180180, 0x02)  # Hookshot only
-    elif world.item_functionality[player] == 'expert':
+    elif world.item_functionality[player] == ItemFunctionality.option_expert:
         rom.write_byte(0x180181, 0x01)  # Make silver arrows work only on ganon
         rom.write_byte(0x180182, 0x00)  # Don't auto equip silvers on pickup
         # Powdered Fairies Prize
@@ -1051,7 +1051,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     # set up game internal RNG seed
     rom.write_bytes(0x178000, local_random.getrandbits(8 * 1024).to_bytes(1024, 'big'))
     prize_replacements = {}
-    if world.item_functionality[player] in ['hard', 'expert']:
+    if world.item_functionality[player] in [ItemFunctionality.option_hard, ItemFunctionality.option_expert]:
         prize_replacements[0xE0] = 0xDF  # Fairy -> heart
         prize_replacements[0xE3] = 0xD8  # Big magic -> small magic
 
@@ -1200,7 +1200,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_byte(0x180043, 0xFF if world.swordless[player] else 0x00)  # starting sword for link
     rom.write_byte(0x180044, 0x01 if world.swordless[player] else 0x00)  # hammer activates tablets
 
-    if world.item_functionality[player] == 'easy':
+    if world.item_functionality[player] == ItemFunctionality.option_easy:
         rom.write_byte(0x18003F, 0x01)  # hammer can harm ganon
         rom.write_byte(0x180041, 0x02)  # Allow swordless medallion use EVERYWHERE.
         rom.write_byte(0x180044, 0x01)  # hammer activates tablets
