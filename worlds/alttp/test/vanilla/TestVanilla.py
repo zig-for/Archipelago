@@ -6,7 +6,7 @@ from worlds.alttp.InvertedRegions import mark_dark_world_regions
 from worlds.alttp.ItemPool import difficulties
 from worlds.alttp.Items import ItemFactory
 from test.TestBase import TestBase
-from worlds.alttp.Options import Mode, Logic
+from worlds.alttp.Options import Logic, Difficulty
 from worlds import AutoWorld
 
 class TestVanilla(TestBase):
@@ -19,7 +19,7 @@ class TestVanilla(TestBase):
         self.multiworld.set_options(args)
         self.multiworld.set_default_common_options()
         self.multiworld.logic[1] = Logic.option_noglitches
-        self.multiworld.worlds[1].difficulty_requirements = difficulties['normal']
+        self.multiworld.worlds[1].difficulty_requirements = difficulties[Difficulty.option_normal]
         self.multiworld.worlds[1].er_seed = 0
         self.multiworld.worlds[1].create_regions()
         self.multiworld.worlds[1].create_items()

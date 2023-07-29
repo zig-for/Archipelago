@@ -13,7 +13,7 @@ from .InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from .ItemPool import generate_itempool, difficulties
 from .Items import item_init_table, item_name_groups, item_table, GetBeemizerItem
 from .Options import alttp_options, smallkey_shuffle, Goal, Mode, Logic
-from .Options import TriforcePiecesAvailable, TriforcePiecesPercentage, TriforcePiecesMode, TriforcePiecesRequired, TriforcePiecesExtra
+from .Options import TriforcePiecesAvailable, TriforcePiecesMode, Difficulty
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
 from .Rom import LocalRom, patch_rom, patch_race_rom, check_enemizer, patch_enemizer, apply_rom_settings, \
@@ -26,7 +26,7 @@ from .StateHelpers import can_buy_unlimited
 
 lttp_logger = logging.getLogger("A Link to the Past")
 
-extras_list = sum(difficulties['normal'].extras[0:5], [])
+extras_list = sum(difficulties[Difficulty.option_normal].extras[0:5], [])
 
 
 class ALTTPSettings(settings.Group):

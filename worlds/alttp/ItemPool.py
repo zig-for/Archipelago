@@ -1,17 +1,20 @@
-from collections import namedtuple
 import logging
+from collections import namedtuple
 
 from BaseClasses import ItemClassification
 from Fill import FillError
 
-from .SubClasses import ALttPLocation, LTTPRegion, LTTPRegionType
-from .Shops import TakeAny, total_shop_slots, set_up_shops, shuffle_shops, create_dynamic_shop_locations
 from .Bosses import place_bosses
 from .Dungeons import get_dungeon_item_pool_player
 from .EntranceShuffle import connect_entrance
-from .Items import ItemFactory, GetBeemizerItem
-from .Options import smallkey_shuffle, compass_shuffle, bigkey_shuffle, map_shuffle, LTTPBosses, Logic, Goal, Mode, Timer
-from .StateHelpers import has_triforce_pieces, has_melee_weapon
+from .Items import GetBeemizerItem, ItemFactory
+from .Options import (Difficulty, Goal, Logic, LTTPBosses, Mode, Timer,
+                      bigkey_shuffle, compass_shuffle, map_shuffle,
+                      smallkey_shuffle)
+from .Shops import (TakeAny, create_dynamic_shop_locations, set_up_shops,
+                    shuffle_shops, total_shop_slots)
+from .StateHelpers import has_melee_weapon, has_triforce_pieces
+from .SubClasses import ALttPLocation, LTTPRegion, LTTPRegionType
 
 # This file sets the item pools for various modes. Timed modes and triforce hunt are enforced first, and then extra items are specified per mode to fill in the remaining space.
 # Some basic items that various modes require are placed here, including pendants and crystals. Medallion requirements for the two relevant entrances are also decided.
@@ -45,7 +48,7 @@ normalthird10extra = ['Rupees (50)'] * 4 + ['Rupees (20)'] * 3 + ['Arrows (10)',
 normalfourth5extra = ['Arrows (10)'] * 2 + ['Rupees (20)'] * 2 + ['Rupees (5)']
 normalfinal25extra = ['Rupees (20)'] * 23 + ['Rupees (5)'] * 2
 
-Difficulty = namedtuple('Difficulty',
+DifficultyParts = namedtuple('Difficulty',
                         ['baseitems', 'bottles', 'bottle_count', 'same_bottle', 'progressiveshield',
                          'basicshield', 'progressivearmor', 'basicarmor', 'swordless', 'progressivemagic', 'basicmagic',
                          'progressivesword', 'basicsword', 'progressivebow', 'basicbow', 'timedohko', 'timedother',
@@ -58,7 +61,7 @@ Difficulty = namedtuple('Difficulty',
 total_items_to_place = 153
 
 difficulties = {
-    'easy': Difficulty(
+    Difficulty.option_easy: DifficultyParts(
         baseitems=easybaseitems,
         bottles=normalbottles,
         bottle_count=8,
@@ -90,7 +93,7 @@ difficulties = {
         boss_heart_container_limit=10,
         heart_piece_limit=36,
     ),
-    'normal': Difficulty(
+    Difficulty.option_normal: DifficultyParts(
         baseitems=normalbaseitems,
         bottles=normalbottles,
         bottle_count=4,
@@ -122,7 +125,7 @@ difficulties = {
         boss_heart_container_limit=10,
         heart_piece_limit=24,
     ),
-    'hard': Difficulty(
+    Difficulty.option_hard: DifficultyParts(
         baseitems=normalbaseitems,
         bottles=hardbottles,
         bottle_count=4,
@@ -154,7 +157,7 @@ difficulties = {
         boss_heart_container_limit=6,
         heart_piece_limit=16,
     ),
-    'expert': Difficulty(
+    Difficulty.option_expert: DifficultyParts(
         baseitems=normalbaseitems,
         bottles=hardbottles,
         bottle_count=4,
@@ -189,8 +192,8 @@ difficulties = {
 }
 
 ice_rod_hunt_difficulties = dict()
-for diff in {'easy', 'normal', 'hard', 'expert'}:
-    ice_rod_hunt_difficulties[diff] = Difficulty(
+for diff in difficulties.keys():
+    ice_rod_hunt_difficulties[diff] = DifficultyParts(
         baseitems=['Nothing'] * 41,
         bottles=['Nothing'] * 4,
         bottle_count=difficulties[diff].bottle_count,

@@ -235,6 +235,13 @@ class WorldState(Choice):
     option_inverted = 2
 
 
+class Difficulty(Choice):
+    option_easy = 0
+    option_normal = 1
+    option_hard = 2
+    option_expert = 3
+    default = option_normal
+
 class LTTPBosses(PlandoBosses):
     """Shuffles bosses around to different locations.
     Basic will shuffle all bosses except Ganon and Agahnim anywhere they can be placed.
@@ -568,5 +575,6 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "triforce_pieces_percentage": TriforcePiecesPercentage,
     "triforce_pieces_available": TriforcePiecesAvailable,
     "triforce_pieces_required": TriforcePiecesRequired,
-    "triforce_pieces_extra": TriforcePiecesExtra
+    "triforce_pieces_extra": TriforcePiecesExtra,
+    "difficulty": Difficulty
 }
