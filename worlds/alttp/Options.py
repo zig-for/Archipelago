@@ -1,7 +1,7 @@
 import typing
 
 from BaseClasses import MultiWorld
-from Options import Choice, Range, Option, Toggle, DefaultOnToggle, DeathLink, StartInventoryPool, PlandoBosses, FreeText
+from Options import Choice, Range, Option, Toggle, DefaultOnToggle, DeathLink, StartInventoryPool, PlandoBosses, FreeText, Range
 
 class Logic(Choice):
     # TODO: text
@@ -68,7 +68,18 @@ class Goal(Choice):
         return self.value in [Goal.option_localtriforcehunt,
                               Goal.option_localganontriforcehunt]
 
-#class ClockMode(Toggle):
+class Timer(Choice):
+    option_none = 0
+    option_display = 1
+    option_timed = 2
+    option_timed_ohko = 3
+    option_ohko = 4
+    option_timed_countdown = 5
+#setattr(Timer, "alias_timed-ohko", Timer.option_timed_ohko)
+#setattr(Timer, "alias_timed-countdown", Timer.option_timed_countdown)
+
+
+
 
 class Mode(Choice):
     option_standard = 0
@@ -177,10 +188,31 @@ class CrystalsGanon(Crystals):
 
 
 class TriforcePieces(Range):
-    default = 30
-    range_start = 1
-    range_end = 90
+     default = 30
+     range_start = 1
+     range_end = 90
 
+class TriforcePiecesMode(Choice):
+    #Determine how to calculate the extra available triforce pieces.
+    option_extra = 0 # available = triforce_pieces_extra + triforce_pieces_required
+    option_percentage = 1 # available = (triforce_pieces_percentage /100) * triforce_pieces_required
+    option_available = 2 # available = triforce_pieces_available
+    default = option_available
+
+class TriforcePiecesAvailable(TriforcePieces):
+    pass
+
+class TriforcePiecesRequired(TriforcePieces):
+    default = 20
+
+class TriforcePiecesExtra(TriforcePieces):
+    default = 10
+    
+class TriforcePiecesPercentage(Range):
+    # ???
+    range_start = 100
+    range_end = 500
+    default = 150
 
 class ShopItemSlots(Range):
     """Number of slots in all shops available to have items from the multiworld"""
@@ -529,6 +561,12 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "goal": Goal,
     "logic": Logic,
     "dungeon_counters": DungeonCounters,
-    "sprite": Sprite
-    
+    "sprite": Sprite,
+    "mode": Mode,
+    "timer": Timer,
+    "triforce_pieces_mode": TriforcePiecesMode,
+    "triforce_pieces_percentage": TriforcePiecesPercentage,
+    "triforce_pieces_available": TriforcePiecesAvailable,
+    "triforce_pieces_required": TriforcePiecesRequired,
+    "triforce_pieces_extra": TriforcePiecesExtra
 }

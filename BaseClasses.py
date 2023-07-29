@@ -138,12 +138,10 @@ class MultiWorld():
 
             set_player_attr('_region_cache', {})
             set_player_attr('shuffle', "vanilla")
-            set_player_attr('logic', "noglitches")
-            set_player_attr('mode', 'open')
             set_player_attr('difficulty', 'normal')
             set_player_attr('item_functionality', 'normal')
-            set_player_attr('timer', False)
             set_player_attr('goal', 'ganon')
+            # dear god, fixme
             set_player_attr('required_medallions', ['Ether', 'Quake'])
             set_player_attr('swamp_patch_required', False)
             set_player_attr('powder_patch_required', False)
@@ -169,8 +167,6 @@ class MultiWorld():
             set_player_attr('blue_clock_time', 2)
             set_player_attr('green_clock_time', 4)
             set_player_attr('can_take_damage', True)
-            set_player_attr('triforce_pieces_available', 30)
-            set_player_attr('triforce_pieces_required', 20)
             set_player_attr('shop_shuffle', 'off')
             set_player_attr('shuffle_prizes', "g")
             set_player_attr('sprite_pool', [])

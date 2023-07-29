@@ -36,7 +36,7 @@ from .Text import KingsReturn_texts, Sanctuary_texts, Kakariko_texts, Blacksmith
     SickKid_texts, FluteBoy_texts, Zora_texts, MagicShop_texts, Sahasrahla_names
 from .Items import ItemFactory, item_table, item_name_groups, progression_items
 from .EntranceShuffle import door_addresses
-from .Options import smallkey_shuffle, Goal, DungeonCounters
+from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer
 
 try:
     from maseya import z3pr
@@ -1023,7 +1023,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         # Set stun items
         rom.write_byte(0x180180, 0x03)  # All standard items
         # Set overflow items for progressive equipment
-        if world.timer[player] in ['timed', 'timed-countdown', 'timed-ohko']:
+        if world.timer[player] in [Timer.option_timed, Timer.option_timed_countdown, Timer.option_timed_ohko]:
             overflow_replacement = GREEN_CLOCK
         else:
             overflow_replacement = GREEN_TWENTY_RUPEES

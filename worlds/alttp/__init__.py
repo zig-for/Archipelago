@@ -5,7 +5,6 @@ import settings
 import threading
 import typing
 
-import Utils
 from BaseClasses import Item, CollectionState, Tutorial, MultiWorld
 from .Dungeons import create_dungeons, Dungeon
 from .EntranceShuffle import link_entrances, link_inverted_entrances, plando_connect, \
@@ -14,9 +13,9 @@ from .InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from .ItemPool import generate_itempool, difficulties
 from .Items import item_init_table, item_name_groups, item_table, GetBeemizerItem
 from .Options import alttp_options, smallkey_shuffle, Goal, Mode
+from .Options import TriforcePiecesAvailable, TriforcePiecesPercentage, TriforcePiecesMode, TriforcePiecesRequired, TriforcePiecesExtra
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
-from .Client import ALTTPSNIClient
 from .Rom import LocalRom, patch_rom, patch_race_rom, check_enemizer, patch_enemizer, apply_rom_settings, \
     get_hash_string, get_base_rom_path, LttPDeltaPatch
 from .Rules import set_rules
@@ -271,9 +270,19 @@ class ALTTPWorld(World):
                 break
 
     def generate_early(self):
-
         player = self.player
         world = self.multiworld
+
+        # sum a percentage to required
+        if world.triforce_pieces_mode[player] == TriforcePiecesMode.option_percentage:
+            world.triforce_pieces_available[player] = TriforcePiecesAvailable.from_any(int(round(world.triforce_pieces_required * world.triforce_pieces_percentage, 0)))
+        # vanilla mode (specify how many pieces are)
+        elif world.triforce_pieces_mode[player] == TriforcePiecesMode.option_available:
+            pass
+        # required pieces + fixed extra
+        elif world.triforce_pieces_mode[player] == TriforcePiecesMode.option_extra:
+            world.triforce_pieces_available = TriforcePiecesAvailable.from_any(world.triforce_pieces_required + world.triforce_pieces_extra[player])
+
 
         if world.mode[player] == Mode.option_standard \
                 and world.smallkey_shuffle[player] \

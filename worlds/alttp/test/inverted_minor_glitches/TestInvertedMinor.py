@@ -9,6 +9,7 @@ from worlds.alttp.Items import ItemFactory
 from worlds.alttp.Regions import mark_light_world_regions
 from worlds.alttp.Shops import create_shops
 from worlds.alttp.Rules import set_rules
+from worlds.alttp.Options import Mode, Logic
 from test.TestBase import TestBase
 
 from worlds import AutoWorld
@@ -23,7 +24,7 @@ class TestInvertedMinor(TestBase):
         self.multiworld.set_options(args)
         self.multiworld.set_default_common_options()
         self.multiworld.mode[1] = Mode.option_inverted
-        self.multiworld.logic[1] = "minorglitches"
+        self.multiworld.logic[1] = Logic.option_minorglitches
         self.multiworld.difficulty_requirements[1] = difficulties['normal']
         create_inverted_regions(self.multiworld, 1)
         self.multiworld.worlds[1].create_dungeons()

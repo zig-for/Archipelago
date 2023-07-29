@@ -10,7 +10,7 @@ from .Bosses import place_bosses
 from .Dungeons import get_dungeon_item_pool_player
 from .EntranceShuffle import connect_entrance
 from .Items import ItemFactory, GetBeemizerItem
-from .Options import smallkey_shuffle, compass_shuffle, bigkey_shuffle, map_shuffle, LTTPBosses, Logic, Goal, Mode
+from .Options import smallkey_shuffle, compass_shuffle, bigkey_shuffle, map_shuffle, LTTPBosses, Logic, Goal, Mode, Timer
 from .StateHelpers import has_triforce_pieces, has_melee_weapon
 
 # This file sets the item pools for various modes. Timed modes and triforce hunt are enforced first, and then extra items are specified per mode to fill in the remaining space.
@@ -230,10 +230,8 @@ def generate_itempool(world):
 
     if multiworld.difficulty[player] not in difficulties:
         raise NotImplementedError(f"Diffulty {multiworld.difficulty[player]}")
-    if multiworld.timer[player] not in {False, 'display', 'timed', 'timed-ohko', 'ohko', 'timed-countdown'}:
-        raise NotImplementedError(f"Timer {multiworld.mode[player]} for player {player}")
 
-    if multiworld.timer[player] in ['ohko', 'timed-ohko']:
+    if multiworld.timer[player] in [Timer.option_ohko, Timer.option_timed_ohko]:
         multiworld.can_take_damage[player] = False
     if multiworld.goal[player].is_triforce_hunt():
         multiworld.push_item(multiworld.get_location('Ganon', player), ItemFactory('Nothing', player), False)
@@ -598,11 +596,11 @@ def get_pool_core(world, player: int):
 
     extraitems = total_items_to_place - len(pool) - len(placed_items)
 
-    if timer in ['timed', 'timed-countdown']:
+    if timer in [Timer.option_timed, Timer.option_timed_countdown]:
         pool.extend(diff.timedother)
         extraitems -= len(diff.timedother)
         clock_mode = 'stopwatch' if timer == 'timed' else 'countdown'
-    elif timer == 'timed-ohko':
+    elif timer == Timer.option_timed_ohko:
         pool.extend(diff.timedohko)
         extraitems -= len(diff.timedohko)
         clock_mode = 'countdown-ohko'
@@ -758,11 +756,11 @@ def make_custom_item_pool(world, player):
         treasure_hunt_count = world.triforce_pieces_required[player]
         treasure_hunt_icon = 'Triforce Piece'
 
-    if timer in ['display', 'timed', 'timed-countdown']:
+    if timer in [Timer.option_display, Timer.option_timed, Timer.option_timed_countdown]:
         clock_mode = 'countdown' if timer == 'timed-countdown' else 'stopwatch'
-    elif timer == 'timed-ohko':
+    elif timer == Timer.option_timed_ohko:
         clock_mode = 'countdown-ohko'
-    elif timer == 'ohko':
+    elif timer == Timer.option_ohko:
         clock_mode = 'ohko'
 
     if goal == Goal.option_pedestal:
