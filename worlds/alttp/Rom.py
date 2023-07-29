@@ -1206,17 +1206,17 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         rom.write_byte(0x180044, 0x01)  # hammer activates tablets
 
     # set up clocks for timed modes
-    if world.clock_mode[player] in ['ohko', 'countdown-ohko']:
+    if world.worlds[player].clock_mode in ['ohko', 'countdown-ohko']:
         rom.write_bytes(0x180190, [0x01, 0x02, 0x01])  # ohko timer with resetable timer functionality
-    elif world.clock_mode[player] == 'stopwatch':
+    elif world.worlds[player].clock_mode == 'stopwatch':
         rom.write_bytes(0x180190, [0x02, 0x01, 0x00])  # set stopwatch mode
-    elif world.clock_mode[player] == 'countdown':
+    elif world.worlds[player].clock_mode == 'countdown':
         rom.write_bytes(0x180190, [0x01, 0x01, 0x00])  # set countdown, with no reset available
     else:
         rom.write_bytes(0x180190, [0x00, 0x00, 0x00])  # turn off clock mode
 
     # Set up requested clock settings
-    if world.clock_mode[player] in ['countdown-ohko', 'stopwatch', 'countdown']:
+    if world.worlds[player].clock_mode in ['countdown-ohko', 'stopwatch', 'countdown']:
         rom.write_int32(0x180200,
                         world.red_clock_time[player] * 60 * 60)  # red clock adjustment time (in frames, sint32)
         rom.write_int32(0x180204,
@@ -1229,7 +1229,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         rom.write_int32(0x180208, 0)  # green clock adjustment time (in frames, sint32)
 
     # Set up requested start time for countdown modes
-    if world.clock_mode[player] in ['countdown-ohko', 'countdown']:
+    if world.worlds[player].clock_mode in ['countdown-ohko', 'countdown']:
         rom.write_int32(0x18020C, world.countdown_start_time[player] * 60 * 60)  # starting time (in frames, sint32)
     else:
         rom.write_int32(0x18020C, 0)  # starting time (in frames, sint32)
@@ -1512,7 +1512,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_byte(0x18003B, 0x01 if world.map_shuffle[player] else 0x00)  # maps showing crystals on overworld
 
     # compasses showing dungeon count
-    if world.clock_mode[player] or not world.dungeon_counters[player] == DungeonCounters.option_off:
+    if world.worlds[player].clock_mode or not world.dungeon_counters[player] == DungeonCounters.option_off:
         rom.write_byte(0x18003C, 0x00)  # Currently must be off if timer is on, because they use same HUD location
     elif world.dungeon_counters[player] == DungeonCounters.option_on:
         rom.write_byte(0x18003C, 0x02)  # always on

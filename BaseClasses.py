@@ -161,7 +161,6 @@ class MultiWorld():
             set_player_attr('escape_assist', [])
             set_player_attr('treasure_hunt_icon', 'Triforce Piece')
             set_player_attr('treasure_hunt_count', 0)
-            set_player_attr('clock_mode', False)
             set_player_attr('countdown_start_time', 10)
             set_player_attr('red_clock_time', -2)
             set_player_attr('blue_clock_time', 2)

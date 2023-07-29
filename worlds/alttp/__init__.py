@@ -248,6 +248,7 @@ class ALTTPWorld(World):
     rom_name_available_event: threading.Event
     has_progressive_bows: bool
     dungeons: typing.Dict[str, Dungeon]
+    clock_mode: typing.Optional[str] = None
 
     def __init__(self, *args, **kwargs):
         self.dungeon_local_item_names = set()

@@ -358,7 +358,7 @@ def generate_itempool(world):
                 break
 
     if clock_mode is not None:
-        multiworld.clock_mode[player] = clock_mode
+        multiworld.worlds[player].clock_mode = clock_mode
 
     if treasure_hunt_count is not None:
         multiworld.treasure_hunt_count[player] = treasure_hunt_count % 999
