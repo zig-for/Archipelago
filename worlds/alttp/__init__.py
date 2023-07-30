@@ -13,7 +13,7 @@ from .InvertedRegions import create_inverted_regions, mark_dark_world_regions
 from .ItemPool import generate_itempool, difficulties
 from .Items import item_init_table, item_name_groups, item_table, GetBeemizerItem
 from .Options import alttp_options, smallkey_shuffle, Goal, Mode, Logic
-from .Options import TriforcePiecesAvailable, TriforcePiecesMode, Difficulty
+from .Options import TriforcePiecesAvailable, TriforcePiecesMode, Difficulty, EntranceShuffle
 from .Regions import lookup_name_to_id, create_regions, mark_light_world_regions, lookup_vanilla_location_to_entrance, \
     is_main_entrance
 from .Rom import LocalRom, patch_rom, patch_race_rom, check_enemizer, patch_enemizer, apply_rom_settings, \
@@ -249,7 +249,21 @@ class ALTTPWorld(World):
     has_progressive_bows: bool
     dungeons: typing.Dict[str, Dungeon]
     clock_mode: typing.Optional[str] = None
-    difficulty_requirements: typing.NamedTuple = None
+    # This is technically set all the time, maybe can be fixed in init?
+    difficulty_requirements: typing.Optional[typing.NamedTuple] = None
+
+    class AttributeProxy():
+        def __init__(self, rule):
+            self.rule = rule
+
+        def __getitem__(self, player) -> bool:
+            return self.rule(player)
+
+    fix_trock_doors: AttributeProxy
+    fix_skullwoods_exit: AttributeProxy
+    fix_palaceofdarkness_exit: AttributeProxy
+    fix_trock_exit: AttributeProxy
+
     #required_medallions: dict
     #dark_room_logic: Dict[int, str]
     #restrict_dungeon_item_on_boss: Dict[int, bool]
@@ -260,6 +274,16 @@ class ALTTPWorld(World):
         self.rom_name_available_event = threading.Event()
         self.has_progressive_bows = False
         self.dungeons = {}
+
+        self.fix_trock_doors = self.AttributeProxy(
+            lambda player: self.multiworld.shuffle[player] != EntranceShuffle.option_vanilla or self.multiworld.mode[player] == 'inverted')
+        self.fix_skullwoods_exit = self.AttributeProxy(
+            lambda player: self.multiworld.shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple])
+        self.fix_palaceofdarkness_exit = self.AttributeProxy(
+            lambda player: self.multiworld.shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple])
+        self.fix_trock_exit = self.AttributeProxy(
+            lambda player: self.multiworld.shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple])
+    
         super(ALTTPWorld, self).__init__(*args, **kwargs)
 
     @classmethod
@@ -288,29 +312,28 @@ class ALTTPWorld(World):
         elif world.triforce_pieces_mode[player] == TriforcePiecesMode.option_extra:
             world.triforce_pieces_available = TriforcePiecesAvailable.from_any(world.triforce_pieces_required + world.triforce_pieces_extra[player])
 
-
         if world.mode[player] == Mode.option_standard \
                 and world.smallkey_shuffle[player] \
                 and world.smallkey_shuffle[player] != smallkey_shuffle.option_universal \
                 and world.smallkey_shuffle[player] != smallkey_shuffle.option_own_dungeons \
                 and world.smallkey_shuffle[player] != smallkey_shuffle.option_start_with:
-            self.multiworld.local_early_items[self.player]["Small Key (Hyrule Castle)"] = 1
+            world.local_early_items[self.player]["Small Key (Hyrule Castle)"] = 1
 
         # system for sharing ER layouts
         self.er_seed = str(world.random.randint(0, 2 ** 64))
 
-        if "-" in world.shuffle[player]:
-            shuffle, seed = world.shuffle[player].split("-", 1)
-            world.shuffle[player] = shuffle
-            if shuffle == "vanilla":
-                self.er_seed = "vanilla"
-            elif seed.startswith("group-") or world.is_race:
-                self.er_seed = get_same_seed(world, (
-                    shuffle, seed, world.retro_caves[player], world.mode[player], world.logic[player]))
-            else:  # not a race or group seed, use set seed as is.
-                self.er_seed = seed
-        elif world.shuffle[player] == "vanilla":
-            self.er_seed = "vanilla"
+        # if "-" in world.shuffle[player].value:
+        #     shuffle, seed = world.shuffle[player].split("-", 1)
+        #     world.shuffle[player] = shuffle
+        #     if shuffle == "vanilla":
+        #         self.er_seed = "vanilla"
+        #     elif seed.startswith("group-") or world.is_race:
+        #         self.er_seed = get_same_seed(world, (
+        #             shuffle, seed, world.retro_caves[player], world.mode[player], world.logic[player]))
+        #     else:  # not a race or group seed, use set seed as is.
+        #         self.er_seed = seed
+        # elif world.shuffle[player] == "vanilla":
+        #     self.er_seed = "vanilla"
         for dungeon_item in ["smallkey_shuffle", "bigkey_shuffle", "compass_shuffle", "map_shuffle"]:
             option = getattr(world, dungeon_item)[player]
             if option == "own_world":
@@ -349,7 +372,7 @@ class ALTTPWorld(World):
         self.create_dungeons()
 
         if world.logic[player] not in ["noglitches", "minorglitches"] and world.shuffle[player] in \
-                {"vanilla", "dungeonssimple", "dungeonsfull", "simple", "restricted", "full"}:
+                {EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_full}:
             world.fix_fake_world[player] = False
 
         # seeded entrance shuffle
@@ -567,7 +590,7 @@ class ALTTPWorld(World):
     @classmethod
     def stage_extend_hint_information(cls, world, hint_data: typing.Dict[int, typing.Dict[int, str]]):
         er_hint_data = {player: {} for player in world.get_game_players("A Link to the Past") if
-                        world.shuffle[player] != "vanilla" or world.retro_caves[player]}
+                        world.shuffle[player] != EntranceShuffle.option_vanilla or world.retro_caves[player]}
 
         for region in world.regions:
             if region.player in er_hint_data and region.locations:
@@ -683,7 +706,7 @@ class ALTTPWorld(World):
         spoiler_handle.write('Difficulty:                      %s\n' % self.multiworld.difficulty[self.player])
         spoiler_handle.write('Item Functionality:              %s\n' % self.multiworld.item_functionality[self.player])
         spoiler_handle.write('Entrance Shuffle:                %s\n' % self.multiworld.shuffle[self.player])
-        if self.multiworld.shuffle[self.player] != "vanilla":
+        if self.multiworld.shuffle[self.player] != EntranceShuffle.option_vanilla:
             spoiler_handle.write('Entrance Shuffle Seed            %s\n' % self.er_seed)
         spoiler_handle.write('Shop inventory shuffle:          %s\n' %
                              bool_to_text("i" in self.multiworld.shop_shuffle[self.player]))

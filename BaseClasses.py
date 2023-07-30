@@ -80,12 +80,6 @@ class MultiWorld():
     per_slot_randoms: Dict[int, random.Random]
     """Deprecated. Please use `self.random` instead."""
 
-    class AttributeProxy():
-        def __init__(self, rule):
-            self.rule = rule
-
-        def __getitem__(self, player) -> bool:
-            return self.rule(player)
 
     def __init__(self, players: int):
         # world-local random state is saved for multiple generations running concurrently
@@ -119,14 +113,7 @@ class MultiWorld():
         self.local_early_items = {player: {} for player in self.player_ids}
         self.indirect_connections = {}
         self.start_inventory_from_pool: Dict[int, Options.StartInventoryPool] = {}
-        self.fix_trock_doors = self.AttributeProxy(
-            lambda player: self.shuffle[player] != 'vanilla' or self.mode[player] == 'inverted')
-        self.fix_skullwoods_exit = self.AttributeProxy(
-            lambda player: self.shuffle[player] not in ['vanilla', 'simple', 'restricted', 'dungeonssimple'])
-        self.fix_palaceofdarkness_exit = self.AttributeProxy(
-            lambda player: self.shuffle[player] not in ['vanilla', 'simple', 'restricted', 'dungeonssimple'])
-        self.fix_trock_exit = self.AttributeProxy(
-            lambda player: self.shuffle[player] not in ['vanilla', 'simple', 'restricted', 'dungeonssimple'])
+
 
         for player in range(1, players + 1):
             def set_player_attr(attr, val):
@@ -153,10 +140,6 @@ class MultiWorld():
             set_player_attr('escape_assist', [])
             set_player_attr('treasure_hunt_icon', 'Triforce Piece')
             set_player_attr('treasure_hunt_count', 0)
-            set_player_attr('countdown_start_time', 10)
-            set_player_attr('red_clock_time', -2)
-            set_player_attr('blue_clock_time', 2)
-            set_player_attr('green_clock_time', 4)
             set_player_attr('can_take_damage', True)
             set_player_attr('shop_shuffle', 'off')
             set_player_attr('shuffle_prizes', "g")

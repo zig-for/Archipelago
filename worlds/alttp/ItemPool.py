@@ -10,7 +10,7 @@ from .EntranceShuffle import connect_entrance
 from .Items import GetBeemizerItem, ItemFactory
 from .Options import (Difficulty, Goal, Logic, LTTPBosses, Mode, Timer,
                       bigkey_shuffle, compass_shuffle, map_shuffle,
-                      smallkey_shuffle)
+                      smallkey_shuffle, EntranceShuffle)
 from .Shops import (TakeAny, create_dynamic_shop_locations, set_up_shops,
                     shuffle_shops, total_shop_slots)
 from .StateHelpers import has_melee_weapon, has_triforce_pieces
@@ -544,7 +544,7 @@ def get_pool_core(world, player: int):
         pool.extend(diff.basicglove)
 
     # insanity legacy shuffle doesn't have fake LW/DW logic so for now guaranteed Mirror and Moon Pearl at the start
-    if shuffle == 'insanity_legacy':
+    if shuffle == EntranceShuffle.option_insanity_legacy:
         place_item('Link\'s House', diff.legacyinsanity[0])
         place_item('Sanctuary', diff.legacyinsanity[1])
     else:
@@ -785,7 +785,7 @@ def make_custom_item_pool(world, player):
     pool.extend(['Fighter Sword'] * customitemarray[32])
     pool.extend(['Progressive Sword'] * customitemarray[36])
 
-    if shuffle == 'insanity_legacy':
+    if shuffle == EntranceShuffle.option_insanity_legacy:
         place_item('Link\'s House', 'Magic Mirror')
         place_item('Sanctuary', 'Moon Pearl')
         pool.extend(['Magic Mirror'] * max((customitemarray[22] -1 ), 0))

@@ -1,7 +1,11 @@
+from __future__ import annotations
 import typing
 
 from BaseClasses import MultiWorld
-from Options import Choice, Range, Option, Toggle, DefaultOnToggle, DeathLink, StartInventoryPool, PlandoBosses, FreeText, Range
+from Options import (Choice, DeathLink, DefaultOnToggle, FreeText,
+                     Option, PlandoBosses, Range,
+                     StartInventoryPool, Toggle)
+
 
 class Logic(Choice):
     # TODO: text
@@ -78,7 +82,27 @@ class Timer(Choice):
 #setattr(Timer, "alias_timed-ohko", Timer.option_timed_ohko)
 #setattr(Timer, "alias_timed-countdown", Timer.option_timed_countdown)
 
+class CountdownStartTime(Range):
+    range_start = 0
+    range_end = 10000
+    """Set amount of time, in minutes, to start with in Timed Countdown and Timed OHKO modes"""
+    default = 10
 
+class ClockTime(Range):
+    range_start = -10000
+    range_end = 10000
+
+class RedClockTime(ClockTime):
+    """For all timer modes, the amount of time in minutes to gain or lose when picking up a red clock"""
+    default = -2
+
+class BlueClockTime(ClockTime):
+    """For all timer modes, the amount of time in minutes to gain or lose when picking up a blue clock"""
+    default = 2
+
+class GreenClockTime(ClockTime):
+    """For all timer modes, the amount of time in minutes to gain or lose when picking up a green clock"""
+    default = 4
 
 
 class Mode(Choice):
@@ -112,7 +136,7 @@ class OpenPyramid(Choice):
             return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal}
         elif self.value == self.option_auto:
             return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal} \
-            and (world.shuffle[player] in {'vanilla', 'dungeonssimple', 'dungeonsfull', 'dungeonscrossed'} or not
+            and (world.shuffle[player] in {EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed} or not
                  world.shuffle_ganon)
         elif self.value == self.option_open:
             return True
@@ -323,6 +347,37 @@ class Progressive(Choice):
     def want_progressives(self, random):
         return random.choice([True, False]) if self.value == self.option_grouped_random else bool(self.value)
 
+
+class EntranceShuffle(Choice):
+    option_vanilla = 0
+    option_simple = 1
+    option_restricted = 2
+    option_full = 3
+    option_crossed = 4
+    option_insanity = 5
+    option_madness = 6
+    option_dungeonsfull = 7
+    option_dungeonssimple = 8
+    option_dungeonscrossed = 9
+    option_restricted_legacy = -1
+    option_full_legacy = -2
+    option_madness_legacy = -3
+    option_insanity_legacy = -4
+
+    er_seed: str = "vanilla"
+
+    @classmethod
+    def from_text(cls, text: str) -> EntranceShuffle:
+        if "-" in text:
+            shuffle, seed = text.split("-", 1)  
+        else:
+            shuffle, seed = text, None
+        ret = super().from_text(shuffle)
+        
+        if seed:
+            ret.er_seed = seed  
+
+        return ret
 
 class Swordless(Toggle):
     """No swords. Curtains in Skull Woods and Agahnim's
@@ -585,4 +640,9 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "triforce_pieces_extra": TriforcePiecesExtra,
     "difficulty": Difficulty,
     "item_functionality": ItemFunctionality,
+    "countdown_start_time": CountdownStartTime,
+    "red_clock_time": RedClockTime,
+    "blue_clock_time": BlueClockTime,
+    "green_clock_time": GreenClockTime,
+    "shuffle": EntranceShuffle,
 }
