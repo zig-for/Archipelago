@@ -1,6 +1,5 @@
 from typing import List, Tuple, Optional, Union
-import os
-
+from dataclasses import fields
 
 class Setting:
     def __init__(self, key: str,
@@ -215,12 +214,12 @@ Note, some entrances can lead into water, use the warp-to-home from the save&qui
         for s in self.__all:
             assert s.short_key not in short_keys, s.label
             short_keys.add(s.short_key)
-            self.ap_options = ap_options
 
-        for option in self.ap_options.values():
+        for field in fields(ap_options):
+            option = getattr(ap_options, field.name)
             if not hasattr(option, 'to_ladxr_option'):
                 continue
-            name, value = option.to_ladxr_option(self.ap_options)
+            name, value = option.to_ladxr_option(ap_options)
             if value == "true":
                 value = 1
             elif value == "false":
@@ -228,7 +227,7 @@ Note, some entrances can lead into water, use the warp-to-home from the save&qui
 
             if name:
                 self.set( f"{name}={value}")
-    
+
     def __getattr__(self, item):
         return self.__by_key[item].value
 

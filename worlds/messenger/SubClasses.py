@@ -1,55 +1,43 @@
-from typing import Set, TYPE_CHECKING, Optional, Dict
+from typing import Optional, TYPE_CHECKING, cast
 
-from BaseClasses import Region, Location, Item, ItemClassification, Entrance, CollectionState
-from .Constants import NOTES, PROG_ITEMS, PHOBEKINS, USEFUL_ITEMS
+from BaseClasses import CollectionState, Item, ItemClassification, Location, Region
+from .Constants import NOTES, PHOBEKINS, PROG_ITEMS, USEFUL_ITEMS
 from .Options import Goal
-from .Regions import REGIONS, SEALS, MEGA_SHARDS
-from .Shop import SHOP_ITEMS, PROG_SHOP_ITEMS, USEFUL_SHOP_ITEMS, FIGURINES
+from .Regions import MEGA_SHARDS, REGIONS, SEALS
+from .Shop import FIGURINES, PROG_SHOP_ITEMS, SHOP_ITEMS, USEFUL_SHOP_ITEMS
 
 if TYPE_CHECKING:
     from . import MessengerWorld
-else:
-    MessengerWorld = object
 
 
 class MessengerRegion(Region):
-    def __init__(self, name: str, world: MessengerWorld) -> None:
+    
+    def __init__(self, name: str, world: "MessengerWorld") -> None:
         super().__init__(name, world.player, world.multiworld)
-        self.add_locations(self.multiworld.worlds[self.player].location_name_to_id)
-        world.multiworld.regions.append(self)
-
-    def add_locations(self, name_to_id: Dict[str, int]) -> None:
-        for loc in REGIONS[self.name]:
-            self.locations.append(MessengerLocation(loc, self, name_to_id.get(loc, None)))
+        locations = [loc for loc in REGIONS[self.name]]
         if self.name == "The Shop":
-            if self.multiworld.goal[self.player] > Goal.option_open_music_box:
-                self.locations.append(MessengerLocation("Shop Chest", self, None))
-            self.locations += [MessengerShopLocation(f"The Shop - {shop_loc}", self,
-                                                     name_to_id[f"The Shop - {shop_loc}"])
-                               for shop_loc in SHOP_ITEMS]
-            self.locations += [MessengerShopLocation(figurine, self, name_to_id[figurine])
-                               for figurine in FIGURINES]
+            if world.options.goal > Goal.option_open_music_box:
+                locations.append("Shop Chest")
+            shop_locations = {f"The Shop - {shop_loc}": world.location_name_to_id[f"The Shop - {shop_loc}"]
+                              for shop_loc in SHOP_ITEMS}
+            shop_locations.update(**{figurine: world.location_name_to_id[figurine] for figurine in FIGURINES})
+            self.add_locations(shop_locations, MessengerShopLocation)
         elif self.name == "Tower HQ":
-            self.locations.append(MessengerLocation("Money Wrench", self, name_to_id["Money Wrench"]))
-        if self.multiworld.shuffle_seals[self.player] and self.name in SEALS:
-            self.locations += [MessengerLocation(seal_loc, self, name_to_id[seal_loc])
-                               for seal_loc in SEALS[self.name]]
-        if self.multiworld.shuffle_shards[self.player] and self.name in MEGA_SHARDS:
-            self.locations += [MessengerLocation(shard, self, name_to_id[shard])
-                               for shard in MEGA_SHARDS[self.name]]
-
-    def add_exits(self, exits: Set[str]) -> None:
-        for exit in exits:
-            ret = Entrance(self.player, f"{self.name} -> {exit}", self)
-            self.exits.append(ret)
-            ret.connect(self.multiworld.get_region(exit, self.player))
+            locations.append("Money Wrench")
+        if world.options.shuffle_seals and self.name in SEALS:
+            locations += [seal_loc for seal_loc in SEALS[self.name]]
+        if world.options.shuffle_shards and self.name in MEGA_SHARDS:
+            locations += [shard for shard in MEGA_SHARDS[self.name]]
+        loc_dict = {loc: world.location_name_to_id[loc] if loc in world.location_name_to_id else None for loc in locations}
+        self.add_locations(loc_dict, MessengerLocation)
+        world.multiworld.regions.append(self)
 
 
 class MessengerLocation(Location):
     game = "The Messenger"
 
-    def __init__(self, name: str, parent: MessengerRegion, loc_id: Optional[int]) -> None:
-        super().__init__(parent.player, name, loc_id, parent)
+    def __init__(self, player: int, name: str, loc_id: Optional[int], parent: MessengerRegion) -> None:
+        super().__init__(player, name, loc_id, parent)
         if loc_id is None:
             self.place_locked_item(MessengerItem(name, parent.player, None))
 
@@ -57,11 +45,11 @@ class MessengerLocation(Location):
 class MessengerShopLocation(MessengerLocation):
     def cost(self) -> int:
         name = self.name.replace("The Shop - ", "")  # TODO use `remove_prefix` when 3.8 finally gets dropped
-        world: MessengerWorld = self.parent_region.multiworld.worlds[self.player]
+        world: MessengerWorld = cast("MessengerWorld", self.parent_region.multiworld.worlds[self.player])
         return world.shop_prices.get(name, world.figurine_prices.get(name))
 
     def can_afford(self, state: CollectionState) -> bool:
-        world: MessengerWorld = state.multiworld.worlds[self.player]
+        world: MessengerWorld = cast("MessengerWorld", state.multiworld.worlds[self.player])
         cost = self.cost() * 2
         if cost >= 1000:
             cost *= 2
@@ -86,4 +74,3 @@ class MessengerItem(Item):
         else:
             item_class = ItemClassification.filler
         super().__init__(name, item_class, item_id, player)
-

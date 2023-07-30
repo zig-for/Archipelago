@@ -86,9 +86,11 @@ inside a `World` object.
 ### Player Options
 
 Players provide customized settings for their World in the form of yamls.
-Those are accessible through `self.multiworld.<option_name>[self.player]`. A dict
-of valid options has to be provided in `self.option_definitions`. Options are automatically
-added to the `World` object for easy access.
+A `dataclass` of valid options definitions has to be provided in `self.options_dataclass`.
+(It must be a subclass of `PerGameCommonOptions`.)
+Option results are automatically added to the `World` object for easy access.
+Those are accessible through `self.options.<option_name>`, and you can get a dictionary of the option values via
+`self.options.as_dict(<option_names>)`, passing the desired options as strings. 
 
 ### World Settings
 
@@ -140,7 +142,10 @@ Other classifications include
 * `filler`: a regular item or trash item
 * `useful`: generally quite useful, but not required for anything logical
 * `trap`: negative impact on the player
-* `skip_balancing`: add to `progression` to skip balancing; e.g. currency or tokens
+* `skip_balancing`: denotes that an item should not be moved to an earlier sphere for the purpose of balancing (to be
+  combined with `progression`; see below)
+* `progression_skip_balancing`: the combination of `progression` and `skip_balancing`, i.e., a progression item that
+  will not be moved around by progression balancing; used, e.g., for currency or tokens
 
 ### Events
 
@@ -218,11 +223,11 @@ See [pip documentation](https://pip.pypa.io/en/stable/cli/pip_install/#requireme
 AP will only import the `__init__.py`. Depending on code size it makes sense to
 use multiple files and use relative imports to access them.
 
-e.g. `from .Options import mygame_options` from your `__init__.py` will load
-`worlds/<world_name>/Options.py` and make its `mygame_options` accessible.
+e.g. `from .Options import MyGameOptions` from your `__init__.py` will load
+`world/[world_name]/Options.py` and make its `MyGameOptions` accessible.
 
 When imported names pile up it may be easier to use `from . import Options`
-and access the variable as `Options.mygame_options`.
+and access the variable as `Options.MyGameOptions`.
 
 Imports from directories outside your world should use absolute imports.
 Correct use of relative / absolute imports is required for zipped worlds to
@@ -270,8 +275,9 @@ Each option has its own class, inherits from a base option type, has a docstring
 to describe it and a `display_name` property for display on the website and in
 spoiler logs.
 
-The actual name as used in the yaml is defined in a `Dict[str, AssembleOptions]`, that is
-assigned to the world under `self.option_definitions`.
+The actual name as used in the yaml is defined via the field names of a `dataclass` that is
+assigned to the world under `self.options_dataclass`. By convention, the strings
+that define your option names should be in `snake_case`.
 
 Common option types are `Toggle`, `DefaultOnToggle`, `Choice`, `Range`.
 For more see `Options.py` in AP's base directory.
@@ -306,8 +312,8 @@ default = 0
 ```python
 # Options.py
 
-from Options import Toggle, Range, Choice, Option
-import typing
+from dataclasses import dataclass
+from Options import Toggle, Range, Choice, PerGameCommonOptions
 
 class Difficulty(Choice):
     """Sets overall game difficulty."""
@@ -330,23 +336,27 @@ class FixXYZGlitch(Toggle):
     """Fixes ABC when you do XYZ"""
     display_name = "Fix XYZ Glitch"
 
-# By convention we call the options dict variable `<world>_options`.
-mygame_options: typing.Dict[str, AssembleOptions] = {
-    "difficulty": Difficulty,
-    "final_boss_hp": FinalBossHP,
-    "fix_xyz_glitch": FixXYZGlitch,
-}
+# By convention, we call the options dataclass `<world>Options`.
+# It has to be derived from 'PerGameCommonOptions'.
+@dataclass
+class MyGameOptions(PerGameCommonOptions):
+    difficulty: Difficulty
+    final_boss_hp: FinalBossHP
+    fix_xyz_glitch: FixXYZGlitch
 ```
+
 ```python
 # __init__.py
 
 from worlds.AutoWorld import World
-from .Options import mygame_options  # import the options dict
+from .Options import MyGameOptions  # import the options dataclass
+
 
 class MyGameWorld(World):
-    #...
-    option_definitions = mygame_options  # assign the options dict to the world
-    #...
+    # ...
+    options_dataclass = MyGameOptions  # assign the options dataclass to the world
+    options: MyGameOptions  # typing for option results
+    # ...
 ```
 
 ### A World Class Skeleton
@@ -356,11 +366,12 @@ class MyGameWorld(World):
 
 import settings
 import typing
-from .Options import mygame_options  # the options we defined earlier
+from .Options import MyGameOptions  # the options we defined earlier
 from .Items import mygame_items  # data used below to add items to the World
 from .Locations import mygame_locations  # same as above
 from worlds.AutoWorld import World
 from BaseClasses import Region, Location, Entrance, Item, RegionType, ItemClassification
+
 
 
 class MyGameItem(Item):  # or from Items import MyGameItem
@@ -369,6 +380,7 @@ class MyGameItem(Item):  # or from Items import MyGameItem
 
 class MyGameLocation(Location):  # or from Locations import MyGameLocation
     game = "My Game"  # name of the game/world this location is in
+
 
 
 class MyGameSettings(settings.Group):
@@ -381,8 +393,8 @@ class MyGameSettings(settings.Group):
 class MyGameWorld(World):
     """Insert description of the world/game here."""
     game = "My Game"  # name of the game/world
-    option_definitions = mygame_options  # options the player can set
-    settings: typing.ClassVar[MyGameSettings]  # will be automatically assigned from type hint
+    options_dataclass = MyGameOptions  # options the player can set
+    options: MyGameOptions  # typing hints for option results
     topology_present = True  # show path to required location checks in spoiler
 
     # ID of first item and location, could be hard-coded but code may be easier
@@ -457,7 +469,7 @@ In addition, the following methods can be implemented and are called in this ord
 ```python
 def generate_early(self) -> None:
     # read player settings to world instance
-    self.final_boss_hp = self.multiworld.final_boss_hp[self.player].value
+    self.final_boss_hp = self.options.final_boss_hp.value
 ```
 
 #### create_item
@@ -670,7 +682,7 @@ def generate_output(self, output_directory: str):
         "seed": self.multiworld.seed_name,  # to verify the server's multiworld
         "slot": self.multiworld.player_name[self.player],  # to connect to server
         "items": {location.name: location.item.name
-                  if location.item.player == self.player else "Remote"
+        if location.item.player == self.player else "Remote"
                   for location in self.multiworld.get_filled_locations(self.player)},
         # store start_inventory from player's .yaml
         # make sure to mark as not remote_start_inventory when connecting if stored in rom/mod
@@ -678,9 +690,9 @@ def generate_output(self, output_directory: str):
                           in self.multiworld.precollected_items[self.player]],
         "final_boss_hp": self.final_boss_hp,
         # store option name "easy", "normal" or "hard" for difficuly
-        "difficulty": self.multiworld.difficulty[self.player].current_key,
+        "difficulty": self.options.difficulty.current_key,
         # store option value True or False for fixing a glitch
-        "fix_xyz_glitch": self.multiworld.fix_xyz_glitch[self.player].value,
+        "fix_xyz_glitch": self.options.fix_xyz_glitch.value,
     }
     # point to a ROM specified by the installation
     src = self.settings.rom_file

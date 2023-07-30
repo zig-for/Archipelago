@@ -1,13 +1,18 @@
 from __future__ import annotations
+
 import abc
 import logging
 from copy import deepcopy
+from dataclasses import dataclass
+import functools
 import math
 import numbers
-import typing
 import random
+import typing
+from copy import deepcopy
 
-from schema import Schema, And, Or, Optional
+from schema import And, Optional, Or, Schema
+
 from Utils import get_fuzzy_results
 
 if typing.TYPE_CHECKING:
@@ -888,10 +893,52 @@ class ProgressionBalancing(SpecialRange):
     }
 
 
-common_options = {
-    "progression_balancing": ProgressionBalancing,
-    "accessibility": Accessibility
-}
+class OptionsMetaProperty(type):
+    def __new__(mcs, name, bases, attrs):
+        for attr, attr_type in attrs.items():
+            assert not isinstance(attr_type, AssembleOptions),\
+                f"Options for {name} should be type hinted on the class, not assigned"
+        return super().__new__(mcs, name, bases, attrs)
+
+    @property
+    @functools.lru_cache(maxsize=None)
+    def type_hints(cls) -> typing.Dict[str, AssembleOptions]:
+        """Returns type hints of the class as a dictionary."""
+        return typing.get_type_hints(cls)
+
+
+@dataclass
+class CommonOptions(metaclass=OptionsMetaProperty):
+    progression_balancing: ProgressionBalancing
+    accessibility: Accessibility
+
+    def as_dict(self, *option_names: str, casing: str = "snake") -> typing.Dict[str, typing.Any]:
+        """
+        Returns a dictionary of [str, Option.value]
+        
+        :param option_names: names of the options to return
+        :param casing: case of the keys to return. Supports `snake`, `camel`, `pascal`, `kebab`
+        """
+        option_results = {}
+        for option_name in option_names:
+            if option_name in type(self).type_hints:
+                if casing == "snake":
+                    display_name = option_name
+                elif casing == "camel":
+                    split_name = [name.title() for name in option_name.split("_")]
+                    split_name[0] = split_name[0].lower()
+                    display_name = "".join(split_name)
+                elif casing == "pascal":
+                    display_name = "".join([name.title() for name in option_name.split("_")])
+                elif casing == "kebab":
+                    display_name = option_name.replace("_", "-")
+                else:
+                    raise ValueError(f"{casing} is invalid casing for as_dict. "
+                                     "Valid names are 'snake', 'camel', 'pascal', 'kebab'.")
+                option_results[display_name] = getattr(self, option_name).value
+            else:
+                raise ValueError(f"{option_name} not found in {tuple(type(self).type_hints)}")
+        return option_results
 
 
 class LocalItems(ItemSet):
@@ -949,6 +996,7 @@ class DeathLink(Toggle):
 
 class ItemLinks(OptionList):
     """Share part of your item pool with other players."""
+    display_name = "Item Links"
     default = []
     schema = Schema([
         {
@@ -1011,17 +1059,20 @@ class ItemLinks(OptionList):
             link.setdefault("link_replacement", None)
 
 
-per_game_common_options = {
-    **common_options,  # can be overwritten per-game
-    "local_items": LocalItems,
-    "non_local_items": NonLocalItems,
-    "start_inventory": StartInventory,
-    "start_hints": StartHints,
-    "start_location_hints": StartLocationHints,
-    "exclude_locations": ExcludeLocations,
-    "priority_locations": PriorityLocations,
-    "item_links": ItemLinks
-}
+@dataclass
+class PerGameCommonOptions(CommonOptions):
+    local_items: LocalItems
+    non_local_items: NonLocalItems
+    start_inventory: StartInventory
+    start_hints: StartHints
+    start_location_hints: StartLocationHints
+    exclude_locations: ExcludeLocations
+    priority_locations: PriorityLocations
+    item_links: ItemLinks
+
+
+GameOptions = typing.TypeVar("GameOptions", bound=PerGameCommonOptions)
+
 
 
 def generate_yaml_templates(target_folder: typing.Union[str, "pathlib.Path"], generate_hidden: bool = True):
@@ -1062,10 +1113,7 @@ def generate_yaml_templates(target_folder: typing.Union[str, "pathlib.Path"], ge
 
     for game_name, world in AutoWorldRegister.world_types.items():
         if not world.hidden or generate_hidden:
-            all_options: typing.Dict[str, AssembleOptions] = {
-                **per_game_common_options,
-                **world.option_definitions
-            }
+            all_options: typing.Dict[str, AssembleOptions] = world.options_dataclass.type_hints
 
             with open(local_path("data", "options.yaml")) as f:
                 file_data = f.read()

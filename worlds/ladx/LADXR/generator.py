@@ -2,7 +2,8 @@ import binascii
 import importlib.util
 import importlib.machinery
 import os
-import pkgutil
+
+from ..Options import ShuffleSmallKeys, ShuffleNightmareKeys
 
 from .romTables import ROMWithTables
 from . import assembler
@@ -135,9 +136,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
     patches.core.alwaysAllowSecretBook(rom)
     patches.core.injectMainLoop(rom)
     
-    from ..Options import ShuffleSmallKeys, ShuffleNightmareKeys
-
-    if ap_settings["shuffle_small_keys"] != ShuffleSmallKeys.option_original_dungeon or  ap_settings["shuffle_nightmare_keys"] != ShuffleNightmareKeys.option_original_dungeon:
+    if ap_settings.shuffle_small_keys != ShuffleSmallKeys.option_original_dungeon or ap_settings.shuffle_nightmare_keys != ShuffleNightmareKeys.option_original_dungeon:
         patches.inventory.advancedInventorySubscreen(rom)
     patches.inventory.moreSlots(rom)
     if settings.witch:
@@ -188,7 +187,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
     # patches.reduceRNG.slowdownThreeOfAKind(rom)
     patches.reduceRNG.fixHorseHeads(rom)
     patches.bomb.onlyDropBombsWhenHaveBombs(rom)
-    if ap_settings['music_change_condition'] == MusicChangeCondition.option_always:
+    if ap_settings.music_change_condition == MusicChangeCondition.option_always:
         patches.aesthetics.noSwordMusic(rom)
     patches.aesthetics.reduceMessageLengths(rom, rnd)
     patches.aesthetics.allowColorDungeonSpritesEverywhere(rom)
@@ -306,21 +305,21 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
 
     patches.core.warpHome(rom)  # Needs to be done after setting the start location.
     patches.titleScreen.setRomInfo(rom, auth, seed_name, settings, player_name, player_id)
-    if ap_settings["ap_title_screen"]:
+    if ap_settings.ap_title_screen:
         patches.titleScreen.setTitleGraphics(rom)
     patches.endscreen.updateEndScreen(rom)
     patches.aesthetics.updateSpriteData(rom)
     if args.doubletrouble:
         patches.enemies.doubleTrouble(rom)
 
-    if ap_settings["trendy_game"] != TrendyGame.option_normal:
+    if ap_settings.trendy_game != TrendyGame.option_normal:
 
         # TODO: if 0 or 4, 5, remove inaccurate conveyor tiles
 
         from .roomEditor import RoomEditor, Object
         room_editor = RoomEditor(rom, 0x2A0)
 
-        if ap_settings["trendy_game"] == TrendyGame.option_easy:
+        if ap_settings.trendy_game == TrendyGame.option_easy:
             # Set physics flag on all objects
             for i in range(0, 6):
                 rom.banks[0x4][0x6F1E + i -0x4000] = 0x4
@@ -331,7 +330,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
             # Add new conveyor to "push" yoshi (it's only a visual)
             room_editor.objects.append(Object(5, 3, 0xD0))
 
-            if int(ap_settings["trendy_game"]) >= TrendyGame.option_harder:
+            if int(ap_settings.trendy_game) >= TrendyGame.option_harder:
                 """
                 Data_004_76A0::
                     db   $FC, $00, $04, $00, $00
@@ -345,12 +344,12 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
                     TrendyGame.option_impossible: (3, 16),
                 }
                 def speed():
-                    return rnd.randint(*speeds[ap_settings["trendy_game"]])
+                    return rnd.randint(*speeds[ap_settings.trendy_game])
                 rom.banks[0x4][0x76A0-0x4000] = 0xFF - speed()                
                 rom.banks[0x4][0x76A2-0x4000] = speed()
                 rom.banks[0x4][0x76A6-0x4000] = speed()
                 rom.banks[0x4][0x76A8-0x4000] = 0xFF - speed()
-                if int(ap_settings["trendy_game"]) >= TrendyGame.option_hardest:
+                if int(ap_settings.trendy_game) >= TrendyGame.option_hardest:
                     rom.banks[0x4][0x76A1-0x4000] = 0xFF - speed()                
                     rom.banks[0x4][0x76A3-0x4000] = speed()
                     rom.banks[0x4][0x76A5-0x4000] = speed()
@@ -375,7 +374,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
                 color[channel] = color[channel] * 31 // 0xbc
         
 
-    palette = ap_settings["palette"]
+    palette = ap_settings.palette
     if palette != Palette.option_normal:
         ranges = {
             # Object palettes
