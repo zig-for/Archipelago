@@ -12,11 +12,10 @@ from flask import request, flash, redirect, url_for, session, render_template
 from pony.orm import commit, db_session
 
 from BaseClasses import seeddigits, get_seed
-from Generate import handle_name, PlandoOptions
+from Generate import handle_name, parse_arguments, PlandoOptions
 from Main import main as ERmain
 from Utils import __version__
 from WebHostLib import app
-from worlds.alttp.EntranceRandomizer import parse_arguments
 from .check import get_yaml_data, roll_options
 from .models import Generation, STATE_ERROR, STATE_QUEUED, Seed, UUID
 from .upload import upload_zip_to_db
