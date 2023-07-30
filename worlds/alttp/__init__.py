@@ -264,6 +264,9 @@ class ALTTPWorld(World):
     fix_palaceofdarkness_exit: AttributeProxy
     fix_trock_exit: AttributeProxy
 
+    required_medallions: typing.List[str] = ['Ether', 'Quake']
+    escape_assist: typing.List[str] = []
+
     #required_medallions: dict
     #dark_room_logic: Dict[int, str]
     #restrict_dungeon_item_on_boss: Dict[int, bool]
@@ -726,10 +729,10 @@ class ALTTPWorld(World):
     def write_spoiler(self, spoiler_handle: typing.TextIO) -> None:
         spoiler_handle.write("\n\nMedallions:\n")
         spoiler_handle.write(f"\nMisery Mire ({self.multiworld.get_player_name(self.player)}):"
-                             f" {self.multiworld.required_medallions[self.player][0]}")
+                             f" {self.multiworld.worlds[self.player].required_medallions[0]}")
         spoiler_handle.write(
             f"\nTurtle Rock ({self.multiworld.get_player_name(self.player)}):"
-            f" {self.multiworld.required_medallions[self.player][1]}")
+            f" {self.multiworld.worlds[self.player].required_medallions[1]}")
 
         if self.multiworld.boss_shuffle[self.player] != "none":
             def create_boss_map() -> typing.Dict:

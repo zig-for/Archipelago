@@ -907,22 +907,22 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_bytes(0x118C64, [first_bot, mid_bot, last_bot])
 
     # patch medallion requirements
-    if world.required_medallions[player][0] == 'Bombos':
+    if world.worlds[player].required_medallions[0] == 'Bombos':
         rom.write_byte(0x180022, 0x00)  # requirement
         rom.write_byte(0x4FF2, 0x31)  # sprite
         rom.write_byte(0x50D1, 0x80)
         rom.write_byte(0x51B0, 0x00)
-    elif world.required_medallions[player][0] == 'Quake':
+    elif world.worlds[player].required_medallions[0] == 'Quake':
         rom.write_byte(0x180022, 0x02)  # requirement
         rom.write_byte(0x4FF2, 0x31)  # sprite
         rom.write_byte(0x50D1, 0x88)
         rom.write_byte(0x51B0, 0x00)
-    if world.required_medallions[player][1] == 'Bombos':
+    if world.worlds[player].required_medallions[1] == 'Bombos':
         rom.write_byte(0x180023, 0x00)  # requirement
         rom.write_byte(0x5020, 0x31)  # sprite
         rom.write_byte(0x50FF, 0x90)
         rom.write_byte(0x51DE, 0x00)
-    elif world.required_medallions[player][1] == 'Ether':
+    elif world.worlds[player].required_medallions[1] == 'Ether':
         rom.write_byte(0x180023, 0x01)  # requirement
         rom.write_byte(0x5020, 0x31)  # sprite
         rom.write_byte(0x50FF, 0x98)
@@ -1473,9 +1473,9 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
         rom.write_bytes(0x180080,
                         [50, 50, 70, 70])  # values to fill for Capacity Upgrades (Bomb5, Bomb10, Arrow5, Arrow10)
 
-    rom.write_byte(0x18004D, ((0x01 if 'arrows' in world.escape_assist[player] else 0x00) |
-                              (0x02 if 'bombs' in world.escape_assist[player] else 0x00) |
-                              (0x04 if 'magic' in world.escape_assist[player] else 0x00)))  # Escape assist
+    rom.write_byte(0x18004D, ((0x01 if 'arrows' in world.worlds[player].escape_assist else 0x00) |
+                              (0x02 if 'bombs' in world.worlds[player].escape_assist else 0x00) |
+                              (0x04 if 'magic' in world.worlds[player].escape_assist else 0x00)))  # Escape assist
 
     if world.goal[player] in [Goal.option_pedestal, Goal.option_triforcehunt, Goal.option_localtriforcehunt, Goal.option_icerodhunt]:
         rom.write_byte(0x18003E, 0x01)  # make ganon invincible

@@ -23,7 +23,7 @@ class TestVanilla(TestBase):
         self.multiworld.worlds[1].er_seed = 0
         self.multiworld.worlds[1].create_regions()
         self.multiworld.worlds[1].create_items()
-        self.multiworld.required_medallions[1] = ['Ether', 'Quake']
+        self.multiworld.worlds[1].required_medallions = ['Ether', 'Quake']
         self.multiworld.itempool.extend(get_dungeon_item_pool(self.multiworld))
         self.multiworld.itempool.extend(ItemFactory(['Green Pendant', 'Red Pendant', 'Blue Pendant', 'Beat Agahnim 1', 'Beat Agahnim 2', 'Crystal 1', 'Crystal 2', 'Crystal 3', 'Crystal 4', 'Crystal 5', 'Crystal 6', 'Crystal 7'], 1))
         self.multiworld.get_location('Agahnim 1', 1).item = None

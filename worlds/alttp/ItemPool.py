@@ -347,7 +347,7 @@ def generate_itempool(world):
             placed_items["Link's Uncle"] = starting_weapon
             pool.remove(starting_weapon)
         if placed_items["Link's Uncle"] in ['Bow', 'Progressive Bow', 'Bombs (10)', 'Cane of Somaria', 'Cane of Byrna'] and multiworld.enemy_health[player] not in ['default', 'easy']:
-            multiworld.escape_assist[player].append('bombs')
+            multiworld.worlds[player].escape_assist.append('bombs')
 
     for (location, item) in placed_items.items():
         multiworld.get_location(location, player).place_locked_item(ItemFactory(item, player))
@@ -421,15 +421,15 @@ def generate_itempool(world):
         multiworld.random.shuffle(nonprogressionitems)
 
     # shuffle medallions
-    if multiworld.required_medallions[player][0] == "random":
+    if multiworld.worlds[player].required_medallions[0] == "random":
         mm_medallion = multiworld.random.choice(['Ether', 'Quake', 'Bombos'])
     else:
-        mm_medallion = multiworld.required_medallions[player][0]
-    if multiworld.required_medallions[player][1] == "random":
+        mm_medallion = multiworld.worlds[player].required_medallions[0]
+    if multiworld.worlds[player].required_medallions[1] == "random":
         tr_medallion = multiworld.random.choice(['Ether', 'Quake', 'Bombos'])
     else:
-        tr_medallion = multiworld.required_medallions[player][1]
-    multiworld.required_medallions[player] = (mm_medallion, tr_medallion)
+        tr_medallion = multiworld.worlds[player].required_medallions[1]
+    multiworld.worlds[player].required_medallions = (mm_medallion, tr_medallion)
 
     place_bosses(world)
     set_up_shops(multiworld, player)
