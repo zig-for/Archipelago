@@ -241,29 +241,6 @@ def read_weights_yamls(path) -> Tuple[Any, ...]:
     return tuple(parse_yamls(yaml))
 
 
-def interpret_on_off(value) -> bool:
-    return {"on": True, "off": False}.get(value, value)
-
-
-def convert_to_on_off(value) -> str:
-    return {True: "on", False: "off"}.get(value, value)
-
-
-def get_choice_legacy(option, root, value=None) -> Any:
-    if option not in root:
-        return value
-    if type(root[option]) is list:
-        return interpret_on_off(random.choices(root[option])[0])
-    if type(root[option]) is not dict:
-        return interpret_on_off(root[option])
-    if not root[option]:
-        return value
-    if any(root[option].values()):
-        return interpret_on_off(
-            random.choices(list(root[option].keys()), weights=list(map(int, root[option].values())))[0])
-    raise RuntimeError(f"All options specified in \"{option}\" are weighted as zero.")
-
-
 def get_choice(option, root, value=None) -> Any:
     if option not in root:
         return value
@@ -302,20 +279,6 @@ def prefer_int(input_data: str) -> Union[str, int]:
         return int(input_data)
     except:
         return input_data
-
-
-goals = {
-    'ganon': 'ganon',
-    'crystals': 'crystals',
-    'bosses': 'bosses',
-    'pedestal': 'pedestal',
-    'ganon_pedestal': 'ganonpedestal',
-    'triforce_hunt': 'triforcehunt',
-    'local_triforce_hunt': 'localtriforcehunt',
-    'ganon_triforce_hunt': 'ganontriforcehunt',
-    'local_ganon_triforce_hunt': 'localganontriforcehunt',
-    'ice_rod_hunt': 'icerodhunt',
-}
 
 
 def roll_percentage(percentage: Union[int, float]) -> bool:

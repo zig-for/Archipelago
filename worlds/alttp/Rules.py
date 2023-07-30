@@ -25,9 +25,9 @@ from .UnderworldGlitchRules import underworld_glitches_rules
 def set_rules(world):
     player = world.player
     world = world.multiworld
-    if world.logic[player] == 'nologic':
+    if world.logic[player] == Logic.option_nologic:
         if player == next(player_id for player_id in world.get_game_players("A Link to the Past")
-                          if world.logic[player_id] == 'nologic'):  # only warn one time
+                          if world.logic[player_id] == Logic.option_nologic):  # only warn one time
             logging.info(
                 'WARNING! Seeds generated under this logic often require major glitches and may be impossible!')
 

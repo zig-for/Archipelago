@@ -20,6 +20,8 @@ class Logic(Choice):
                     item requirements.
                              """
     # TODO: go back and replace these to underscore versions
+    # TODO: missed a tonne of strings in code for these
+    
     option_noglitches = 0
     option_minorglitches = 1
     option_owglitches = 2
@@ -52,6 +54,7 @@ class Goal(Choice):
     localganontriforcehunt: Places 30 Triforce Pieces in your world,
                    collect 20 of them, then defeat Ganon.
     """
+    # TODO: like with logic, re_underscore these
     option_ganon = 0
     option_pedestal = 1
     option_bosses = 2
@@ -148,6 +151,12 @@ class Sprite(FreeText):
     """
     TODO: probably broke this
     """
+
+class SpritePool(FreeText):
+    """
+    TODO: probably broke this
+    """
+
 
 class DungeonItem(Choice):
     value: int
@@ -739,8 +748,9 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "enemy_health": EnemyHealth,
     "enemy_damage": EnemyDamage,
     # required_medallions??
-    # sprite_pool dark_room_logic
+    # 
     "shop_shuffle": ShopShuffle,
     "shuffle_prizes": PrizeShuffle,
     "dark_room_logic": DarkRoomLogic,
+    "sprite_pool": SpritePool,
 }
