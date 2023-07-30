@@ -145,37 +145,34 @@ class OpenPyramid(Choice):
         elif self.value == self.option_open:
             return True
         else:
-            return False
+            return False    
 
-class Sprite(FreeText):
-    """
-    TODO: probably broke this
-    """
-
-class SpritePool(Option[typing.List[str]]):
-    """
-    TODO: probably broke this
-    """
+class YamlNode(Option[typing.Any]):
     supports_weighting = False
+    value = []
+    @classmethod
+    def from_any(cls, root):
+        return SpritePool(root)
+
+    def __init__(self, value: typing.Any):
+        self.value = value
 
     @property
     def current_option_name(self) -> str:
         """For display purposes. Worlds should be using current_key."""
         return str(self.value)
 
-    def __init__(self, value: typing.List[str] | str):
-        if type(value) == str:
-            value = [value]
-        assert isinstance(value, list), f"value of SpritePool must be a list[str] (found a {type(value)} {value})"
-        for item in value:
-            assert isinstance(item, str), f"value of SpritePool must be a list[str] (found a {type(item)} {item}) inside)"
-        self.value = value
+class Sprite(YamlNode):
+    pass
 
-    @classmethod
-    def from_any(cls, root: typing.List[str] | str):
-        return SpritePool(root)
+class SpritePool(YamlNode):
+    pass
 
+class RandomSpriteOnEvent(YamlNode):
+    pass
 
+class UseWeightedSpritePool(Toggle):
+    pass
 
 class DungeonItem(Choice):
     value: int
@@ -753,7 +750,6 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "goal": Goal,
     "logic": Logic,
     "dungeon_counters": DungeonCounters,
-    "sprite": Sprite,
     "mode": Mode,
     "timer": Timer,
     "triforce_pieces_mode": TriforcePiecesMode,
@@ -776,4 +772,7 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "shuffle_prizes": PrizeShuffle,
     "dark_room_logic": DarkRoomLogic,
     "sprite_pool": SpritePool,
+    "sprite": Sprite,
+    "random_sprite_on_event": RandomSpriteOnEvent,
+    "use_weighted_sprite_pool": UseWeightedSpritePool,
 }

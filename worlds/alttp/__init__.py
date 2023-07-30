@@ -342,6 +342,48 @@ class ALTTPWorld(World):
         world.non_local_items[player].value -= item_name_groups['Pendants']
         world.non_local_items[player].value -= item_name_groups['Crystals']
 
+        
+
+        def interpret_on_off(value) -> bool:
+            return {"on": True, "off": False}.get(value, value)
+
+        def get_choice_legacy(option, root, value=None) -> typing.Any:
+            if option not in root:
+                return value
+            if type(root[option]) is list:
+                return interpret_on_off(random.choices(root[option])[0])
+            if type(root[option]) is not dict:
+                return interpret_on_off(root[option])
+            if not root[option]:
+                return value
+            if any(root[option].values()):
+                return interpret_on_off(
+                    random.choices(list(root[option].keys()), weights=list(map(int, root[option].values())))[0])
+            raise RuntimeError(f"All options specified in \"{option}\" are weighted as zero.")
+
+        sprite_pool = world.sprite_pool[player].value
+        sprite = get_choice_legacy('sprite', {'sprite': world.sprite[player].value}, "Link")
+        randomoneventweights = world.random_sprite_on_event[player].value
+        if randomoneventweights:
+            if get_choice_legacy('enabled', randomoneventweights, False):
+                sprite = 'randomon'
+                sprite += '-hit' if get_choice_legacy('on_hit', randomoneventweights, True) else ''
+                sprite += '-enter' if get_choice_legacy('on_enter', randomoneventweights, False) else ''
+                sprite += '-exit' if get_choice_legacy('on_exit', randomoneventweights, False) else ''
+                sprite += '-slash' if get_choice_legacy('on_slash', randomoneventweights, False) else ''
+                sprite += '-item' if get_choice_legacy('on_item', randomoneventweights, False) else ''
+                sprite += '-bonk' if get_choice_legacy('on_bonk', randomoneventweights, False) else ''
+                sprite = 'randomonall' if get_choice_legacy('on_everything', randomoneventweights, False) else sprite
+                sprite = 'randomonnone' if sprite == 'randomon' else sprite
+
+                if (not sprite_pool or get_choice_legacy('use_weighted_sprite_pool', randomoneventweights, False)) \
+                        and world.sprite[player].value:  # Use sprite as a weighted sprite pool, if a sprite pool is not already defined.
+                    for key, value in world.sprite[player].value.items():
+                        if key.startswith('random'):
+                            sprite_pool += ['random'] * int(value)
+                        else:
+                            sprite_pool += [key] * int(value)
+        world.sprite[player].value = sprite
     create_dungeons = create_dungeons
 
     def create_regions(self):
