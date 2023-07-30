@@ -108,12 +108,11 @@ class GreenClockTime(ClockTime):
     """For all timer modes, the amount of time in minutes to gain or lose when picking up a green clock"""
     default = 4
 
-
 class Mode(Choice):
     option_standard = 0
     option_open = 1
     option_inverted = 2
-    default = option_standard
+    default = option_open
 
 class DungeonCounters(Choice):
     option_off = 0
