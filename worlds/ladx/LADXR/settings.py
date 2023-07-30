@@ -215,8 +215,7 @@ Note, some entrances can lead into water, use the warp-to-home from the save&qui
             assert s.short_key not in short_keys, s.label
             short_keys.add(s.short_key)
 
-        for field in fields(ap_options):
-            option = getattr(ap_options, field.name)
+        for option in ap_options.as_dict().values():
             if not hasattr(option, 'to_ladxr_option'):
                 continue
             name, value = option.to_ladxr_option(ap_options)
