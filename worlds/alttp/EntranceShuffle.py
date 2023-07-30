@@ -1,6 +1,8 @@
 # ToDo: With shuffle_ganon option, prevent gtower from linking to an exit only location through a 2 entrance cave.
 from collections import defaultdict
 
+from .Options import Mode, EntranceShuffle
+
 from .OverworldGlitchRules import overworld_glitch_connections
 from .UnderworldGlitchRules import underworld_glitch_connections
 
@@ -21,17 +23,17 @@ def link_entrances(world, player):
         connect_simple(world, exitname, regionname, player)
 
     # if we do not shuffle, set default connections
-    if world.shuffle[player] == 'vanilla':
+    if world.entrance_shuffle[player] == EntranceShuffle.option_vanilla:
         for exitname, regionname in default_connections:
             connect_simple(world, exitname, regionname, player)
         for exitname, regionname in default_dungeon_connections:
             connect_simple(world, exitname, regionname, player)
-    elif world.shuffle[player] == 'dungeonssimple':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_dungeonssimple:
         for exitname, regionname in default_connections:
             connect_simple(world, exitname, regionname, player)
 
         simple_shuffle_dungeons(world, player)
-    elif world.shuffle[player] == 'dungeonsfull':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_dungeonsfull:
         for exitname, regionname in default_connections:
             connect_simple(world, exitname, regionname, player)
 
@@ -41,7 +43,7 @@ def link_entrances(world, player):
         lw_entrances = list(LW_Dungeon_Entrances)
         dw_entrances = list(DW_Dungeon_Entrances)
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_two_way(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
         else:
@@ -54,7 +56,7 @@ def link_entrances(world, player):
             dw_entrances.append('Ganons Tower')
             dungeon_exits.append('Ganons Tower Exit')
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # rest of hyrule castle must be in light world, so it has to be the one connected to east exit of desert
             hyrule_castle_exits = [('Hyrule Castle Exit (West)', 'Hyrule Castle Exit (East)')]
             connect_mandatory_exits(world, lw_entrances, hyrule_castle_exits, list(LW_Dungeon_Entrances_Must_Exit), player)
@@ -63,9 +65,9 @@ def link_entrances(world, player):
             connect_mandatory_exits(world, lw_entrances, dungeon_exits, list(LW_Dungeon_Entrances_Must_Exit), player)
         connect_mandatory_exits(world, dw_entrances, dungeon_exits, list(DW_Dungeon_Entrances_Must_Exit), player)
         connect_caves(world, lw_entrances, dw_entrances, dungeon_exits, player)
-    elif world.shuffle[player] == 'dungeonscrossed':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_dungeonscrossed:
         crossed_shuffle_dungeons(world, player)
-    elif world.shuffle[player] == 'simple':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_simple:
         simple_shuffle_dungeons(world, player)
 
         old_man_entrances = list(Old_Man_Entrances)
@@ -136,7 +138,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, single_doors, door_targets, player)
-    elif world.shuffle[player] == 'restricted':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_restricted:
         simple_shuffle_dungeons(world, player)
 
         lw_entrances = list(LW_Entrances + LW_Single_Cave_Doors + Old_Man_Entrances)
@@ -207,7 +209,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, doors, door_targets, player)
-    elif world.shuffle[player] == 'restricted_legacy':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_restricted_legacy:
         simple_shuffle_dungeons(world, player)
 
         lw_entrances = list(LW_Entrances)
@@ -262,7 +264,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, single_doors, door_targets, player)
-    elif world.shuffle[player] == 'full':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_full:
         skull_woods_shuffle(world, player)
 
         lw_entrances = list(LW_Entrances + LW_Dungeon_Entrances + LW_Single_Cave_Doors + Old_Man_Entrances)
@@ -279,7 +281,7 @@ def link_entrances(world, player):
         # tavern back door cannot be shuffled yet
         connect_doors(world, ['Tavern North'], ['Tavern'], player)
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_two_way(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
         else:
@@ -316,7 +318,7 @@ def link_entrances(world, player):
                 pass
             else: #if the cave wasn't placed we get here
                 connect_caves(world, lw_entrances, [], old_man_house, player)
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # rest of hyrule castle must be in light world
             connect_caves(world, lw_entrances, [], [('Hyrule Castle Exit (West)', 'Hyrule Castle Exit (East)')], player)
 
@@ -368,7 +370,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, doors, door_targets, player)
-    elif world.shuffle[player] == 'crossed':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_crossed:
         skull_woods_shuffle(world, player)
 
         entrances = list(LW_Entrances + LW_Dungeon_Entrances + LW_Single_Cave_Doors + Old_Man_Entrances + DW_Entrances + DW_Dungeon_Entrances + DW_Single_Cave_Doors)
@@ -383,7 +385,7 @@ def link_entrances(world, player):
         # tavern back door cannot be shuffled yet
         connect_doors(world, ['Tavern North'], ['Tavern'], player)
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_two_way(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
         else:
@@ -400,7 +402,7 @@ def link_entrances(world, player):
         #place must-exit caves 
         connect_mandatory_exits(world, entrances, caves, must_exits, player)
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # rest of hyrule castle must be dealt with
             connect_caves(world, entrances, [], [('Hyrule Castle Exit (West)', 'Hyrule Castle Exit (East)')], player)
 
@@ -445,7 +447,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, entrances, door_targets, player)
-    elif world.shuffle[player] == 'full_legacy':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_full_legacy:
         skull_woods_shuffle(world, player)
 
         lw_entrances = list(LW_Entrances + LW_Dungeon_Entrances + Old_Man_Entrances)
@@ -459,7 +461,7 @@ def link_entrances(world, player):
         blacksmith_doors = list(Blacksmith_Single_Cave_Doors)
         door_targets = list(Single_Cave_Targets)
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_two_way(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
         else:
@@ -480,7 +482,7 @@ def link_entrances(world, player):
         else:
             connect_mandatory_exits(world, dw_entrances, caves, dw_must_exits, player)
             connect_mandatory_exits(world, lw_entrances, caves, lw_must_exits, player)
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # rest of hyrule castle must be in light world
             connect_caves(world, lw_entrances, [], [('Hyrule Castle Exit (West)', 'Hyrule Castle Exit (East)')], player)
 
@@ -522,7 +524,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, single_doors, door_targets, player)
-    elif world.shuffle[player] == 'madness_legacy':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_madness_legacy:
         # here lie dragons, connections are no longer two way
         lw_entrances = list(LW_Entrances + LW_Dungeon_Entrances + Old_Man_Entrances)
         dw_entrances = list(DW_Entrances + DW_Dungeon_Entrances)
@@ -571,7 +573,7 @@ def link_entrances(world, player):
                         ('Lumberjack Tree Exit', 'Lumberjack Tree (top)'),
                         (('Skull Woods Second Section Exit (East)', 'Skull Woods Second Section Exit (West)'), 'Skull Woods Second Section (Drop)')]
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # cannot move uncle cave
             connect_entrance(world, 'Hyrule Castle Secret Entrance Drop', 'Hyrule Castle Secret Entrance', player)
             connect_exit(world, 'Hyrule Castle Secret Entrance Exit', 'Hyrule Castle Secret Entrance Stairs', player)
@@ -626,7 +628,7 @@ def link_entrances(world, player):
             connect_entrance(world, hole, target, player)
 
         # hyrule castle handling
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_entrance(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
             connect_exit(world, 'Hyrule Castle Exit (South)', 'Hyrule Castle Entrance (South)', player)
@@ -775,7 +777,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, single_doors, door_targets, player)
-    elif world.shuffle[player] == 'insanity':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_insanity:
         # beware ye who enter here
 
         entrances = LW_Entrances + LW_Dungeon_Entrances + DW_Entrances + DW_Dungeon_Entrances + Old_Man_Entrances + ['Skull Woods Second Section Door (East)', 'Skull Woods First Section Door', 'Kakariko Well Cave', 'Bat Cave Cave', 'North Fairy Cave', 'Sanctuary', 'Lost Woods Hideout Stump', 'Lumberjack Tree Cave']
@@ -812,7 +814,7 @@ def link_entrances(world, player):
         # tavern back door cannot be shuffled yet
         connect_doors(world, ['Tavern North'], ['Tavern'], player)
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # cannot move uncle cave
             connect_entrance(world, 'Hyrule Castle Secret Entrance Drop', 'Hyrule Castle Secret Entrance', player)
             connect_exit(world, 'Hyrule Castle Secret Entrance Exit', 'Hyrule Castle Secret Entrance Stairs', player)
@@ -845,7 +847,7 @@ def link_entrances(world, player):
             connect_entrance(world, hole, hole_targets.pop(), player)
 
         # hyrule castle handling
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_entrance(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
             connect_exit(world, 'Hyrule Castle Exit (South)', 'Hyrule Castle Entrance (South)', player)
@@ -922,7 +924,7 @@ def link_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, doors, door_targets, player)
-    elif world.shuffle[player] == 'insanity_legacy':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_insanity_legacy:
         world.fix_fake_world[player] = False
         # beware ye who enter here
 
@@ -947,7 +949,7 @@ def link_entrances(world, player):
         hole_targets = ['Kakariko Well (top)', 'Bat Cave (right)', 'North Fairy Cave', 'Lost Woods Hideout (top)', 'Lumberjack Tree (top)', 'Sewer Drop', 'Skull Woods Second Section (Drop)',
                         'Skull Woods First Section (Left)', 'Skull Woods First Section (Right)', 'Skull Woods First Section (Top)']
 
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # cannot move uncle cave
             connect_entrance(world, 'Hyrule Castle Secret Entrance Drop', 'Hyrule Castle Secret Entrance', player)
             connect_exit(world, 'Hyrule Castle Secret Entrance Exit', 'Hyrule Castle Secret Entrance Stairs', player)
@@ -980,7 +982,7 @@ def link_entrances(world, player):
             connect_entrance(world, hole, hole_targets.pop(), player)
 
         # hyrule castle handling
-        if world.mode[player] == 'standard':
+        if world.mode[player] == Mode.option_standard:
             # must connect front of hyrule castle to do escape
             connect_entrance(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
             connect_exit(world, 'Hyrule Castle Exit (South)', 'Hyrule Castle Entrance (South)', player)
@@ -1067,7 +1069,7 @@ def link_entrances(world, player):
         connect_doors(world, single_doors, door_targets, player)
     else:
         raise NotImplementedError(
-            f'{world.shuffle[player]} Shuffling not supported yet. Player {world.get_player_name(player)}')
+            f'{world.entrance_shuffle[player]} Shuffling not supported yet. Player {world.get_player_name(player)}')
 
     if world.logic[player] in ['owglitches', 'hybridglitches', 'nologic']:
         overworld_glitch_connections(world, player)
@@ -1106,17 +1108,17 @@ def link_inverted_entrances(world, player):
         connect_simple(world, exitname, regionname, player)
 
     # if we do not shuffle, set default connections
-    if world.shuffle[player] == 'vanilla':
+    if world.entrance_shuffle[player] == EntranceShuffle.option_vanilla:
         for exitname, regionname in inverted_default_connections:
             connect_simple(world, exitname, regionname, player)
         for exitname, regionname in inverted_default_dungeon_connections:
             connect_simple(world, exitname, regionname, player)
-    elif world.shuffle[player] == 'dungeonssimple':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_dungeonssimple:
         for exitname, regionname in inverted_default_connections:
             connect_simple(world, exitname, regionname, player)
 
         simple_shuffle_dungeons(world, player)
-    elif world.shuffle[player] == 'dungeonsfull':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_dungeonsfull:
         for exitname, regionname in inverted_default_connections:
             connect_simple(world, exitname, regionname, player)
 
@@ -1171,9 +1173,9 @@ def link_inverted_entrances(world, player):
         connect_mandatory_exits(world, lw_entrances, dungeon_exits, lw_dungeon_entrances_must_exit, player)
 
         connect_caves(world, lw_entrances, dw_entrances, dungeon_exits, player)
-    elif world.shuffle[player] == 'dungeonscrossed':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_dungeonscrossed:
         inverted_crossed_shuffle_dungeons(world, player)
-    elif world.shuffle[player] == 'simple':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_simple:
         simple_shuffle_dungeons(world, player)
 
         old_man_entrances = list(Inverted_Old_Man_Entrances)
@@ -1270,7 +1272,7 @@ def link_inverted_entrances(world, player):
         # place remaining doors
         connect_doors(world, single_doors, door_targets, player)
     
-    elif world.shuffle[player] == 'restricted':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_restricted:
         simple_shuffle_dungeons(world, player)
 
         lw_entrances = list(Inverted_LW_Entrances + Inverted_LW_Single_Cave_Doors)
@@ -1355,7 +1357,7 @@ def link_inverted_entrances(world, player):
         doors = lw_entrances + dw_entrances
         # place remaining doors
         connect_doors(world, doors, door_targets, player)
-    elif world.shuffle[player] == 'full':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_full:
         skull_woods_shuffle(world, player)
 
         lw_entrances = list(Inverted_LW_Entrances + Inverted_LW_Dungeon_Entrances + Inverted_LW_Single_Cave_Doors)
@@ -1506,7 +1508,7 @@ def link_inverted_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, doors, door_targets, player)
-    elif world.shuffle[player] == 'crossed':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_crossed:
         skull_woods_shuffle(world, player)
 
         entrances = list(Inverted_LW_Entrances + Inverted_LW_Dungeon_Entrances + Inverted_LW_Single_Cave_Doors + Inverted_Old_Man_Entrances + Inverted_DW_Entrances + Inverted_DW_Dungeon_Entrances + Inverted_DW_Single_Cave_Doors)
@@ -1617,7 +1619,7 @@ def link_inverted_entrances(world, player):
 
         # place remaining doors
         connect_doors(world, entrances, door_targets, player)
-    elif world.shuffle[player] == 'insanity':
+    elif world.entrance_shuffle[player] == EntranceShuffle.option_insanity:
         # beware ye who enter here
 
         entrances = Inverted_LW_Entrances + Inverted_LW_Dungeon_Entrances + Inverted_DW_Entrances + Inverted_DW_Dungeon_Entrances + Inverted_Old_Man_Entrances + Old_Man_Entrances + ['Skull Woods Second Section Door (East)', 'Skull Woods Second Section Door (West)', 'Skull Woods First Section Door', 'Kakariko Well Cave', 'Bat Cave Cave', 'North Fairy Cave', 'Sanctuary', 'Lost Woods Hideout Stump', 'Lumberjack Tree Cave', 'Hyrule Castle Entrance (South)']
@@ -1871,7 +1873,7 @@ def scramble_holes(world, player):
     else:
         hole_targets.append(('Pyramid Exit', 'Pyramid'))
 
-    if world.mode[player] == 'standard':
+    if world.mode[player] == Mode.option_standard:
         # cannot move uncle cave
         connect_two_way(world, 'Hyrule Castle Secret Entrance Stairs', 'Hyrule Castle Secret Entrance Exit', player)
         connect_entrance(world, 'Hyrule Castle Secret Entrance Drop', 'Hyrule Castle Secret Entrance', player)
@@ -1880,14 +1882,14 @@ def scramble_holes(world, player):
         hole_targets.append(('Hyrule Castle Secret Entrance Exit', 'Hyrule Castle Secret Entrance'))
 
     # do not shuffle sanctuary into pyramid hole unless shuffle is crossed
-    if world.shuffle[player] == 'crossed':
+    if world.entrance_shuffle[player] == EntranceShuffle.option_crossed:
         hole_targets.append(('Sanctuary Exit', 'Sewer Drop'))
     if world.shuffle_ganon:
         world.random.shuffle(hole_targets)
         exit, target = hole_targets.pop()
         connect_two_way(world, 'Pyramid Entrance', exit, player)
         connect_entrance(world, 'Pyramid Hole', target, player)
-    if world.shuffle[player] != 'crossed':
+    if world.entrance_shuffle[player] != EntranceShuffle.option_crossed:
         hole_targets.append(('Sanctuary Exit', 'Sewer Drop'))
 
     world.random.shuffle(hole_targets)
@@ -1922,14 +1924,14 @@ def scramble_inverted_holes(world, player):
     hole_targets.append(('Hyrule Castle Secret Entrance Exit', 'Hyrule Castle Secret Entrance'))
 
     # do not shuffle sanctuary into pyramid hole unless shuffle is crossed
-    if world.shuffle[player] == 'crossed':
+    if world.entrance_shuffle[player] == EntranceShuffle.option_crossed:
         hole_targets.append(('Sanctuary Exit', 'Sewer Drop'))
     if world.shuffle_ganon:
         world.random.shuffle(hole_targets)
         exit, target = hole_targets.pop()
         connect_two_way(world, 'Inverted Pyramid Entrance', exit, player)
         connect_entrance(world, 'Inverted Pyramid Hole', target, player)
-    if world.shuffle[player] != 'crossed':
+    if world.entrance_shuffle[player] != EntranceShuffle.option_crossed:
         hole_targets.append(('Sanctuary Exit', 'Sewer Drop'))
 
     world.random.shuffle(hole_targets)
@@ -1952,7 +1954,7 @@ def connect_random(world, exitlist, targetlist, player, two_way=False):
 def connect_mandatory_exits(world, entrances, caves, must_be_exits, player):
 
     # Keeps track of entrances that cannot be used to access each exit / cave
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         invalid_connections = Inverted_Must_Exit_Invalid_Connections.copy()
     else:
         invalid_connections = Must_Exit_Invalid_Connections.copy()
@@ -1960,7 +1962,7 @@ def connect_mandatory_exits(world, entrances, caves, must_be_exits, player):
 
     if world.logic[player] in ['owglitches', 'hybridglitches', 'nologic']:
         from worlds.alttp import OverworldGlitchRules
-        for entrance in OverworldGlitchRules.get_non_mandatory_exits(world.mode[player] == 'inverted'):
+        for entrance in OverworldGlitchRules.get_non_mandatory_exits(world.mode[player] == Mode.option_inverted):
             invalid_connections[entrance] = set()
             if entrance in must_be_exits:
                 must_be_exits.remove(entrance)
@@ -1971,7 +1973,7 @@ def connect_mandatory_exits(world, entrances, caves, must_be_exits, player):
     world.random.shuffle(caves)
 
     # Handle inverted Aga Tower - if it depends on connections, then so does Hyrule Castle Ledge
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         for entrance in invalid_connections:
             if world.get_entrance(entrance, player).connected_region == world.get_region('Inverted Agahnims Tower',
                                                                                          player):
@@ -2086,7 +2088,7 @@ def simple_shuffle_dungeons(world, player):
     dungeon_entrances = ['Eastern Palace', 'Tower of Hera', 'Thieves Town', 'Skull Woods Final Section', 'Palace of Darkness', 'Ice Palace', 'Misery Mire', 'Swamp Palace']
     dungeon_exits = ['Eastern Palace Exit', 'Tower of Hera Exit', 'Thieves Town Exit', 'Skull Woods Final Section Exit', 'Palace of Darkness Exit', 'Ice Palace Exit', 'Misery Mire Exit', 'Swamp Palace Exit']
 
-    if world.mode[player] != 'inverted':
+    if world.mode[player] != Mode.option_inverted:
         if not world.shuffle_ganon:
             connect_two_way(world, 'Ganons Tower', 'Ganons Tower Exit', player)
         else:
@@ -2101,13 +2103,13 @@ def simple_shuffle_dungeons(world, player):
 
     # mix up 4 door dungeons
     multi_dungeons = ['Desert', 'Turtle Rock']
-    if world.mode[player] == 'open' or (world.mode[player] == 'inverted' and world.shuffle_ganon):
+    if world.mode[player] == Mode.option_open or (world.mode[player] == Mode.option_inverted and world.shuffle_ganon):
         multi_dungeons.append('Hyrule Castle')
     world.random.shuffle(multi_dungeons)
 
     dp_target = multi_dungeons[0]
     tr_target = multi_dungeons[1]
-    if world.mode[player] not in ['open', 'inverted'] or (world.mode[player] == 'inverted' and world.shuffle_ganon is False):
+    if world.mode[player] not in [Mode.option_open, Mode.option_inverted] or (world.mode[player] == Mode.option_inverted and world.shuffle_ganon is False):
         # place hyrule castle as intended
         hc_target = 'Hyrule Castle'
     else:
@@ -2115,7 +2117,7 @@ def simple_shuffle_dungeons(world, player):
 
     # ToDo improve this?
 
-    if world.mode[player] != 'inverted':
+    if world.mode[player] != Mode.option_inverted:
         if hc_target == 'Hyrule Castle':
             connect_two_way(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
             connect_two_way(world, 'Hyrule Castle Entrance (East)', 'Hyrule Castle Exit (East)', player)
@@ -2230,7 +2232,7 @@ def crossed_shuffle_dungeons(world, player: int):
         dungeon_entrances.append('Ganons Tower')
         dungeon_exits.append('Ganons Tower Exit')
 
-    if world.mode[player] == 'standard':
+    if world.mode[player] == Mode.option_standard:
         # must connect front of hyrule castle to do escape
         connect_two_way(world, 'Hyrule Castle Entrance (South)', 'Hyrule Castle Exit (South)', player)
     else:
@@ -2240,7 +2242,7 @@ def crossed_shuffle_dungeons(world, player: int):
     connect_mandatory_exits(world, dungeon_entrances, dungeon_exits,
                             LW_Dungeon_Entrances_Must_Exit + DW_Dungeon_Entrances_Must_Exit, player)
 
-    if world.mode[player] == 'standard':
+    if world.mode[player] == Mode.option_standard:
         connect_caves(world, dungeon_entrances, [], [('Hyrule Castle Exit (West)', 'Hyrule Castle Exit (East)')], player)
 
     connect_caves(world, dungeon_entrances, [], dungeon_exits, player)

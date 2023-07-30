@@ -8,6 +8,7 @@ from worlds.alttp.ItemPool import difficulties
 from worlds.alttp.Items import ItemFactory
 from worlds.alttp.Regions import create_regions
 from worlds.alttp.Shops import create_shops
+from worlds.alttp.Options import Difficulty
 from worlds import AutoWorld
 
 
@@ -22,7 +23,7 @@ class TestDungeon(unittest.TestCase):
         self.multiworld.set_default_common_options()
         self.starting_regions = []  # Where to start exploring
         self.remove_exits = []      # Block dungeon exits
-        self.multiworld.difficulty_requirements[1] = difficulties['normal']
+        self.multiworld.worlds[1].difficulty_requirements = Difficulty.option_normal
         create_regions(self.multiworld, 1)
         self.multiworld.worlds[1].create_dungeons()
         create_shops(self.multiworld, 1)

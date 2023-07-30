@@ -309,5 +309,5 @@ class TestLightWorld(TestInvertedOWG):
             # ["Bomb Merchant", True, ['Crystal 5', 'Crystal 6', 'Magic Mirror', 'Pegasus Boots']],
             # ["Bomb Merchant", True, ['Crystal 5', 'Crystal 6', 'Beat Agahnim 1']],
 
-            ["Ganon", False, []],
+            [Goal.option_ganon, False, []],
         ])

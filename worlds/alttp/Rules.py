@@ -9,7 +9,7 @@ from worlds.generic.Rules import (add_item_rule, add_rule, forbid_item,
 from . import OverworldGlitchRules
 from .Bosses import GanonDefeatRule
 from .Items import ItemFactory, item_name_groups, item_table, progression_items
-from .Options import smallkey_shuffle
+from .Options import smallkey_shuffle, Goal, Mode, DarkRoomLogic, Logic
 from .OverworldGlitchRules import no_logic_rules, overworld_glitches_rules
 from .Regions import LTTPRegionType, location_table
 from .StateHelpers import (can_extend_magic, can_kill_most_things,
@@ -25,9 +25,9 @@ from .UnderworldGlitchRules import underworld_glitches_rules
 def set_rules(world):
     player = world.player
     world = world.multiworld
-    if world.logic[player] == 'nologic':
+    if world.logic[player] == Logic.option_nologic:
         if player == next(player_id for player_id in world.get_game_players("A Link to the Past")
-                          if world.logic[player_id] == 'nologic'):  # only warn one time
+                          if world.logic[player_id] == Logic.option_nologic):  # only warn one time
             logging.info(
                 'WARNING! Seeds generated under this logic often require major glitches and may be impossible!')
 
@@ -49,14 +49,14 @@ def set_rules(world):
     global_rules(world, player)
     dungeon_boss_rules(world, player)
 
-    if world.mode[player] != 'inverted':
+    if world.mode[player] != Mode.option_inverted:
         default_rules(world, player)
 
-    if world.mode[player] == 'open':
+    if world.mode[player] == Mode.option_open:
         open_rules(world, player)
-    elif world.mode[player] == 'standard':
+    elif world.mode[player] == Mode.option_standard:
         standard_rules(world, player)
-    elif world.mode[player] == 'inverted':
+    elif world.mode[player] == Mode.option_inverted:
         open_rules(world, player)
         inverted_rules(world, player)
     else:
@@ -81,16 +81,16 @@ def set_rules(world):
     else:
         raise NotImplementedError(f'Not implemented yet: Logic - {world.logic[player]}')
 
-    if world.goal[player] == 'bosses':
+    if world.goal[player] == Goal.option_bosses:
         # require all bosses to beat ganon
         add_rule(world.get_location('Ganon', player), lambda state: state.can_reach('Master Sword Pedestal', 'Location', player) and state.has('Beat Agahnim 1', player) and state.has('Beat Agahnim 2', player) and has_crystals(state, 7, player))
     elif world.goal[player] == 'ganon':
         # require aga2 to beat ganon
         add_rule(world.get_location('Ganon', player), lambda state: state.has('Beat Agahnim 2', player))
 
-    if world.mode[player] != 'inverted':
+    if world.mode[player] != Mode.option_inverted:
         set_big_bomb_rules(world, player)
-        if world.logic[player] in {'owglitches', 'hybridglitches', 'nologic'} and world.shuffle[player] not in {'insanity', 'insanity_legacy', 'madness'}:
+        if world.logic[player] in {'owglitches', 'hybridglitches', 'nologic'} and world.entrance_shuffle[player] not in {EntranceShuffle.option_insanity, EntranceShuffle.option_insanity_legacy, EntranceShuffle.option_madness}:
             path_to_courtyard = mirrorless_path_to_castle_courtyard(world, player)
             add_rule(world.get_entrance('Pyramid Fairy', player), lambda state: state.multiworld.get_entrance('Dark Death Mountain Offset Mirror', player).can_reach(state) and all(rule(state) for rule in path_to_courtyard), 'or')
     else:
@@ -102,17 +102,17 @@ def set_rules(world):
         add_rule(world.get_entrance('Swamp Palace Moat', player), lambda state: state.has('Magic Mirror', player))
 
     # GT Entrance may be required for Turtle Rock for OWG and < 7 required
-    ganons_tower = world.get_entrance('Inverted Ganons Tower' if world.mode[player] == 'inverted' else 'Ganons Tower', player)
-    if world.crystals_needed_for_gt[player] == 7 and not (world.logic[player] in ['owglitches', 'hybridglitches', 'nologic'] and world.mode[player] != 'inverted'):
+    ganons_tower = world.get_entrance('Inverted Ganons Tower' if world.mode[player] == Mode.option_inverted else 'Ganons Tower', player)
+    if world.crystals_needed_for_gt[player] == 7 and not (world.logic[player] in ['owglitches', 'hybridglitches', 'nologic'] and world.mode[player] != Mode.option_inverted):
         set_rule(ganons_tower, lambda state: False)
 
     set_trock_key_rules(world, player)
 
     set_rule(ganons_tower, lambda state: has_crystals(state, state.multiworld.crystals_needed_for_gt[player], player))
-    if world.mode[player] != 'inverted' and world.logic[player] in ['owglitches', 'hybridglitches', 'nologic']:
+    if world.mode[player] != Mode.option_inverted and world.logic[player] in ['owglitches', 'hybridglitches', 'nologic']:
         add_rule(world.get_entrance('Ganons Tower', player), lambda state: state.multiworld.get_entrance('Ganons Tower Ascent', player).can_reach(state), 'or')
 
-    set_bunny_rules(world, player, world.mode[player] == 'inverted')
+    set_bunny_rules(world, player, world.mode[player] == Mode.option_inverted)
 
 
 def mirrorless_path_to_castle_courtyard(world, player):
@@ -144,14 +144,14 @@ def set_always_allow(spot, rule):
 
 
 def add_lamp_requirement(world: MultiWorld, spot, player: int, has_accessible_torch: bool = False):
-    if world.dark_room_logic[player] == "lamp":
+    if world.dark_room_logic[player] == DarkRoomLogic.option_lamp:
         add_rule(spot, lambda state: state.has('Lamp', player))
-    elif world.dark_room_logic[player] == "torches":  # implicitly lamp as well
+    elif world.dark_room_logic[player] == DarkRoomLogic.option_torches:  # implicitly lamp as well
         if has_accessible_torch:
             add_rule(spot, lambda state: state.has('Lamp', player) or state.has('Fire Rod', player))
         else:
             add_rule(spot, lambda state: state.has('Lamp', player))
-    elif world.dark_room_logic[player] == "none":
+    elif world.dark_room_logic[player] == DarkRoomLogic.option_none:
         pass
     else:
         raise ValueError(f"Unknown Dark Room Logic: {world.dark_room_logic[player]}")
@@ -235,7 +235,7 @@ def global_rules(world, player):
     set_rule(world.get_entrance('Sewers Door', player),
              lambda state: state._lttp_has_key('Small Key (Hyrule Castle)', player) or (
                          world.smallkey_shuffle[player] == smallkey_shuffle.option_universal and world.mode[
-                     player] == 'standard'))  # standard universal small keys cannot access the shop
+                     player] == Mode.option_standard))  # standard universal small keys cannot access the shop
     set_rule(world.get_entrance('Sewers Back Door', player),
              lambda state: state._lttp_has_key('Small Key (Hyrule Castle)', player))
     set_rule(world.get_entrance('Agahnim 1', player),
@@ -418,9 +418,9 @@ def global_rules(world, player):
     set_defeat_dungeon_boss_rule(world.get_location('Agahnim 2', player))
     ganon = world.get_location('Ganon', player)
     set_rule(ganon, lambda state: GanonDefeatRule(state, player))
-    if world.goal[player] in ['ganontriforcehunt', 'localganontriforcehunt']:
+    if world.goal[player] in [Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt]:
         add_rule(ganon, lambda state: has_triforce_pieces(state, player))
-    elif world.goal[player] == 'ganonpedestal':
+    elif world.goal[player] == Goal.option_ganonpedestal:
         add_rule(world.get_location('Ganon', player), lambda state: state.can_reach('Master Sword Pedestal', 'Location', player))
     else:
         add_rule(ganon, lambda state: has_crystals(state, state.multiworld.crystals_needed_for_ganon[player], player))
@@ -693,7 +693,7 @@ def inverted_rules(world, player):
 
 def no_glitches_rules(world, player):
     """"""
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         set_rule(world.get_entrance('Zoras River', player), lambda state: state.has('Moon Pearl', player) and (state.has('Flippers', player) or can_lift_rocks(state, player)))
         set_rule(world.get_entrance('Lake Hylia Central Island Pier', player), lambda state: state.has('Moon Pearl', player) and state.has('Flippers', player))  # can be fake flippered to
         set_rule(world.get_entrance('Lake Hylia Island Pier', player), lambda state: state.has('Moon Pearl', player) and state.has('Flippers', player))  # can be fake flippered to
@@ -718,7 +718,7 @@ def no_glitches_rules(world, player):
     add_conditional_lamps(world, player)
 
 def fake_flipper_rules(world, player):
-    if world.mode[player] == 'inverted':
+    if world.mode[player] == Mode.option_inverted:
         set_rule(world.get_entrance('Zoras River', player), lambda state: state.has('Moon Pearl', player))
         set_rule(world.get_entrance('Lake Hylia Central Island Pier', player), lambda state: state.has('Moon Pearl', player))
         set_rule(world.get_entrance('Lake Hylia Island Pier', player), lambda state: state.has('Moon Pearl', player))
@@ -796,7 +796,7 @@ def add_conditional_lamps(world, player):
                          'Location', True)
     add_conditional_lamp('Palace of Darkness - Dark Basement - Right', 'Palace of Darkness (Entrance)',
                          'Location', True)
-    if world.mode[player] != 'inverted':
+    if world.mode[player] != Mode.option_inverted:
         add_conditional_lamp('Agahnim 1', 'Agahnims Tower', 'Entrance')
         add_conditional_lamp('Castle Tower - Dark Maze', 'Agahnims Tower')
     else:
@@ -812,7 +812,7 @@ def add_conditional_lamps(world, player):
     add_conditional_lamp('Eastern Palace - Boss', 'Eastern Palace', 'Location', True)
     add_conditional_lamp('Eastern Palace - Prize', 'Eastern Palace', 'Location', True)
 
-    if not world.mode[player] == "standard":
+    if not world.mode[player] == Mode.option_standard:
         add_lamp_requirement(world, world.get_location('Sewers - Dark Cross', player), player)
         add_lamp_requirement(world, world.get_entrance('Sewers Back Door', player), player)
         add_lamp_requirement(world, world.get_entrance('Throne Room', player), player)
@@ -832,7 +832,7 @@ def swordless_rules(world, player):
     set_rule(world.get_entrance('Ice Palace Entrance Room', player), lambda state: state.has('Fire Rod', player) or state.has('Bombos', player)) #in swordless mode bombos pads are present in the relevant parts of ice palace
     set_rule(world.get_entrance('Ganon Drop', player), lambda state: state.has('Hammer', player))  # need to damage ganon to get tiles to drop
 
-    if world.mode[player] != 'inverted':
+    if world.mode[player] != Mode.option_inverted:
         set_rule(world.get_entrance('Agahnims Tower', player), lambda state: state.has('Cape', player) or state.has('Hammer', player) or state.has('Beat Agahnim 1', player))  # barrier gets removed after killing agahnim, relevant for entrance shuffle
         set_rule(world.get_entrance('Turtle Rock', player), lambda state: state.has('Moon Pearl', player) and has_turtle_rock_medallion(state, player) and state.can_reach('Turtle Rock (Top)', 'Region', player))   # sword not required to use medallion for opening in swordless (!)
         set_rule(world.get_entrance('Misery Mire', player), lambda state: state.has('Moon Pearl', player) and has_misery_mire_medallion(state, player))  # sword not required to use medallion for opening in swordless (!)
@@ -945,7 +945,7 @@ def set_trock_key_rules(world, player):
             if not can_reach_big_chest:
                 # Must not go in the Chain Chomps chest - only 2 other chests available and 3+ keys required for all other chests
                 forbid_item(world.get_location('Turtle Rock - Chain Chomps', player), 'Big Key (Turtle Rock)', player)
-            if world.accessibility[player] == 'locations' and world.goal[player] != 'icerodhunt':
+            if world.accessibility[player] == 'locations' and world.goal[player] != Goal.option_icerodhunt:
                 if world.bigkey_shuffle[player] and can_reach_big_chest:
                     # Must not go in the dungeon - all 3 available chests (Chomps, Big Chest, Crystaroller) must be keys to access laser bridge, and the big key is required first
                     for location in ['Turtle Rock - Chain Chomps', 'Turtle Rock - Compass Chest',

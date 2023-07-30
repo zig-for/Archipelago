@@ -1,12 +1,12 @@
 from .SubClasses import LTTPRegion
 from BaseClasses import CollectionState
-
+from .Options import Mode, ItemFunctionality
 
 def is_not_bunny(state: CollectionState, region: LTTPRegion, player: int) -> bool:
     if state.has('Moon Pearl', player):
         return True
 
-    return region.is_light_world if state.multiworld.mode[player] != 'inverted' else region.is_dark_world
+    return region.is_light_world if state.multiworld.mode[player] != Mode.option_inverted else region.is_dark_world
 
 
 def can_bomb_clip(state: CollectionState, region: LTTPRegion, player: int) -> bool:
@@ -48,7 +48,7 @@ def can_lift_heavy_rocks(state: CollectionState, player: int) -> bool:
 
 
 def bottle_count(state: CollectionState, player: int) -> int:
-    return min(state.multiworld.difficulty_requirements[player].progressive_bottle_limit,
+    return min(state.multiworld.worlds[player].difficulty_requirements.progressive_bottle_limit,
                 state.count_group("Bottles", player))
 
 
@@ -59,7 +59,7 @@ def has_hearts(state: CollectionState, player: int, count: int) -> int:
 
 def heart_count(state: CollectionState, player: int) -> int:
     # Warning: This only considers items that are marked as advancement items
-    diff = state.multiworld.difficulty_requirements[player]
+    diff = state.multiworld.worlds[player].difficulty_requirements
     return min(state.item_count('Boss Heart Container', player), diff.boss_heart_container_limit) \
             + state.item_count('Sanctuary Heart Container', player) \
             + min(state.item_count('Piece of Heart', player), diff.heart_piece_limit) // 4 \
@@ -74,9 +74,9 @@ def can_extend_magic(state: CollectionState, player: int, smallmagic: int = 16,
     elif state.has('Magic Upgrade (1/2)', player):
         basemagic = 16
     if can_buy_unlimited(state, 'Green Potion', player) or can_buy_unlimited(state, 'Blue Potion', player):
-        if state.multiworld.item_functionality[player] == 'hard' and not fullrefill:
+        if state.multiworld.item_functionality[player] == ItemFunctionality.option_hard and not fullrefill:
             basemagic = basemagic + int(basemagic * 0.5 * bottle_count(state, player))
-        elif state.multiworld.item_functionality[player] == 'expert' and not fullrefill:
+        elif state.multiworld.item_functionality[player] == ItemFunctionality.option_expert and not fullrefill:
             basemagic = basemagic + int(basemagic * 0.25 * bottle_count(state, player))
         else:
             basemagic = basemagic + basemagic * bottle_count(state, player)
@@ -137,26 +137,26 @@ def can_melt_things(state: CollectionState, player: int) -> bool:
 
 
 def has_misery_mire_medallion(state: CollectionState, player: int) -> bool:
-    return state.has(state.multiworld.required_medallions[player][0], player)
+    return state.has(state.multiworld.misery_mire_medallion[player].current_option_name, player)
 
 def has_turtle_rock_medallion(state: CollectionState, player: int) -> bool:
-    return state.has(state.multiworld.required_medallions[player][1], player)
+    return state.has(state.multiworld.turtle_rock_medallion[player].current_option_name, player)
 
 
 def can_boots_clip_lw(state: CollectionState, player: int) -> bool:
-    if state.multiworld.mode[player] == 'inverted':
+    if state.multiworld.mode[player] == Mode.option_inverted:
         return state.has('Pegasus Boots', player) and state.has('Moon Pearl', player)
     return state.has('Pegasus Boots', player)
 
 
 def can_boots_clip_dw(state: CollectionState, player: int) -> bool:
-    if state.multiworld.mode[player] != 'inverted':
+    if state.multiworld.mode[player] != Mode.option_inverted:
         return state.has('Pegasus Boots', player) and state.has('Moon Pearl', player)
     return state.has('Pegasus Boots', player)
 
 
 def can_get_glitched_speed_dw(state: CollectionState, player: int) -> bool:
     rules = [state.has('Pegasus Boots', player), any([state.has('Hookshot', player), has_sword(state, player)])]
-    if state.multiworld.mode[player] != 'inverted':
+    if state.multiworld.mode[player] != Mode.option_inverted:
         rules.append(state.has('Moon Pearl', player))
     return all(rules)

@@ -18,15 +18,76 @@ import copy
 import Utils
 import Options
 from BaseClasses import seeddigits, get_seed, PlandoOptions
-from Main import main as ERmain
+from Main import main as main
 from settings import get_settings
-from Utils import parse_yamls, version_tuple, __version__, tuplize_version, user_path
-from worlds.alttp import Options as LttPOptions
-from worlds.alttp.EntranceRandomizer import parse_arguments
-from worlds.alttp.Text import TextTable
+from Utils import parse_yamls, version_tuple, __version__, tuplize_version
+
 from worlds.AutoWorld import AutoWorldRegister
 from worlds.generic import PlandoConnection
 
+
+import textwrap
+import shlex
+
+
+class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
+
+    def _get_help_string(self, action):
+        return textwrap.dedent(action.help)
+
+
+# TODO: rather than parsing args multiple times, this could be used as a base argparse
+def parse_arguments(argv, no_defaults=False):
+    def defval(value):
+        return value if not no_defaults else None
+
+    # we need to know how many players we have first
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--multi', default=defval(1), type=lambda value: max(int(value), 1))
+    multiargs, _ = parser.parse_known_args(argv)
+
+    parser = argparse.ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--seed', help='Define seed number to generate.', type=int)
+    parser.add_argument('--count', help='''\
+                             Use to batch generate multiple seeds with same settings.
+                             If --seed is provided, it will be used for the first seed, then
+                             used to derive the next seed (i.e. generating 10 seeds with
+                             --seed given will produce the same 10 (different) roms each
+                             time).
+                             ''', type=int)
+    parser.add_argument('--multi', default=defval(1), type=lambda value: max(int(value), 1))
+    parser.add_argument('--names', default=defval(''))
+    parser.add_argument('--outputpath')
+    parser.add_argument('--game', default="A Link to the Past")
+    parser.add_argument('--race', default=defval(False), action='store_true')
+    parser.add_argument("--no_zip", dest="zip", default=True, action="store_false",
+    help="Skips creating a zip, and instead leaves a folder")
+    parser.add_argument('--outputname')
+    if multiargs.multi:
+        for player in range(1, multiargs.multi + 1):
+            parser.add_argument(f'--p{player}', default=defval(''), help=argparse.SUPPRESS)
+
+    ret = parser.parse_args(argv)
+
+    # cannot be set through CLI currently
+    ret.plando_items = []
+    ret.plando_texts = {}
+    ret.plando_connections = []
+
+
+    if multiargs.multi:
+        defaults = copy.deepcopy(ret)
+        for player in range(1, multiargs.multi + 1):
+            playerargs = parse_arguments(shlex.split(getattr(ret, f"p{player}")), True)
+
+            for name in ['game', "plando_items", "plando_texts", "plando_connections"]:
+                value = getattr(defaults, name) if getattr(playerargs, name) is None else getattr(playerargs, name)
+                if player == 1:
+                    setattr(ret, name, {1: value})
+                else:
+                    getattr(ret, name)[player] = value
+
+    return ret
 
 def mystery_argparse():
     options = get_settings()
@@ -66,7 +127,7 @@ def get_seed_name(random_source) -> str:
     return f"{random_source.randint(0, pow(10, seeddigits) - 1)}".zfill(seeddigits)
 
 
-def main(args=None, callback=ERmain):
+def main(args=None, callback=main):
     if not args:
         args, options = mystery_argparse()
     else:
@@ -223,7 +284,6 @@ def main(args=None, callback=ERmain):
             os.makedirs(args.outputpath, exist_ok=True)
         with open(os.path.join(args.outputpath if args.outputpath else ".", f"generate_{seed_name}.yaml"), "wt") as f:
             yaml.dump(important, f)
-
     callback(erargs, seed)
 
 
@@ -238,29 +298,6 @@ def read_weights_yamls(path) -> Tuple[Any, ...]:
         raise Exception(f"Failed to read weights ({path})") from e
 
     return tuple(parse_yamls(yaml))
-
-
-def interpret_on_off(value) -> bool:
-    return {"on": True, "off": False}.get(value, value)
-
-
-def convert_to_on_off(value) -> str:
-    return {True: "on", False: "off"}.get(value, value)
-
-
-def get_choice_legacy(option, root, value=None) -> Any:
-    if option not in root:
-        return value
-    if type(root[option]) is list:
-        return interpret_on_off(random.choices(root[option])[0])
-    if type(root[option]) is not dict:
-        return interpret_on_off(root[option])
-    if not root[option]:
-        return value
-    if any(root[option].values()):
-        return interpret_on_off(
-            random.choices(list(root[option].keys()), weights=list(map(int, root[option].values())))[0])
-    raise RuntimeError(f"All options specified in \"{option}\" are weighted as zero.")
 
 
 def get_choice(option, root, value=None) -> Any:
@@ -303,20 +340,6 @@ def prefer_int(input_data: str) -> Union[str, int]:
         return input_data
 
 
-goals = {
-    'ganon': 'ganon',
-    'crystals': 'crystals',
-    'bosses': 'bosses',
-    'pedestal': 'pedestal',
-    'ganon_pedestal': 'ganonpedestal',
-    'triforce_hunt': 'triforcehunt',
-    'local_triforce_hunt': 'localtriforcehunt',
-    'ganon_triforce_hunt': 'ganontriforcehunt',
-    'local_ganon_triforce_hunt': 'localganontriforcehunt',
-    'ice_rod_hunt': 'icerodhunt',
-}
-
-
 def roll_percentage(percentage: Union[int, float]) -> bool:
     """Roll a percentage chance.
     percentage is expected to be in range [0, 100]"""
@@ -345,15 +368,6 @@ def roll_meta_option(option_key, game: str, category_dict: Dict) -> Any:
             if options[option_key].supports_weighting:
                 return get_choice(option_key, category_dict)
             return category_dict[option_key]
-    if game == "A Link to the Past":  # TODO wow i hate this
-        if option_key in {"glitches_required", "dark_room_logic", "entrance_shuffle", "goals", "triforce_pieces_mode",
-                          "triforce_pieces_percentage", "triforce_pieces_available", "triforce_pieces_extra",
-                          "triforce_pieces_required", "shop_shuffle", "mode", "item_pool", "item_functionality",
-                          "boss_shuffle", "enemy_damage", "enemy_health", "timer", "countdown_start_time",
-                          "red_clock_time", "blue_clock_time", "green_clock_time", "dungeon_counters", "shuffle_prizes",
-                          "misery_mire_medallion", "turtle_rock_medallion", "sprite_pool", "sprite",
-                          "random_sprite_on_event"}:
-            return get_choice(option_key, category_dict)
     raise Exception(f"Error generating meta option {option_key} for {game}.")
 
 
@@ -490,155 +504,9 @@ def roll_settings(weights: dict, plando_options: PlandoOptions = PlandoOptions.b
                         get_choice("exit", placement),
                         get_choice("direction", placement)
                     ))
-    elif ret.game == "A Link to the Past":
-        roll_alttp_settings(ret, game_weights, plando_options)
+
 
     return ret
-
-
-def roll_alttp_settings(ret: argparse.Namespace, weights, plando_options):
-    if "dungeon_items" in weights and get_choice_legacy('dungeon_items', weights, "none") != "none":
-        raise Exception(f"dungeon_items key in A Link to the Past was removed, but is present in these weights as {get_choice_legacy('dungeon_items', weights, False)}.")
-    glitches_required = get_choice_legacy('glitches_required', weights)
-    if glitches_required not in [None, 'none', 'no_logic', 'overworld_glitches', 'hybrid_major_glitches', 'minor_glitches']:
-        logging.warning("Only NMG, OWG, HMG and No Logic supported")
-        glitches_required = 'none'
-    ret.logic = {None: 'noglitches', 'none': 'noglitches', 'no_logic': 'nologic', 'overworld_glitches': 'owglitches',
-                 'minor_glitches': 'minorglitches', 'hybrid_major_glitches': 'hybridglitches'}[
-        glitches_required]
-
-    ret.dark_room_logic = get_choice_legacy("dark_room_logic", weights, "lamp")
-    if not ret.dark_room_logic:  # None/False
-        ret.dark_room_logic = "none"
-    if ret.dark_room_logic == "sconces":
-        ret.dark_room_logic = "torches"
-    if ret.dark_room_logic not in {"lamp", "torches", "none"}:
-        raise ValueError(f"Unknown Dark Room Logic: \"{ret.dark_room_logic}\"")
-
-    entrance_shuffle = get_choice_legacy('entrance_shuffle', weights, 'vanilla')
-    if entrance_shuffle.startswith('none-'):
-        ret.shuffle = 'vanilla'
-    else:
-        ret.shuffle = entrance_shuffle if entrance_shuffle != 'none' else 'vanilla'
-
-    goal = get_choice_legacy('goals', weights, 'ganon')
-
-    ret.goal = goals[goal]
-
-
-    extra_pieces = get_choice_legacy('triforce_pieces_mode', weights, 'available')
-
-    ret.triforce_pieces_required = LttPOptions.TriforcePieces.from_any(get_choice_legacy('triforce_pieces_required', weights, 20))
-
-    # sum a percentage to required
-    if extra_pieces == 'percentage':
-        percentage = max(100, float(get_choice_legacy('triforce_pieces_percentage', weights, 150))) / 100
-        ret.triforce_pieces_available = int(round(ret.triforce_pieces_required * percentage, 0))
-    # vanilla mode (specify how many pieces are)
-    elif extra_pieces == 'available':
-        ret.triforce_pieces_available = LttPOptions.TriforcePieces.from_any(
-            get_choice_legacy('triforce_pieces_available', weights, 30))
-    # required pieces + fixed extra
-    elif extra_pieces == 'extra':
-        extra_pieces = max(0, int(get_choice_legacy('triforce_pieces_extra', weights, 10)))
-        ret.triforce_pieces_available = ret.triforce_pieces_required + extra_pieces
-
-    # change minimum to required pieces to avoid problems
-    ret.triforce_pieces_available = min(max(ret.triforce_pieces_required, int(ret.triforce_pieces_available)), 90)
-
-    ret.shop_shuffle = get_choice_legacy('shop_shuffle', weights, '')
-    if not ret.shop_shuffle:
-        ret.shop_shuffle = ''
-
-    ret.mode = get_choice_legacy("mode", weights)
-
-    ret.difficulty = get_choice_legacy('item_pool', weights)
-
-    ret.item_functionality = get_choice_legacy('item_functionality', weights)
-
-
-    ret.enemy_damage = {None: 'default',
-                        'default': 'default',
-                        'shuffled': 'shuffled',
-                        'random': 'chaos', # to be removed
-                        'chaos': 'chaos',
-                        }[get_choice_legacy('enemy_damage', weights)]
-
-    ret.enemy_health = get_choice_legacy('enemy_health', weights)
-
-    ret.timer = {'none': False,
-                 None: False,
-                 False: False,
-                 'timed': 'timed',
-                 'timed_ohko': 'timed-ohko',
-                 'ohko': 'ohko',
-                 'timed_countdown': 'timed-countdown',
-                 'display': 'display'}[get_choice_legacy('timer', weights, False)]
-
-    ret.countdown_start_time = int(get_choice_legacy('countdown_start_time', weights, 10))
-    ret.red_clock_time = int(get_choice_legacy('red_clock_time', weights, -2))
-    ret.blue_clock_time = int(get_choice_legacy('blue_clock_time', weights, 2))
-    ret.green_clock_time = int(get_choice_legacy('green_clock_time', weights, 4))
-
-    ret.dungeon_counters = get_choice_legacy('dungeon_counters', weights, 'default')
-
-    ret.shuffle_prizes = get_choice_legacy('shuffle_prizes', weights, "g")
-
-    ret.required_medallions = [get_choice_legacy("misery_mire_medallion", weights, "random"),
-                               get_choice_legacy("turtle_rock_medallion", weights, "random")]
-
-    for index, medallion in enumerate(ret.required_medallions):
-        ret.required_medallions[index] = {"ether": "Ether", "quake": "Quake", "bombos": "Bombos", "random": "random"} \
-            .get(medallion.lower(), None)
-        if not ret.required_medallions[index]:
-            raise Exception(f"unknown Medallion {medallion} for {'misery mire' if index == 0 else 'turtle rock'}")
-
-    ret.plando_texts = {}
-    if PlandoOptions.texts in plando_options:
-        tt = TextTable()
-        tt.removeUnwantedText()
-        options = weights.get("plando_texts", [])
-        for placement in options:
-            if roll_percentage(get_choice_legacy("percentage", placement, 100)):
-                at = str(get_choice_legacy("at", placement))
-                if at not in tt:
-                    raise Exception(f"No text target \"{at}\" found.")
-                ret.plando_texts[at] = str(get_choice_legacy("text", placement))
-
-    ret.plando_connections = []
-    if PlandoOptions.connections in plando_options:
-        options = weights.get("plando_connections", [])
-        for placement in options:
-            if roll_percentage(get_choice_legacy("percentage", placement, 100)):
-                ret.plando_connections.append(PlandoConnection(
-                    get_choice_legacy("entrance", placement),
-                    get_choice_legacy("exit", placement),
-                    get_choice_legacy("direction", placement, "both")
-                ))
-
-    ret.sprite_pool = weights.get('sprite_pool', [])
-    ret.sprite = get_choice_legacy('sprite', weights, "Link")
-    if 'random_sprite_on_event' in weights:
-        randomoneventweights = weights['random_sprite_on_event']
-        if get_choice_legacy('enabled', randomoneventweights, False):
-            ret.sprite = 'randomon'
-            ret.sprite += '-hit' if get_choice_legacy('on_hit', randomoneventweights, True) else ''
-            ret.sprite += '-enter' if get_choice_legacy('on_enter', randomoneventweights, False) else ''
-            ret.sprite += '-exit' if get_choice_legacy('on_exit', randomoneventweights, False) else ''
-            ret.sprite += '-slash' if get_choice_legacy('on_slash', randomoneventweights, False) else ''
-            ret.sprite += '-item' if get_choice_legacy('on_item', randomoneventweights, False) else ''
-            ret.sprite += '-bonk' if get_choice_legacy('on_bonk', randomoneventweights, False) else ''
-            ret.sprite = 'randomonall' if get_choice_legacy('on_everything', randomoneventweights, False) else ret.sprite
-            ret.sprite = 'randomonnone' if ret.sprite == 'randomon' else ret.sprite
-
-            if (not ret.sprite_pool or get_choice_legacy('use_weighted_sprite_pool', randomoneventweights, False)) \
-                    and 'sprite' in weights:  # Use sprite as a weighted sprite pool, if a sprite pool is not already defined.
-                for key, value in weights['sprite'].items():
-                    if key.startswith('random'):
-                        ret.sprite_pool += ['random'] * int(value)
-                    else:
-                        ret.sprite_pool += [key] * int(value)
-
 
 if __name__ == '__main__':
     import atexit

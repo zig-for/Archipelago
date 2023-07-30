@@ -371,7 +371,7 @@ class TestInvertedLightWorld(TestInvertedMinor):
             ["Flute Spot", True, ['Shovel', 'Moon Pearl', 'Progressive Glove', 'Hammer']],
             ["Flute Spot", True, ['Shovel', 'Moon Pearl', 'Progressive Glove', 'Progressive Glove']],
 
-            ["Ganon", False, []],
-            ["Ganon", False, [], ['Moon Pearl']],
-            ["Ganon", False, [], ['Beat Agahnim 2']],
+            [Goal.option_ganon, False, []],
+            [Goal.option_ganon, False, [], ['Moon Pearl']],
+            [Goal.option_ganon, False, [], ['Beat Agahnim 2']],
         ])

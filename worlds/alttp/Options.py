@@ -1,33 +1,125 @@
+from __future__ import annotations
 import typing
-
+from schema import Schema
+import re
 from BaseClasses import MultiWorld
-from Options import Choice, Range, Option, Toggle, DefaultOnToggle, DeathLink, StartInventoryPool, PlandoBosses
+from Options import (Choice, DeathLink, DefaultOnToggle, FreeText,
+                     Option, PlandoBosses, Range,
+                     StartInventoryPool, Toggle, OptionDict)
 
 
 class Logic(Choice):
-    option_no_glitches = 0
-    option_minor_glitches = 1
-    option_overworld_glitches = 2
-    option_hybrid_major_glitches = 3
-    option_no_logic = 4
-    alias_owg = 2
-    alias_hmg = 3
+    # TODO: text
+    """
+    No Glitches:
+    Minor Glitches: May require Fake Flippers, Bunny Revival
+                    and Dark Room Navigation.
+    Overworld Glitches: May require overworld glitches.
+    Hybrid Major Glitches: May require both overworld and underworld clipping. 
+    No Logic: Distribute items without regard for
+                    item requirements.
+                             """
+    # TODO: go back and replace these to underscore versions
+    # TODO: missed a tonne of strings in code for these
 
+    option_noglitches = 0
+    option_minorglitches = 1
+    option_owglitches = 2
+    option_hybridglitches = 3
+    option_nologic = 4
+    alias_owg = option_owglitches
+    alias_hmg = option_hybridglitches
+    alias_no_logic = option_nologic
+    alias_overworld_glitches = option_owglitches
+    alias_minor_glitches = option_minorglitches
+    alias_hybrid_major_glitches = option_hybridglitches
 
-class Objective(Choice):
-    option_crystals = 0
-    # option_pendants = 1
-    option_triforce_pieces = 2
-    option_pedestal = 3
-    option_bingo = 4
-
-
+    
 class Goal(Choice):
-    option_kill_ganon = 0
-    option_kill_ganon_and_gt_agahnim = 1
-    option_hand_in = 2
+    # TODO
+    """
+    ganon:         Collect all crystals, beat Agahnim 2 then
+                   defeat Ganon.
+    crystals:      Collect all crystals then defeat Ganon.
+    pedestal:      Places the Triforce at the Master Sword Pedestal.
+    ganonpedestal: Pull the Master Sword Pedestal, then defeat Ganon.
+    bosses:        Collect all crystals, pendants, beat both
+                   Agahnim fights and then defeat Ganon.
+    triforcehunt: Places 30 Triforce Pieces in the world, collect
+                   20 of them to beat the game.
+    local: Places 30 Triforce Pieces in your world, collect
+                   20 of them to beat the game.
+    ganontriforcehunt: Places 30 Triforce Pieces in the world, collect
+                   20 of them, then defeat Ganon.
+    localganontriforcehunt: Places 30 Triforce Pieces in your world,
+                   collect 20 of them, then defeat Ganon.
+    """
+    # TODO: like with logic, re_underscore these
+    option_ganon = 0
+    option_pedestal = 1
+    option_bosses = 2
+    option_triforcehunt = 3
+    option_localtriforcehunt = 4
+    option_ganontriforcehunt = 5
+    option_localganontriforcehunt = 6
+    option_crystals = 7
+    option_ganonpedestal = 8
+    option_icerodhunt = 9
 
+    def is_triforce_hunt(self) -> bool:
+        return self.value in [Goal.option_triforcehunt,
+                              Goal.option_localtriforcehunt,
+                              Goal.option_ganontriforcehunt,
+                              Goal.option_localganontriforcehunt]
+    
+    def is_local_triforce_hunt(self) -> bool:
+        return self.value in [Goal.option_localtriforcehunt,
+                              Goal.option_localganontriforcehunt]
 
+class Timer(Choice):
+    option_none = 0
+    option_display = 1
+    option_timed = 2
+    option_timed_ohko = 3
+    option_ohko = 4
+    option_timed_countdown = 5
+#setattr(Timer, "alias_timed-ohko", Timer.option_timed_ohko)
+#setattr(Timer, "alias_timed-countdown", Timer.option_timed_countdown)
+
+class CountdownStartTime(Range):
+    range_start = 0
+    range_end = 10000
+    """Set amount of time, in minutes, to start with in Timed Countdown and Timed OHKO modes"""
+    default = 10
+
+class ClockTime(Range):
+    range_start = -10000
+    range_end = 10000
+
+class RedClockTime(ClockTime):
+    """For all timer modes, the amount of time in minutes to gain or lose when picking up a red clock"""
+    default = -2
+
+class BlueClockTime(ClockTime):
+    """For all timer modes, the amount of time in minutes to gain or lose when picking up a blue clock"""
+    default = 2
+
+class GreenClockTime(ClockTime):
+    """For all timer modes, the amount of time in minutes to gain or lose when picking up a green clock"""
+    default = 4
+
+class Mode(Choice):
+    option_standard = 0
+    option_open = 1
+    option_inverted = 2
+    default = option_open
+
+class DungeonCounters(Choice):
+    option_off = 0
+    option_pickup = 1
+    option_on = 2
+    default = option_pickup
+    
 class OpenPyramid(Choice):
     """Determines whether the hole at the top of pyramid is open.
     Goal will open the pyramid if the goal requires you to kill Ganon, without needing to kill Agahnim 2.
@@ -44,16 +136,42 @@ class OpenPyramid(Choice):
 
     def to_bool(self, world: MultiWorld, player: int) -> bool:
         if self.value == self.option_goal:
-            return world.goal[player] in {'crystals', 'ganontriforcehunt', 'localganontriforcehunt', 'ganonpedestal'}
+            return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal}
         elif self.value == self.option_auto:
-            return world.goal[player] in {'crystals', 'ganontriforcehunt', 'localganontriforcehunt', 'ganonpedestal'} \
-            and (world.shuffle[player] in {'vanilla', 'dungeonssimple', 'dungeonsfull', 'dungeonscrossed'} or not
+            return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal} \
+            and (world.entrance_shuffle[player] in {EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed} or not
                  world.shuffle_ganon)
         elif self.value == self.option_open:
             return True
         else:
-            return False
+            return False    
 
+class YamlNode(Option[typing.Any]):
+    supports_weighting = False
+    value = []
+    @classmethod
+    def from_any(cls, root):
+        return cls(root)
+
+    def __init__(self, value: typing.Any):
+        self.value = value
+
+    @property
+    def current_option_name(self) -> str:
+        """For display purposes. Worlds should be using current_key."""
+        return str(self.value)
+
+class Sprite(YamlNode):
+    pass
+
+class SpritePool(YamlNode):
+    pass
+
+class RandomSpriteOnEvent(YamlNode):
+    pass
+
+class UseWeightedSpritePool(Toggle):
+    pass
 
 class DungeonItem(Choice):
     value: int
@@ -119,10 +237,31 @@ class CrystalsGanon(Crystals):
 
 
 class TriforcePieces(Range):
-    default = 30
-    range_start = 1
-    range_end = 90
+     default = 30
+     range_start = 1
+     range_end = 90
 
+class TriforcePiecesMode(Choice):
+    #Determine how to calculate the extra available triforce pieces.
+    option_extra = 0 # available = triforce_pieces_extra + triforce_pieces_required
+    option_percentage = 1 # available = (triforce_pieces_percentage /100) * triforce_pieces_required
+    option_available = 2 # available = triforce_pieces_available
+    default = option_available
+
+class TriforcePiecesAvailable(TriforcePieces):
+    pass
+
+class TriforcePiecesRequired(TriforcePieces):
+    default = 20
+
+class TriforcePiecesExtra(TriforcePieces):
+    default = 10
+    
+class TriforcePiecesPercentage(Range):
+    # ???
+    range_start = 100
+    range_end = 500
+    default = 150
 
 class ShopItemSlots(Range):
     """Number of slots in all shops available to have items from the multiworld"""
@@ -145,6 +284,38 @@ class WorldState(Choice):
     option_inverted = 2
 
 
+class Difficulty(Choice):
+    option_easy = 0
+    option_normal = 1
+    option_hard = 2
+    option_expert = 3
+    default = option_normal
+
+class ItemFunctionality(Choice):
+    option_easy = 0
+    option_normal = 1
+    option_hard = 2
+    option_expert = 3
+    default = option_normal
+
+class MedallionChoice(Choice):
+    #option_random = 0
+    option_ether = 1
+    option_quake = 2
+    option_bombos = 3
+    default = "random"
+
+
+class MiseryMireMedallion(MedallionChoice):
+    """
+    required medallion to open Misery Mire front entrance
+    """
+
+class TurtleRockMedallion(MedallionChoice):
+    """
+    required medallion to open Turtle Rock front entrance
+    """
+    
 class LTTPBosses(PlandoBosses):
     """Shuffles bosses around to different locations.
     Basic will shuffle all bosses except Ganon and Agahnim anywhere they can be placed.
@@ -219,6 +390,38 @@ class Progressive(Choice):
     def want_progressives(self, random):
         return random.choice([True, False]) if self.value == self.option_grouped_random else bool(self.value)
 
+
+class EntranceShuffle(Choice):
+    option_vanilla = 0
+    option_simple = 1
+    option_restricted = 2
+    option_full = 3
+    option_crossed = 4
+    option_insanity = 5
+    option_madness = 6
+    option_dungeonsfull = 7
+    option_dungeonssimple = 8
+    option_dungeonscrossed = 9
+    option_restricted_legacy = -1
+    option_full_legacy = -2
+    option_madness_legacy = -3
+    option_insanity_legacy = -4
+
+    er_seed: str = ''
+
+    @classmethod
+    def from_text(cls, text: str) -> EntranceShuffle:
+        if "-" in text:
+            shuffle, seed = text.split("-", 1)  
+        else:
+            shuffle, seed = text, ''
+        ret = super().from_text(shuffle)
+
+        # Note: the old settings system forced 'vanilla' if vanilla, but this shouldn't be needed
+
+        ret.er_seed = seed  
+
+        return ret
 
 class Swordless(Toggle):
     """No swords. Curtains in Skull Woods and Agahnim's
@@ -299,6 +502,72 @@ class PotShuffle(Toggle):
     """Shuffle contents of pots within "supertiles" (item will still be nearby original placement)."""
     display_name = "Pot Shuffle"
 
+class PrizeShuffle(FreeText):
+    @staticmethod
+    def should_only_contain_b_or_g(s):
+        # Handle default, 'off', and restricted user defined strings
+        return s == 'False' or all(c in 'bg' for c in s)
+    
+    default = 'False'
+
+    schema = Schema(
+       should_only_contain_b_or_g
+    )
+
+    def randomize_bonk_prizes(self):
+        return 'b' in self.value
+
+    def randomize_general_prizes(self):
+        return 'g' in self.value
+
+class ShopShuffle(FreeText):
+    """
+    g: 0 # Generate new default inventories for overworld/underworld shops, and unique shops
+    f: 0 # Generate new default inventories for every shop independently
+    i: 0 # Shuffle default inventories of the shops around
+    p: 0 # Randomize the prices of the items in shop inventories
+    u: 0 # Shuffle capacity upgrades into the item pool (and allow them to traverse the multiworld)
+    w: 0 # Consider witch's hut like any other shop and shuffle/randomize it too
+    P: 0 # Prices of the items in shop inventories cost hearts, arrow, or bombs instead of rupees
+    ip: 0 # Shuffle inventories and randomize prices
+    fpu: 0 # Generate new inventories, randomize prices and shuffle capacity upgrades into item pool
+    uip: 0 # Shuffle inventories, randomize prices and shuffle capacity upgrades into the item pool
+    """
+
+    # Validate the string, a separate function so that error messages are nice
+    @staticmethod
+    def should_only_contain_gfipuwP(s):
+        # Handle default, 'off', and restricted user defined strings
+        return s == 'False' or all(c in 'gfipuwP' for c in s)
+        
+    default = 'False'
+
+    schema = Schema(
+       should_only_contain_gfipuwP
+    )
+    
+    # TODO: we should consider warning if g and f
+    # TODO: consider handling "true" as 'g'
+    def randomize_shops(self):
+        return 'g' in self.value or 'f' in self.value
+    
+    def randomize_shops_independantly(self):
+        return 'f' in self.value
+    
+    def randomize_potion_shop(self):
+        return 'w' in self.value
+    
+    def shuffle_capacity_upgrades(self):
+        return 'u' in self.value
+
+    def shuffle_default_inventories(self):
+        return 'i' in self.value
+
+    def shuffle_shop_prices(self):
+        return 'p' in self.value
+
+    def shuffle_shop_price_currencies(self):
+        return 'P' in self.value
 
 class Palette(Choice):
     option_default = 0
@@ -419,6 +688,33 @@ class BeemizerTrapChance(BeemizerRange):
     default = 60
     display_name = "Beemizer Trap Chance"
 
+class EnemyHealth(Choice):
+    option_default = -1
+    option_easy = 0
+    option_normal = 1
+    option_hard = 2
+    option_expert = 3
+    default = option_default
+
+    @property
+    def enemizer_arg_value(self):
+        return max(0, self.value)
+
+
+class EnemyDamage(Choice):
+    option_default = 0
+    option_shuffled = 1
+    option_chaos = 2
+    # TODO: this doesn't work at all, do we need it?
+    # alias_random = option_chaos # This was slated to be "removed", is this still the case?
+    
+
+class DarkRoomLogic(Choice):
+    option_lamp = 0
+    option_torches = 1
+    option_none = 2
+    alias_sconces = option_torches
+    alias_fire_rod = option_torches
 
 class AllowCollect(Toggle):
     """Allows for !collect / co-op to auto-open chests containing items for other players.
@@ -468,4 +764,32 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "death_link": DeathLink,
     "allow_collect": AllowCollect,
     "start_inventory_from_pool": StartInventoryPool,
+    "goal": Goal,
+    "logic": Logic,
+    "dungeon_counters": DungeonCounters,
+    "mode": Mode,
+    "timer": Timer,
+    "triforce_pieces_mode": TriforcePiecesMode,
+    "triforce_pieces_percentage": TriforcePiecesPercentage,
+    "triforce_pieces_available": TriforcePiecesAvailable,
+    "triforce_pieces_required": TriforcePiecesRequired,
+    "triforce_pieces_extra": TriforcePiecesExtra,
+    "difficulty": Difficulty,
+    "item_functionality": ItemFunctionality,
+    "countdown_start_time": CountdownStartTime,
+    "red_clock_time": RedClockTime,
+    "blue_clock_time": BlueClockTime,
+    "green_clock_time": GreenClockTime,
+    "entrance_shuffle": EntranceShuffle,
+    "enemy_health": EnemyHealth,
+    "enemy_damage": EnemyDamage,
+    "shop_shuffle": ShopShuffle,
+    "shuffle_prizes": PrizeShuffle,
+    "dark_room_logic": DarkRoomLogic,
+    "sprite_pool": SpritePool,
+    "sprite": Sprite,
+    "random_sprite_on_event": RandomSpriteOnEvent,
+    "use_weighted_sprite_pool": UseWeightedSpritePool,
+    "misery_mire_medallion": MiseryMireMedallion,
+    "turtle_rock_medallion": TurtleRockMedallion,
 }

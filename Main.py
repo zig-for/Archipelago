@@ -37,36 +37,8 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
     world.set_seed(seed, args.race, str(args.outputname) if args.outputname else None)
     world.plando_options = args.plando_options
 
-    world.shuffle = args.shuffle.copy()
-    world.logic = args.logic.copy()
-    world.mode = args.mode.copy()
-    world.difficulty = args.difficulty.copy()
-    world.item_functionality = args.item_functionality.copy()
-    world.timer = args.timer.copy()
-    world.goal = args.goal.copy()
-    world.boss_shuffle = args.shufflebosses.copy()
-    world.enemy_health = args.enemy_health.copy()
-    world.enemy_damage = args.enemy_damage.copy()
-    world.beemizer_total_chance = args.beemizer_total_chance.copy()
-    world.beemizer_trap_chance = args.beemizer_trap_chance.copy()
-    world.countdown_start_time = args.countdown_start_time.copy()
-    world.red_clock_time = args.red_clock_time.copy()
-    world.blue_clock_time = args.blue_clock_time.copy()
-    world.green_clock_time = args.green_clock_time.copy()
-    world.dungeon_counters = args.dungeon_counters.copy()
-    world.triforce_pieces_available = args.triforce_pieces_available.copy()
-    world.triforce_pieces_required = args.triforce_pieces_required.copy()
-    world.shop_shuffle = args.shop_shuffle.copy()
-    world.shuffle_prizes = args.shuffle_prizes.copy()
-    world.sprite_pool = args.sprite_pool.copy()
-    world.dark_room_logic = args.dark_room_logic.copy()
-    world.plando_items = args.plando_items.copy()
-    world.plando_texts = args.plando_texts.copy()
-    world.plando_connections = args.plando_connections.copy()
-    world.required_medallions = args.required_medallions.copy()
     world.game = args.game.copy()
     world.player_name = args.name.copy()
-    world.sprite = args.sprite.copy()
     world.glitch_triforce = args.glitch_triforce  # This is enabled/disabled globally, no per player option.
 
     world.set_options(args)
@@ -412,12 +384,15 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
         if args.spoiler:
             world.spoiler.to_file(os.path.join(temp_dir, '%s_Spoiler.txt' % outfilebase))
 
-        zipfilename = output_path(f"AP_{world.seed_name}.zip")
-        logger.info(f"Creating final archive at {zipfilename}")
-        with zipfile.ZipFile(zipfilename, mode="w", compression=zipfile.ZIP_DEFLATED,
-                             compresslevel=9) as zf:
-            for file in os.scandir(temp_dir):
-                zf.write(file.path, arcname=file.name)
+        if args.zip:
+            zipfilename = output_path(f"AP_{world.seed_name}.zip")
+            logger.info(f"Creating final archive at {zipfilename}")
+            with zipfile.ZipFile(zipfilename, mode="w", compression=zipfile.ZIP_DEFLATED,
+                                compresslevel=9) as zf:
+                for file in os.scandir(temp_dir):
+                    zf.write(file.path, arcname=file.name)
+        else:
+            os.rename(temp_dir, output_path(f"AP_{world.seed_name}"))
 
     logger.info('Done. Enjoy. Total Time: %s', time.perf_counter() - start)
     return world

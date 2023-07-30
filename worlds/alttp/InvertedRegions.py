@@ -516,7 +516,7 @@ def create_inverted_regions(world, player):
                               ['Ganons Tower Moldorm Gap']),
         create_dungeon_region(world, player, 'Agahnim 2', 'Ganon\'s Tower',
                               ['Ganons Tower - Validation Chest', 'Agahnim 2'], None),
-        create_cave_region(world, player, 'Pyramid', 'a drop\'s exit', ['Ganon'], ['Ganon Drop']),
+        create_cave_region(world, player, 'Pyramid', 'a drop\'s exit', [Goal.option_ganon], ['Ganon Drop']),
         create_cave_region(world, player, 'Bottom of Pyramid', 'a drop\'s exit', None, ['Pyramid Exit']),
         create_dw_region(world, player, 'Pyramid Ledge', None, ['Pyramid Drop']),  # houlihan room exits here in inverted
         
