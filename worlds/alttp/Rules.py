@@ -9,7 +9,7 @@ from worlds.generic.Rules import (add_item_rule, add_rule, forbid_item,
 from . import OverworldGlitchRules
 from .Bosses import GanonDefeatRule
 from .Items import ItemFactory, item_name_groups, item_table, progression_items
-from .Options import smallkey_shuffle, Goal, Mode
+from .Options import smallkey_shuffle, Goal, Mode, DarkRoomLogic
 from .OverworldGlitchRules import no_logic_rules, overworld_glitches_rules
 from .Regions import LTTPRegionType, location_table
 from .StateHelpers import (can_extend_magic, can_kill_most_things,
@@ -144,14 +144,14 @@ def set_always_allow(spot, rule):
 
 
 def add_lamp_requirement(world: MultiWorld, spot, player: int, has_accessible_torch: bool = False):
-    if world.dark_room_logic[player] == "lamp":
+    if world.dark_room_logic[player] == DarkRoomLogic.option_lamp:
         add_rule(spot, lambda state: state.has('Lamp', player))
-    elif world.dark_room_logic[player] == "torches":  # implicitly lamp as well
+    elif world.dark_room_logic[player] == DarkRoomLogic.option_torches:  # implicitly lamp as well
         if has_accessible_torch:
             add_rule(spot, lambda state: state.has('Lamp', player) or state.has('Fire Rod', player))
         else:
             add_rule(spot, lambda state: state.has('Lamp', player))
-    elif world.dark_room_logic[player] == "none":
+    elif world.dark_room_logic[player] == DarkRoomLogic.option_none:
         pass
     else:
         raise ValueError(f"Unknown Dark Room Logic: {world.dark_room_logic[player]}")

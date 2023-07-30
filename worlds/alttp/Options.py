@@ -663,6 +663,13 @@ class EnemyDamage(Choice):
     # alias_random = option_chaos # This was slated to be "removed", is this still the case?
     
 
+class DarkRoomLogic(Choice):
+    option_lamp = 0
+    option_torches = 1
+    option_none = 2
+    alias_sconces = option_torches
+    alias_fire_rod = option_torches
+
 class AllowCollect(Toggle):
     """Allows for !collect / co-op to auto-open chests containing items for other players.
     Off by default, because it currently crashes on real hardware."""
@@ -732,7 +739,8 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "enemy_health": EnemyHealth,
     "enemy_damage": EnemyDamage,
     # required_medallions??
-    # sprite_pool dark_room_logic shop_shuffle
+    # sprite_pool dark_room_logic
     "shop_shuffle": ShopShuffle,
     "shuffle_prizes": PrizeShuffle,
+    "dark_room_logic": DarkRoomLogic,
 }
