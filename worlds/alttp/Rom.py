@@ -1969,7 +1969,7 @@ def apply_rom_settings(rom, beep, color, quickswap, menuspeed, music: bool, spri
                              (0b00000100 if allowcollect else 0))
 
     apply_random_sprite_on_event(rom, sprite, local_random, allow_random_on_event,
-                                 world.sprite_pool[player] if world else [])
+                                 world.sprite_pool[player].value if world else [])
 
     if oof is not None:
         apply_oof_sfx(rom, oof)

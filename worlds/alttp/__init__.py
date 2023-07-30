@@ -361,6 +361,8 @@ class ALTTPWorld(World):
                     random.choices(list(root[option].keys()), weights=list(map(int, root[option].values())))[0])
             raise RuntimeError(f"All options specified in \"{option}\" are weighted as zero.")
 
+
+        # Very ugly and in need of testing
         sprite_pool = world.sprite_pool[player].value
         sprite = get_choice_legacy('sprite', {'sprite': world.sprite[player].value}, "Link")
         randomoneventweights = world.random_sprite_on_event[player].value
@@ -384,6 +386,8 @@ class ALTTPWorld(World):
                         else:
                             sprite_pool += [key] * int(value)
         world.sprite[player].value = sprite
+
+
     create_dungeons = create_dungeons
 
     def create_regions(self):
