@@ -20,9 +20,8 @@ import Options
 from BaseClasses import seeddigits, get_seed, PlandoOptions
 from Main import main as main
 from settings import get_settings
-from Utils import parse_yamls, version_tuple, __version__, tuplize_version, user_path
-from worlds.alttp import Options as LttPOptions
-from worlds.alttp.Text import TextTable
+from Utils import parse_yamls, version_tuple, __version__, tuplize_version
+
 from worlds.AutoWorld import AutoWorldRegister
 from worlds.generic import PlandoConnection
 
