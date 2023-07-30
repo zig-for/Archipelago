@@ -364,18 +364,20 @@ class EntranceShuffle(Choice):
     option_madness_legacy = -3
     option_insanity_legacy = -4
 
-    er_seed: str = "vanilla"
+    er_seed: str = ''
 
     @classmethod
     def from_text(cls, text: str) -> EntranceShuffle:
         if "-" in text:
             shuffle, seed = text.split("-", 1)  
         else:
-            shuffle, seed = text, None
+            shuffle, seed = text, ''
         ret = super().from_text(shuffle)
-        
-        if seed:
-            ret.er_seed = seed  
+        assert(type(ret) is EntranceShuffle)
+        if ret == EntranceShuffle.option_vanilla:
+            seed = 'vanilla'
+
+        ret.er_seed = seed  
 
         return ret
 
@@ -578,6 +580,26 @@ class BeemizerTrapChance(BeemizerRange):
     default = 60
     display_name = "Beemizer Trap Chance"
 
+class EnemyHealth(Choice):
+    option_default = -1
+    option_easy = 0
+    option_normal = 1
+    option_hard = 2
+    option_expert = 3
+    default = option_default
+
+    @property
+    def enemizer_arg_value(self):
+        return max(0, self.value)
+
+
+class EnemyDamage(Choice):
+    option_default = 0
+    option_shuffled = 1
+    option_chaos = 2
+    # TODO: this doesn't work at all, do we need it?
+    # alias_random = option_chaos # This was slated to be "removed", is this still the case?
+    
 
 class AllowCollect(Toggle):
     """Allows for !collect / co-op to auto-open chests containing items for other players.
@@ -644,5 +666,10 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "red_clock_time": RedClockTime,
     "blue_clock_time": BlueClockTime,
     "green_clock_time": GreenClockTime,
-    "shuffle": EntranceShuffle,
+    "entrance_shuffle": EntranceShuffle,
+    "enemy_health": EnemyHealth,
+    "enemy_damage": EnemyDamage,
+    # required_medallions??
+    # shuffle_prizes sprite_pool dark_room_logic shop_shuffle
+
 }

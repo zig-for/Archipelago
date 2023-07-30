@@ -86,11 +86,9 @@ class MultiWorld():
         self.random = ThreadBarrierProxy(random.Random())
         self.players = players
         self.player_types = {player: NetUtils.SlotType.player for player in self.player_ids}
-        self.glitch_triforce = False
         self.algorithm = 'balanced'
         self.groups = {}
         self.regions = []
-        self.shops = []
         self.itempool = []
         self.seed = None
         self.seed_name: str = "Unavailable"
@@ -100,27 +98,35 @@ class MultiWorld():
         self._entrance_cache = {}
         self._location_cache: Dict[Tuple[str, int], Location] = {}
         self.required_locations = []
-        self.light_world_light_cone = False
-        self.dark_world_light_cone = False
-        self.rupoor_cost = 10
-        self.aga_randomness = True
-        self.save_and_quit_from_boss = True
+        
         self.custom = False
         self.customitemarray = []
-        self.shuffle_ganon = True
+
         self.spoiler = Spoiler(self)
         self.early_items = {player: {} for player in self.player_ids}
         self.local_early_items = {player: {} for player in self.player_ids}
         self.indirect_connections = {}
         self.start_inventory_from_pool: Dict[int, Options.StartInventoryPool] = {}
 
+        # (╯°□°)╯︵ ┻━┻
+        # Global across all players :^)
+        self.shuffle_ganon = True
+        self.shops = []
+        self.light_world_light_cone = False
+        self.dark_world_light_cone = False
+        self.rupoor_cost = 10
+        self.aga_randomness = True
+        self.save_and_quit_from_boss = True
+        self.glitch_triforce = False
 
         for player in range(1, players + 1):
             def set_player_attr(attr, val):
                 self.__dict__.setdefault(attr, {})[player] = val
-
+            
+            set_player_attr('game', "A Link to the Past")
+            set_player_attr('completion_condition', lambda state: True)
             set_player_attr('_region_cache', {})
-            set_player_attr('shuffle', "vanilla")
+
             # dear god, fixme
             set_player_attr('swamp_patch_required', False)
             set_player_attr('powder_patch_required', False)
@@ -131,8 +137,6 @@ class MultiWorld():
             set_player_attr('can_access_trock_big_chest', None)
             set_player_attr('can_access_trock_middle', None)
             set_player_attr('fix_fake_world', True)
-            set_player_attr('enemy_health', 'default')
-            set_player_attr('enemy_damage', 'default')
             set_player_attr('beemizer_total_chance', 0)
             set_player_attr('beemizer_trap_chance', 0)
             set_player_attr('treasure_hunt_icon', 'Triforce Piece')
@@ -145,8 +149,7 @@ class MultiWorld():
             set_player_attr('plando_items', [])
             set_player_attr('plando_texts', {})
             set_player_attr('plando_connections', [])
-            set_player_attr('game', "A Link to the Past")
-            set_player_attr('completion_condition', lambda state: True)
+            
         self.custom_data = {}
         self.worlds = {}
         self.per_slot_randoms = {}

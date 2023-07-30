@@ -10,7 +10,7 @@ from .EntranceShuffle import connect_entrance
 from .Items import GetBeemizerItem, ItemFactory
 from .Options import (Difficulty, Goal, Logic, LTTPBosses, Mode, Timer,
                       bigkey_shuffle, compass_shuffle, map_shuffle,
-                      smallkey_shuffle, EntranceShuffle)
+                      smallkey_shuffle, EntranceShuffle, EnemyHealth, EnemyDamage)
 from .Shops import (TakeAny, create_dynamic_shop_locations, set_up_shops,
                     shuffle_shops, total_shop_slots)
 from .StateHelpers import has_melee_weapon, has_triforce_pieces
@@ -346,7 +346,7 @@ def generate_itempool(world):
             starting_weapon = multiworld.random.choice(possible_weapons)
             placed_items["Link's Uncle"] = starting_weapon
             pool.remove(starting_weapon)
-        if placed_items["Link's Uncle"] in ['Bow', 'Progressive Bow', 'Bombs (10)', 'Cane of Somaria', 'Cane of Byrna'] and multiworld.enemy_health[player] not in ['default', 'easy']:
+        if placed_items["Link's Uncle"] in ['Bow', 'Progressive Bow', 'Bombs (10)', 'Cane of Somaria', 'Cane of Byrna'] and multiworld.enemy_health[player] not in [EnemyHealth.option_easy, EnemyHealth.option_normal]:
             multiworld.worlds[player].escape_assist.append('bombs')
 
     for (location, item) in placed_items.items():

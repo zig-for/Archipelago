@@ -36,7 +36,7 @@ from .Text import KingsReturn_texts, Sanctuary_texts, Kakariko_texts, Blacksmith
     SickKid_texts, FluteBoy_texts, Zora_texts, MagicShop_texts, Sahasrahla_names
 from .Items import ItemFactory, item_table, item_name_groups, progression_items
 from .EntranceShuffle import door_addresses
-from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer, ItemFunctionality, EntranceShuffle
+from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer, ItemFunctionality, EntranceShuffle, EnemyHealth, EnemyDamage
 
 try:
     from maseya import z3pr
@@ -292,14 +292,13 @@ def patch_enemizer(world, rom: LocalRom, enemizercli, output_directory):
         'RandomizeEnemies': multiworld.enemy_shuffle[player].value,
         'RandomizeEnemiesType': 3,
         'RandomizeBushEnemyChance': multiworld.bush_shuffle[player].value,
-        'RandomizeEnemyHealthRange': multiworld.enemy_health[player] != 'default',
-        'RandomizeEnemyHealthType': {'default': 0, 'easy': 0, 'normal': 1, 'hard': 2, 'expert': 3}[
-            multiworld.enemy_health[player]],
+        'RandomizeEnemyHealthRange': multiworld.enemy_health[player] != EnemyHealth.option_default,
+        'RandomizeEnemyHealthType': multiworld.enemy_health[player].enemizer_arg_value(),
         'OHKO': False,
-        'RandomizeEnemyDamage': multiworld.enemy_damage[player] != 'default',
+        'RandomizeEnemyDamage': multiworld.enemy_damage[player] != EnemyDamage.option_default,
         'AllowEnemyZeroDamage': True,
-        'ShuffleEnemyDamageGroups': multiworld.enemy_damage[player] != 'default',
-        'EnemyDamageChaosMode': multiworld.enemy_damage[player] == 'chaos',
+        'ShuffleEnemyDamageGroups': multiworld.enemy_damage[player] != EnemyDamage.option_default,
+        'EnemyDamageChaosMode': multiworld.enemy_damage[player] == EnemyDamage.option_chaos,
         'EasyModeEscape': multiworld.mode[player] == Mode.option_standard,
         'EnemiesAbsorbable': False,
         'AbsorbableSpawnRate': 10,
