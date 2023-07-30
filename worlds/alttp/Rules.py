@@ -9,7 +9,7 @@ from worlds.generic.Rules import (add_item_rule, add_rule, forbid_item,
 from . import OverworldGlitchRules
 from .Bosses import GanonDefeatRule
 from .Items import ItemFactory, item_name_groups, item_table, progression_items
-from .Options import smallkey_shuffle, Goal, Mode, DarkRoomLogic
+from .Options import smallkey_shuffle, Goal, Mode, DarkRoomLogic, Logic
 from .OverworldGlitchRules import no_logic_rules, overworld_glitches_rules
 from .Regions import LTTPRegionType, location_table
 from .StateHelpers import (can_extend_magic, can_kill_most_things,

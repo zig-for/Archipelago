@@ -21,7 +21,7 @@ class Logic(Choice):
                              """
     # TODO: go back and replace these to underscore versions
     # TODO: missed a tonne of strings in code for these
-    
+
     option_noglitches = 0
     option_minorglitches = 1
     option_owglitches = 2
@@ -152,10 +152,29 @@ class Sprite(FreeText):
     TODO: probably broke this
     """
 
-class SpritePool(FreeText):
+class SpritePool(Option[typing.List[str]]):
     """
     TODO: probably broke this
     """
+    supports_weighting = False
+
+    @property
+    def current_option_name(self) -> str:
+        """For display purposes. Worlds should be using current_key."""
+        return str(self.value)
+
+    def __init__(self, value: typing.List[str] | str):
+        if type(value) == str:
+            value = [value]
+        assert isinstance(value, list), f"value of SpritePool must be a list[str] (found a {type(value)} {value})"
+        for item in value:
+            assert isinstance(item, str), f"value of SpritePool must be a list[str] (found a {type(item)} {item}) inside)"
+        self.value = value
+
+    @classmethod
+    def from_any(cls, root: typing.List[str] | str):
+        return SpritePool(root)
+
 
 
 class DungeonItem(Choice):
