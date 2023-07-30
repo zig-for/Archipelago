@@ -5,7 +5,7 @@ import re
 from BaseClasses import MultiWorld
 from Options import (Choice, DeathLink, DefaultOnToggle, FreeText,
                      Option, PlandoBosses, Range,
-                     StartInventoryPool, Toggle)
+                     StartInventoryPool, Toggle, OptionDict)
 
 
 class Logic(Choice):
@@ -151,7 +151,7 @@ class YamlNode(Option[typing.Any]):
     value = []
     @classmethod
     def from_any(cls, root):
-        return SpritePool(root)
+        return cls(root)
 
     def __init__(self, value: typing.Any):
         self.value = value
@@ -298,6 +298,24 @@ class ItemFunctionality(Choice):
     option_expert = 3
     default = option_normal
 
+class MedallionChoice(Choice):
+    #option_random = 0
+    option_ether = 1
+    option_quake = 2
+    option_bombos = 3
+    default = "random"
+
+
+class MiseryMireMedallion(MedallionChoice):
+    """
+    required medallion to open Misery Mire front entrance
+    """
+
+class TurtleRockMedallion(MedallionChoice):
+    """
+    required medallion to open Turtle Rock front entrance
+    """
+    
 class LTTPBosses(PlandoBosses):
     """Shuffles bosses around to different locations.
     Basic will shuffle all bosses except Ganon and Agahnim anywhere they can be placed.
@@ -765,8 +783,6 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "entrance_shuffle": EntranceShuffle,
     "enemy_health": EnemyHealth,
     "enemy_damage": EnemyDamage,
-    # required_medallions??
-    # 
     "shop_shuffle": ShopShuffle,
     "shuffle_prizes": PrizeShuffle,
     "dark_room_logic": DarkRoomLogic,
@@ -774,4 +790,6 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "sprite": Sprite,
     "random_sprite_on_event": RandomSpriteOnEvent,
     "use_weighted_sprite_pool": UseWeightedSpritePool,
+    "misery_mire_medallion": MiseryMireMedallion,
+    "turtle_rock_medallion": TurtleRockMedallion,
 }

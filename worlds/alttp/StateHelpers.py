@@ -137,10 +137,10 @@ def can_melt_things(state: CollectionState, player: int) -> bool:
 
 
 def has_misery_mire_medallion(state: CollectionState, player: int) -> bool:
-    return state.has(state.multiworld.worlds[player].required_medallions[0], player)
+    return state.has(state.multiworld.misery_mire_medallion[player].current_option_name, player)
 
 def has_turtle_rock_medallion(state: CollectionState, player: int) -> bool:
-    return state.has(state.multiworld.worlds[player].required_medallions[1], player)
+    return state.has(state.multiworld.turtle_rock_medallion[player].current_option_name, player)
 
 
 def can_boots_clip_lw(state: CollectionState, player: int) -> bool:

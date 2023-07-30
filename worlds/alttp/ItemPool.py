@@ -420,17 +420,6 @@ def generate_itempool(world):
         nonprogressionitems = nonprogressionitems[additional_triforce_pieces:]
         multiworld.random.shuffle(nonprogressionitems)
 
-    # shuffle medallions
-    if multiworld.worlds[player].required_medallions[0] == "random":
-        mm_medallion = multiworld.random.choice(['Ether', 'Quake', 'Bombos'])
-    else:
-        mm_medallion = multiworld.worlds[player].required_medallions[0]
-    if multiworld.worlds[player].required_medallions[1] == "random":
-        tr_medallion = multiworld.random.choice(['Ether', 'Quake', 'Bombos'])
-    else:
-        tr_medallion = multiworld.worlds[player].required_medallions[1]
-    multiworld.worlds[player].required_medallions = (mm_medallion, tr_medallion)
-
     place_bosses(world)
     set_up_shops(multiworld, player)
 

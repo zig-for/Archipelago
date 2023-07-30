@@ -259,7 +259,6 @@ class ALTTPWorld(World):
     fix_palaceofdarkness_exit: bool
     fix_trock_exit: bool
 
-    required_medallions: typing.List[str] = ['random', 'random']
     # Used to give free bombs/arrows/magic in standard escape - currently only ever set to bombs
     escape_assist: typing.List[str] = []
 
@@ -341,8 +340,6 @@ class ALTTPWorld(World):
         # Not possible to place crystals outside boss prizes yet (might as well make it consistent with pendants too).
         world.non_local_items[player].value -= item_name_groups['Pendants']
         world.non_local_items[player].value -= item_name_groups['Crystals']
-
-        
 
         def interpret_on_off(value) -> bool:
             return {"on": True, "off": False}.get(value, value)
@@ -758,10 +755,10 @@ class ALTTPWorld(World):
     def write_spoiler(self, spoiler_handle: typing.TextIO) -> None:
         spoiler_handle.write("\n\nMedallions:\n")
         spoiler_handle.write(f"\nMisery Mire ({self.multiworld.get_player_name(self.player)}):"
-                             f" {self.multiworld.worlds[self.player].required_medallions[0]}")
+                             f" {self.multiworld.misery_mire_medallion[self.player]}")
         spoiler_handle.write(
             f"\nTurtle Rock ({self.multiworld.get_player_name(self.player)}):"
-            f" {self.multiworld.worlds[self.player].required_medallions[1]}")
+            f" {self.multiworld.turtle_rock_medallion[self.player]}")
 
         if self.multiworld.boss_shuffle[self.player] != "none":
             def create_boss_map() -> typing.Dict:

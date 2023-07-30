@@ -36,7 +36,7 @@ from .Text import KingsReturn_texts, Sanctuary_texts, Kakariko_texts, Blacksmith
     SickKid_texts, FluteBoy_texts, Zora_texts, MagicShop_texts, Sahasrahla_names
 from .Items import ItemFactory, item_table, item_name_groups, progression_items
 from .EntranceShuffle import door_addresses
-from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer, ItemFunctionality, EntranceShuffle, EnemyHealth, EnemyDamage
+from .Options import smallkey_shuffle, Goal, DungeonCounters, Mode, Timer, ItemFunctionality, EntranceShuffle, EnemyHealth, EnemyDamage, MedallionChoice
 
 try:
     from maseya import z3pr
@@ -906,22 +906,22 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_bytes(0x118C64, [first_bot, mid_bot, last_bot])
 
     # patch medallion requirements
-    if world.worlds[player].required_medallions[0] == 'Bombos':
+    if world.misery_mire_medallion[player] == MedallionChoice.option_bombos:
         rom.write_byte(0x180022, 0x00)  # requirement
         rom.write_byte(0x4FF2, 0x31)  # sprite
         rom.write_byte(0x50D1, 0x80)
         rom.write_byte(0x51B0, 0x00)
-    elif world.worlds[player].required_medallions[0] == 'Quake':
+    elif world.misery_mire_medallion[player] == MedallionChoice.option_quake:
         rom.write_byte(0x180022, 0x02)  # requirement
         rom.write_byte(0x4FF2, 0x31)  # sprite
         rom.write_byte(0x50D1, 0x88)
         rom.write_byte(0x51B0, 0x00)
-    if world.worlds[player].required_medallions[1] == 'Bombos':
+    if world.turtle_rock_medallion[player] == MedallionChoice.option_bombos:
         rom.write_byte(0x180023, 0x00)  # requirement
         rom.write_byte(0x5020, 0x31)  # sprite
         rom.write_byte(0x50FF, 0x90)
         rom.write_byte(0x51DE, 0x00)
-    elif world.worlds[player].required_medallions[1] == 'Ether':
+    elif world.turtle_rock_medallion[player] == MedallionChoice.option_ether:
         rom.write_byte(0x180023, 0x01)  # requirement
         rom.write_byte(0x5020, 0x31)  # sprite
         rom.write_byte(0x50FF, 0x98)
