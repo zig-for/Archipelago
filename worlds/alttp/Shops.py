@@ -8,7 +8,7 @@ from Utils import int16_as_bytes
 from .SubClasses import ALttPLocation
 from .EntranceShuffle import door_addresses
 from .Items import item_name_groups, item_table, ItemFactory, trap_replaceable, GetBeemizerItem
-from .Options import smallkey_shuffle, Mode
+from .Options import smallkey_shuffle, Mode, Goal
 
 
 logger = logging.getLogger("Shops")
@@ -276,7 +276,7 @@ def ShopSlotFill(multiworld):
                     shop.push_inventory(location.shop_slot, item_name,
                                         min(int(price * multiworld.shop_price_modifier[location.player] / 100) * 5, 9999), 1,
                                         location.item.player if location.item.player != location.player else 0)
-                    if 'P' in multiworld.shop_shuffle[location.player]:
+                    if multiworld.shop_shuffle[location.player].shuffle_shop_price_currencies():
                         price_to_funny_price(multiworld, shop.inventory[location.shop_slot], location.player)
 
     FillDisabledShopSlots(multiworld)
@@ -286,7 +286,7 @@ def create_shops(world, player: int):
     option = world.shop_shuffle[player]
 
     player_shop_table = shop_table.copy()
-    if "w" in option:
+    if option.randomize_potion_shop():
         player_shop_table["Potion Shop"] = player_shop_table["Potion Shop"]._replace(locked=False)
         dynamic_shop_slots = total_dynamic_shop_slots + 3
     else:
@@ -296,7 +296,7 @@ def create_shops(world, player: int):
     single_purchase_slots: List[bool] = [True] * num_slots + [False] * (dynamic_shop_slots - num_slots)
     world.random.shuffle(single_purchase_slots)
 
-    if 'g' in option or 'f' in option:
+    if option.randomize_shops():
         default_shop_table = [i for l in
                               [shop_generation_types[x] for x in ['arrows', 'bombs', 'potions', 'shields', 'bottle'] if
                                not world.retro_bow[player] or x != 'arrows'] for i in l]
@@ -306,7 +306,7 @@ def create_shops(world, player: int):
             typ, shop_id, keeper, custom, locked, items, sram_offset = shop
             if not locked:
                 new_items = world.random.sample(default_shop_table, k=3)
-                if 'f' not in option:
+                if not option.randomize_shops_independantly():
                     if items == _basic_shop_defaults:
                         new_items = new_basic_shop
                     elif items == _dark_world_shop_defaults:
@@ -440,7 +440,7 @@ def set_up_shops(world, player: int):
 
 def shuffle_shops(world, items, player: int):
     option = world.shop_shuffle[player]
-    if 'u' in option:
+    if option.shuffle_capacity_upgrades():
         progressive = world.progressive[player]
         progressive = world.random.choice([True, False]) if progressive == 'grouped_random' else progressive == 'on'
         progressive &= world.goal == Goal.option_icerodhunt
@@ -479,8 +479,11 @@ def shuffle_shops(world, items, player: int):
         else:
             for item in new_items:
                 world.push_precollected(ItemFactory(item, player))
+    
+        return 'i' in self.value
 
-    if any(setting in option for setting in 'ipP'):
+    
+    if option.shuffle_shop_prices() or option.shuffle_default_inventories() or option.shuffle_shop_price_currencies():
         shops = []
         upgrade_shops = []
         total_inventory = []
@@ -492,7 +495,7 @@ def shuffle_shops(world, items, player: int):
                     shops.append(shop)
                     total_inventory.extend(shop.inventory)
 
-        if 'p' in option:
+        if option.shuffle_shop_prices():
             def price_adjust(price: int) -> int:
                 # it is important that a base price of 0 always returns 0 as new price!
                 adjust = 2 if price < 100 else 5
@@ -509,14 +512,14 @@ def shuffle_shops(world, items, player: int):
                 for item in shop.inventory:
                     adjust_item(item)
 
-        if 'P' in option:
+        if option.shuffle_shop_price_currencies():
             for item in total_inventory:
                 price_to_funny_price(world, item, player)
             # Don't apply to upgrade shops
             # Upgrade shop is only one place, and will generally be too easy to
             # replenish hearts and bombs
 
-        if 'i' in option:
+        if option.shuffle_default_inventories():
             world.random.shuffle(total_inventory)
 
             i = 0

@@ -288,10 +288,10 @@ class ALTTPWorld(World):
         world = self.multiworld
 
         # Entrance shuffle fixup        
-        self.fix_trock_doors = self.multiworld.shuffle[self.player] != EntranceShuffle.option_vanilla or self.multiworld.mode[self.player] == Mode.option_inverted
-        self.fix_skullwoods_exit = self.multiworld.shuffle[self.player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple]
-        self.fix_palaceofdarkness_exit = self.multiworld.shuffle[self.player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple]
-        self.fix_trock_exit = self.multiworld.shuffle[self.player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple]
+        self.fix_trock_doors = self.multiworld.entrance_shuffle[self.player] != EntranceShuffle.option_vanilla or self.multiworld.mode[self.player] == Mode.option_inverted
+        self.fix_skullwoods_exit = self.multiworld.entrance_shuffle[self.player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple]
+        self.fix_palaceofdarkness_exit = self.multiworld.entrance_shuffle[self.player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple]
+        self.fix_trock_exit = self.multiworld.entrance_shuffle[self.player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_dungeonssimple]
     
         # Triforce piece logic
         
@@ -313,15 +313,13 @@ class ALTTPWorld(World):
             world.local_early_items[self.player]["Small Key (Hyrule Castle)"] = 1
 
         # system for sharing ER layouts
-        self.er_seed = str(world.random.randint(0, 2 ** 64))
-
-        shuffle = world.shuffle[player]
+        shuffle = world.entrance_shuffle[player]
         if shuffle.er_seed:
             if shuffle.er_seed.startswith("group-") or world.is_race:
-                self.er_seed = get_same_seed(world, (
+                shuffle.er_seed = get_same_seed(world, (
                     shuffle, shuffle.er_seed, world.retro_caves[player], world.mode[player], world.logic[player]))
-            else:  # not a race or group seed, use set seed as is.
-                self.er_seed = shuffle.er_seed
+        else:
+            shuffle.er_seed = str(world.random.randint(0, 2 ** 64))
 
         for dungeon_item in ["smallkey_shuffle", "bigkey_shuffle", "compass_shuffle", "map_shuffle"]:
             option = getattr(world, dungeon_item)[player]
@@ -360,13 +358,13 @@ class ALTTPWorld(World):
         create_shops(world, player)
         self.create_dungeons()
 
-        if world.logic[player] not in ["noglitches", "minorglitches"] and world.shuffle[player] in \
+        if world.logic[player] not in [Logic.option_noglitches, Logic.option_minorglitches] and world.entrance_shuffle[player] in \
                 {EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_full}:
             world.fix_fake_world[player] = False
 
         # seeded entrance shuffle
         old_random = world.random
-        world.random = random.Random(self.er_seed)
+        world.random = random.Random(world.entrance_shuffle[player].er_seed)
 
         if world.mode[player] != Mode.option_inverted:
             link_entrances(world, player)
@@ -579,7 +577,7 @@ class ALTTPWorld(World):
     @classmethod
     def stage_extend_hint_information(cls, world, hint_data: typing.Dict[int, typing.Dict[int, str]]):
         er_hint_data = {player: {} for player in world.get_game_players("A Link to the Past") if
-                        world.shuffle[player] != EntranceShuffle.option_vanilla or world.retro_caves[player]}
+                        world.entrance_shuffle[player] != EntranceShuffle.option_vanilla or world.retro_caves[player]}
 
         for region in world.regions:
             if region.player in er_hint_data and region.locations:
@@ -694,20 +692,19 @@ class ALTTPWorld(World):
                           self.multiworld.triforce_pieces_required[self.player])
         spoiler_handle.write('Difficulty:                      %s\n' % self.multiworld.difficulty[self.player])
         spoiler_handle.write('Item Functionality:              %s\n' % self.multiworld.item_functionality[self.player])
-        spoiler_handle.write('Entrance Shuffle:                %s\n' % self.multiworld.shuffle[self.player])
-        if self.multiworld.shuffle[self.player] != EntranceShuffle.option_vanilla:
-            spoiler_handle.write('Entrance Shuffle Seed            %s\n' % self.er_seed)
+        spoiler_handle.write('Entrance Shuffle:                %s\n' % self.multiworld.entrance_shuffle[self.player])
+        if self.multiworld.entrance_shuffle[self.player] != EntranceShuffle.option_vanilla:
+            spoiler_handle.write('Entrance Shuffle Seed            %s\n' % self.multiworld.entrance_shuffle[self.player].er_seed)
         spoiler_handle.write('Shop inventory shuffle:          %s\n' %
-                             bool_to_text("i" in self.multiworld.shop_shuffle[self.player]))
+                             bool_to_text(self.multiworld.shop_shuffle[self.player].shuffle_default_inventories()))
         spoiler_handle.write('Shop price shuffle:              %s\n' %
-                             bool_to_text("p" in self.multiworld.shop_shuffle[self.player]))
+                             bool_to_text(self.multiworld.shop_shuffle[self.player].shuffle_shop_prices()))
         spoiler_handle.write('Shop upgrade shuffle:            %s\n' %
-                             bool_to_text("u" in self.multiworld.shop_shuffle[self.player]))
+                             bool_to_text(self.multiworld.shop_shuffle[self.player].shuffle_capacity_upgrades()))
         spoiler_handle.write('New Shop inventory:              %s\n' %
-                             bool_to_text("g" in self.multiworld.shop_shuffle[self.player] or
-                                          "f" in self.multiworld.shop_shuffle[self.player]))
+                             bool_to_text(self.multiworld.shop_shuffle[self.player].randomize_shops()))
         spoiler_handle.write('Custom Potion Shop:              %s\n' %
-                             bool_to_text("w" in self.multiworld.shop_shuffle[self.player]))
+                             bool_to_text(self.multiworld.shop_shuffle[self.player].randomize_potion_shop()))
         spoiler_handle.write('Enemy health:                    %s\n' % self.multiworld.enemy_health[self.player])
         spoiler_handle.write('Enemy damage:                    %s\n' % self.multiworld.enemy_damage[self.player])
         spoiler_handle.write('Prize shuffle                    %s\n' % self.multiworld.shuffle_prizes[self.player])

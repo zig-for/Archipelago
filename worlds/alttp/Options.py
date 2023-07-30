@@ -1,6 +1,7 @@
 from __future__ import annotations
 import typing
-
+from schema import Schema
+import re
 from BaseClasses import MultiWorld
 from Options import (Choice, DeathLink, DefaultOnToggle, FreeText,
                      Option, PlandoBosses, Range,
@@ -136,7 +137,7 @@ class OpenPyramid(Choice):
             return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal}
         elif self.value == self.option_auto:
             return world.goal[player] in {Goal.option_crystals, Goal.option_ganontriforcehunt, Goal.option_localganontriforcehunt, Goal.option_ganonpedestal} \
-            and (world.shuffle[player] in {EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed} or not
+            and (world.entrance_shuffle[player] in {EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed} or not
                  world.shuffle_ganon)
         elif self.value == self.option_open:
             return True
@@ -373,9 +374,8 @@ class EntranceShuffle(Choice):
         else:
             shuffle, seed = text, ''
         ret = super().from_text(shuffle)
-        assert(type(ret) is EntranceShuffle)
-        if ret == EntranceShuffle.option_vanilla:
-            seed = 'vanilla'
+
+        # Note: the old settings system forced 'vanilla' if vanilla, but this shouldn't be needed
 
         ret.er_seed = seed  
 
@@ -460,6 +460,44 @@ class PotShuffle(Toggle):
     """Shuffle contents of pots within "supertiles" (item will still be nearby original placement)."""
     display_name = "Pot Shuffle"
 
+class ShopShuffle(FreeText):
+    """
+    g: 0 # Generate new default inventories for overworld/underworld shops, and unique shops
+    f: 0 # Generate new default inventories for every shop independently
+    i: 0 # Shuffle default inventories of the shops around
+    p: 0 # Randomize the prices of the items in shop inventories
+    u: 0 # Shuffle capacity upgrades into the item pool (and allow them to traverse the multiworld)
+    w: 0 # Consider witch's hut like any other shop and shuffle/randomize it too
+    P: 0 # Prices of the items in shop inventories cost hearts, arrow, or bombs instead of rupees
+    ip: 0 # Shuffle inventories and randomize prices
+    fpu: 0 # Generate new inventories, randomize prices and shuffle capacity upgrades into item pool
+    uip: 0 # Shuffle inventories, randomize prices and shuffle capacity upgrades into the item pool
+    """
+    schema = Schema(
+        lambda s: s == '0' or all(c in 'gfipuwP' for c in s)
+    )
+    
+    # TODO: we should consider warning if g and f
+    def randomize_shops(self):
+        return 'g' in self.value or 'f' in self.value
+    
+    def randomize_shops_independantly(self):
+        return 'f' in self.value
+    
+    def randomize_potion_shop(self):
+        return 'w' in self.value
+    
+    def shuffle_capacity_upgrades(self):
+        return 'u' in self.value
+
+    def shuffle_default_inventories(self):
+        return 'i' in self.value
+
+    def shuffle_shop_prices(self):
+        return 'p' in self.value
+
+    def shuffle_shop_price_currencies(self):
+        return 'P' in self.value
 
 class Palette(Choice):
     option_default = 0
@@ -671,5 +709,5 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "enemy_damage": EnemyDamage,
     # required_medallions??
     # shuffle_prizes sprite_pool dark_room_logic shop_shuffle
-
+    "shop_shuffle": ShopShuffle,
 }

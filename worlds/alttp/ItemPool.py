@@ -508,7 +508,7 @@ def set_up_take_anys(world, player):
 
 
 def get_pool_core(world, player: int):
-    shuffle = world.shuffle[player]
+    shuffle = world.entrance_shuffle[player]
     difficulty = world.difficulty[player]
     timer = world.timer[player]
     goal = world.goal[player]
@@ -649,7 +649,7 @@ def get_pool_core(world, player: int):
 
 
 def make_custom_item_pool(world, player):
-    shuffle = world.shuffle[player]
+    shuffle = world.entrance_shuffle[player]
     difficulty = world.difficulty[player]
     timer = world.timer[player]
     goal = world.goal[player]

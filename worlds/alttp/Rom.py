@@ -844,7 +844,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
                     # Thanks to Zarby89 for originally finding these values
                     # todo fix screen scrolling
 
-                    if world.shuffle[player] not in {EntranceShuffle.option_insanity, EntranceShuffle.option_insanity_legacy, EntranceShuffle.option_madness_legacy} and \
+                    if world.entrance_shuffle[player] not in {EntranceShuffle.option_insanity, EntranceShuffle.option_insanity_legacy, EntranceShuffle.option_madness_legacy} and \
                             exit.name in {'Eastern Palace Exit', 'Tower of Hera Exit', 'Thieves Town Exit',
                                           'Skull Woods Final Section Exit', 'Ice Palace Exit', 'Misery Mire Exit',
                                           'Palace of Darkness Exit', 'Swamp Palace Exit', 'Ganons Tower Exit',
@@ -893,7 +893,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     if world.retro_caves[player]:  # Old man cave and Take any caves will count towards collection rate.
         credits_total += 5
     if world.shop_item_slots[player]:  # Potion shop only counts towards collection rate if included in the shuffle.
-        credits_total += 30 if 'w' in world.shop_shuffle[player] else 27
+        credits_total += 30 if world.shop_shuffle[player].randomize_potion_shop() else 27
 
     rom.write_byte(0x187010, credits_total)  # dynamic credits
     # collection rate address: 238C37
@@ -1241,7 +1241,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_bytes(0x180213, [0x00, 0x01])  # Not a Tournament Seed
 
     gametype = 0x04  # item
-    if world.shuffle[player] != EntranceShuffle.option_vanilla:
+    if world.entrance_shuffle[player] != EntranceShuffle.option_vanilla:
         gametype |= 0x02  # entrance
     if enemized:
         gametype |= 0x01  # enemizer
@@ -1465,7 +1465,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     rom.write_byte(0x3A96D, 0xF0 if world.mode[
                                         player] != Mode.option_inverted else 0xD0)  # Residual Portal: Normal  (F0= Light Side, D0=Dark Side, 42 = both (Darth Vader))
     rom.write_byte(0x3A9A7, 0xD0)  # Residual Portal: Normal  (D0= Light Side, F0=Dark Side, 42 = both (Darth Vader))
-    if 'u' in world.shop_shuffle[player]:
+    if world.shop_shuffle[player].shuffle_capacity_upgrades():
         rom.write_bytes(0x180080,
                         [5, 10, 5, 10])  # values to fill for Capacity Upgrades (Bomb5, Bomb10, Arrow5, Arrow10)
     else:
@@ -1501,7 +1501,7 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
     # c - enabled for inside compasses
     # s - enabled for inside small keys
     # block HC upstairs doors in rain state in standard mode
-    rom.write_byte(0x18008A, 0x01 if world.mode[player] == Mode.option_standard and world.shuffle[player] != EntranceShuffle.option_vanilla else 0x00)
+    rom.write_byte(0x18008A, 0x01 if world.mode[player] == Mode.option_standard and world.entrance_shuffle[player] != EntranceShuffle.option_vanilla else 0x00)
 
     rom.write_byte(0x18016A, 0x10 | ((0x01 if world.smallkey_shuffle[player] else 0x00)
                                      | (0x02 if world.compass_shuffle[player] else 0x00)
@@ -1627,8 +1627,8 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
                                                                                                 0x4F])
 
     # allow smith into multi-entrance caves in appropriate shuffles
-    if world.shuffle[player] in [EntranceShuffle.option_restricted, EntranceShuffle.option_full, EntranceShuffle.option_crossed, EntranceShuffle.option_insanity, EntranceShuffle.option_madness] or (
-            world.shuffle[player] == EntranceShuffle.option_simple and world.mode[player] == Mode.option_inverted):
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_restricted, EntranceShuffle.option_full, EntranceShuffle.option_crossed, EntranceShuffle.option_insanity, EntranceShuffle.option_madness] or (
+            world.entrance_shuffle[player] == EntranceShuffle.option_simple and world.mode[player] == Mode.option_inverted):
         rom.write_byte(0x18004C, 0x01)
 
     # set correct flag for hera basement item
@@ -1725,7 +1725,7 @@ def write_custom_shops(rom, world, player):
             if item is None:
                 break
             if world.shop_item_slots[player] or shop.type == ShopType.TakeAny:
-                count_shop = (shop.region.name != 'Potion Shop' or 'w' in world.shop_shuffle[player]) and \
+                count_shop = (shop.region.name != 'Potion Shop' or world.shop_shuffle[player].randomize_potion_shop()) and \
                              shop.region.name != 'Capacity Upgrade'
                 rom.write_byte(0x186560 + shop.sram_offset + slot, 1 if count_shop else 0)
             if item['item'] == 'Single Arrow' and item['player'] == 0:
@@ -2168,7 +2168,7 @@ def write_strings(rom, world, player):
     tt.removeUnwantedText()
 
     # Let's keep this guy's text accurate to the shuffle setting.
-    if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonscrossed]:
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonscrossed]:
         tt['kakariko_flophouse_man_no_flippers'] = 'I really hate mowing my yard.\n{PAGEBREAK}\nI should move.'
         tt['kakariko_flophouse_man'] = 'I really hate mowing my yard.\n{PAGEBREAK}\nI should move.'
 
@@ -2222,7 +2222,7 @@ def write_strings(rom, world, player):
                     entrances_to_hint.update({'Inverted Ganons Tower': 'The sealed castle door'})
                 else:
                     entrances_to_hint.update({'Ganons Tower': 'Ganon\'s Tower'})
-            if world.shuffle[player] in [EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_restricted_legacy]:
+            if world.entrance_shuffle[player] in [EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_restricted_legacy]:
                 for entrance in all_entrances:
                     if entrance.name in entrances_to_hint:
                         this_hint = entrances_to_hint[entrance.name] + ' leads to ' + hint_text(
@@ -2232,9 +2232,9 @@ def write_strings(rom, world, player):
                         break
             # Now we write inconvenient locations for most shuffles and finish taking care of the less chaotic ones.
             entrances_to_hint.update(InconvenientOtherEntrances)
-            if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
+            if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
                 hint_count = 0
-            elif world.shuffle[player] in [EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_restricted_legacy]:
+            elif world.entrance_shuffle[player] in [EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_restricted_legacy]:
                 hint_count = 2
             else:
                 hint_count = 4
@@ -2251,14 +2251,14 @@ def write_strings(rom, world, player):
 
             # Next we handle hints for randomly selected other entrances,
             # curating the selection intelligently based on shuffle.
-            if world.shuffle[player] not in [EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_restricted_legacy]:
+            if world.entrance_shuffle[player] not in [EntranceShuffle.option_simple, EntranceShuffle.option_restricted, EntranceShuffle.option_restricted_legacy]:
                 entrances_to_hint.update(ConnectorEntrances)
                 entrances_to_hint.update(DungeonEntrances)
                 if world.mode[player] == Mode.option_inverted:
                     entrances_to_hint.update({'Inverted Agahnims Tower': 'The dark mountain tower'})
                 else:
                     entrances_to_hint.update({'Agahnims Tower': 'The sealed castle door'})
-            elif world.shuffle[player] == EntranceShuffle.option_restricted:
+            elif world.entrance_shuffle[player] == EntranceShuffle.option_restricted:
                 entrances_to_hint.update(ConnectorEntrances)
             entrances_to_hint.update(OtherEntrances)
             if world.mode[player] == Mode.option_inverted:
@@ -2268,14 +2268,14 @@ def write_strings(rom, world, player):
             else:
                 entrances_to_hint.update({'Dark Sanctuary Hint': 'The dark sanctuary cave'})
                 entrances_to_hint.update({'Big Bomb Shop': 'The old bomb shop'})
-            if world.shuffle[player] in [EntranceShuffle.option_insanity, EntranceShuffle.option_madness_legacy, EntranceShuffle.option_insanity_legacy]:
+            if world.entrance_shuffle[player] in [EntranceShuffle.option_insanity, EntranceShuffle.option_madness_legacy, EntranceShuffle.option_insanity_legacy]:
                 entrances_to_hint.update(InsanityEntrances)
                 if world.shuffle_ganon:
                     if world.mode[player] == Mode.option_inverted:
                         entrances_to_hint.update({'Inverted Pyramid Entrance': 'The extra castle passage'})
                     else:
                         entrances_to_hint.update({'Pyramid Ledge': 'The pyramid ledge'})
-            hint_count = 4 if world.shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull,
+            hint_count = 4 if world.entrance_shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull,
                                                             EntranceShuffle.option_dungeonscrossed] else 0
             for entrance in all_entrances:
                 if entrance.name in entrances_to_hint:
@@ -2290,10 +2290,10 @@ def write_strings(rom, world, player):
 
             # Next we write a few hints for specific inconvenient locations. We don't make many because in entrance this is highly unpredictable.
             locations_to_hint = InconvenientLocations.copy()
-            if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
+            if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
                 locations_to_hint.extend(InconvenientVanillaLocations)
             local_random.shuffle(locations_to_hint)
-            hint_count = 3 if world.shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull,
+            hint_count = 3 if world.entrance_shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull,
                                                             EntranceShuffle.option_dungeonscrossed] else 5
             for location in locations_to_hint[:hint_count]:
                 if location == 'Swamp Left':
@@ -2356,7 +2356,7 @@ def write_strings(rom, world, player):
             if world.hints[player] == EntranceShuffle.option_full:
                 hint_count = len(hint_locations)  # fill all remaining hint locations with Item hints.
             else:
-                hint_count = 5 if world.shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull,
+                hint_count = 5 if world.entrance_shuffle[player] not in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull,
                                                                 EntranceShuffle.option_dungeonscrossed] else 8
             hint_count = min(hint_count, len(items_to_hint), len(hint_locations))
             if hint_count:
@@ -2581,12 +2581,12 @@ def set_inverted_mode(world, player, rom):
     rom.write_byte(snes_to_pc(0x08D40C), 0xD0)  # morph proof
     # the following bytes should only be written in vanilla
     # or they'll overwrite the randomizer's shuffles
-    if world.shuffle[player] == EntranceShuffle.option_vanilla:
+    if world.entrance_shuffle[player] == EntranceShuffle.option_vanilla:
         rom.write_byte(0xDBB73 + 0x23, 0x37)  # switch AT and GT
         rom.write_byte(0xDBB73 + 0x36, 0x24)
         rom.write_int16(0x15AEE + 2 * 0x38, 0x00E0)
         rom.write_int16(0x15AEE + 2 * 0x25, 0x000C)
-    if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
         rom.write_byte(0x15B8C, 0x6C)
         rom.write_byte(0xDBB73 + 0x00, 0x53)  # switch bomb shop and links house
         rom.write_byte(0xDBB73 + 0x52, 0x01)
@@ -2644,7 +2644,7 @@ def set_inverted_mode(world, player, rom):
     rom.write_int16(snes_to_pc(0x02D9A6), 0x005A)
     rom.write_byte(snes_to_pc(0x02D9B3), 0x12)
     # keep the old man spawn point at old man house unless shuffle is vanilla
-    if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonscrossed]:
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonscrossed]:
         rom.write_bytes(snes_to_pc(0x308350), [0x00, 0x00, 0x01])
         rom.write_int16(snes_to_pc(0x02D8DE), 0x00F1)
         rom.write_bytes(snes_to_pc(0x02D910), [0x1F, 0x1E, 0x1F, 0x1F, 0x03, 0x02, 0x03, 0x03])
@@ -2707,7 +2707,7 @@ def set_inverted_mode(world, player, rom):
     rom.write_int16s(snes_to_pc(0x1bb836), [0x001B, 0x001B, 0x001B])
     rom.write_int16(snes_to_pc(0x308300), 0x0140)  # new pyramid hole entrance
     rom.write_int16(snes_to_pc(0x308320), 0x001B)
-    if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
         rom.write_byte(snes_to_pc(0x308340), 0x7B)
     rom.write_int16(snes_to_pc(0x1af504), 0x148B)
     rom.write_int16(snes_to_pc(0x1af50c), 0x149B)
@@ -2744,10 +2744,10 @@ def set_inverted_mode(world, player, rom):
     rom.write_bytes(snes_to_pc(0x1BC85A), [0x50, 0x0F, 0x82])
     rom.write_int16(0xDB96F + 2 * 0x35, 0x001B)  # move pyramid exit door
     rom.write_int16(0xDBA71 + 2 * 0x35, 0x06A4)
-    if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
         rom.write_byte(0xDBB73 + 0x35, 0x36)
     rom.write_byte(snes_to_pc(0x09D436), 0xF3)  # remove castle gate warp
-    if world.shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
+    if world.entrance_shuffle[player] in [EntranceShuffle.option_vanilla, EntranceShuffle.option_dungeonssimple, EntranceShuffle.option_dungeonsfull, EntranceShuffle.option_dungeonscrossed]:
         rom.write_int16(0x15AEE + 2 * 0x37, 0x0010)  # pyramid exit to new hc area
         rom.write_byte(0x15B8C + 0x37, 0x1B)
         rom.write_int16(0x15BDB + 2 * 0x37, 0x0418)
