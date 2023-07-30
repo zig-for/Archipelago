@@ -524,8 +524,10 @@ class ShopShuffle(FreeText):
     @staticmethod
     def should_only_contain_gfipuwP(s):
         # Handle default, 'off', and restricted user defined strings
-        return s == '0' or s == 'False' or all(c in 'gfipuwP' for c in s)
-    
+        return s == 'False' or all(c in 'gfipuwP' for c in s)
+        
+    default = 'False'
+
     schema = Schema(
        should_only_contain_gfipuwP
     )
