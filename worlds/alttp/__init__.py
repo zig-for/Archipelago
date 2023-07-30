@@ -724,18 +724,18 @@ class ALTTPWorld(World):
                 return variable
             return "Yes" if variable else "No"
 
-        spoiler_handle.write('Logic:                           %s\n' % self.multiworld.logic[self.player])
-        spoiler_handle.write('Dark Room Logic:                 %s\n' % self.multiworld.dark_room_logic[self.player])
-        spoiler_handle.write('Mode:                            %s\n' % self.multiworld.mode[self.player])
-        spoiler_handle.write('Goal:                            %s\n' % self.multiworld.goal[self.player])
+        spoiler_handle.write('Logic:                           %s\n' % self.multiworld.logic[self.player].current_option_name)
+        spoiler_handle.write('Dark Room Logic:                 %s\n' % self.multiworld.dark_room_logic[self.player].current_option_name)
+        spoiler_handle.write('Mode:                            %s\n' % self.multiworld.mode[self.player].current_option_name)
+        spoiler_handle.write('Goal:                            %s\n' % self.multiworld.goal[self.player].current_option_name)
         if self.multiworld.goal[self.player].is_triforce_hunt():  # triforce hunt
             spoiler_handle.write("Pieces available for Triforce:   %s\n" %
                           self.multiworld.triforce_pieces_available[self.player])
             spoiler_handle.write("Pieces required for Triforce:    %s\n" %
                           self.multiworld.triforce_pieces_required[self.player])
-        spoiler_handle.write('Difficulty:                      %s\n' % self.multiworld.difficulty[self.player])
-        spoiler_handle.write('Item Functionality:              %s\n' % self.multiworld.item_functionality[self.player])
-        spoiler_handle.write('Entrance Shuffle:                %s\n' % self.multiworld.entrance_shuffle[self.player])
+        spoiler_handle.write('Difficulty:                      %s\n' % self.multiworld.difficulty[self.player].current_option_name)
+        spoiler_handle.write('Item Functionality:              %s\n' % self.multiworld.item_functionality[self.player].current_option_name)
+        spoiler_handle.write('Entrance Shuffle:                %s\n' % self.multiworld.entrance_shuffle[self.player].current_option_name)
         if self.multiworld.entrance_shuffle[self.player] != EntranceShuffle.option_vanilla:
             spoiler_handle.write('Entrance Shuffle Seed            %s\n' % self.multiworld.entrance_shuffle[self.player].er_seed)
         spoiler_handle.write('Shop inventory shuffle:          %s\n' %
@@ -748,17 +748,17 @@ class ALTTPWorld(World):
                              bool_to_text(self.multiworld.shop_shuffle[self.player].randomize_shops()))
         spoiler_handle.write('Custom Potion Shop:              %s\n' %
                              bool_to_text(self.multiworld.shop_shuffle[self.player].randomize_potion_shop()))
-        spoiler_handle.write('Enemy health:                    %s\n' % self.multiworld.enemy_health[self.player])
-        spoiler_handle.write('Enemy damage:                    %s\n' % self.multiworld.enemy_damage[self.player])
+        spoiler_handle.write('Enemy health:                    %s\n' % self.multiworld.enemy_health[self.player].current_option_name)
+        spoiler_handle.write('Enemy damage:                    %s\n' % self.multiworld.enemy_damage[self.player].current_option_name)
         spoiler_handle.write('Prize shuffle                    %s\n' % self.multiworld.shuffle_prizes[self.player].value)
 
     def write_spoiler(self, spoiler_handle: typing.TextIO) -> None:
         spoiler_handle.write("\n\nMedallions:\n")
         spoiler_handle.write(f"\nMisery Mire ({self.multiworld.get_player_name(self.player)}):"
-                             f" {self.multiworld.misery_mire_medallion[self.player]}")
+                             f" {self.multiworld.misery_mire_medallion[self.player].current_option_name}")
         spoiler_handle.write(
             f"\nTurtle Rock ({self.multiworld.get_player_name(self.player)}):"
-            f" {self.multiworld.turtle_rock_medallion[self.player]}")
+            f" {self.multiworld.turtle_rock_medallion[self.player].current_option_name}")
 
         if self.multiworld.boss_shuffle[self.player] != "none":
             def create_boss_map() -> typing.Dict:
