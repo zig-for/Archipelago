@@ -25,7 +25,7 @@ from .LADXR.locations.instrument import Instrument
 from .LADXR.locations.constants import CHEST_ITEMS
 from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
                         create_regions_from_ladxr, get_locations_to_id)
-from .Options import links_awakening_options, DungeonItemShuffle
+from .Options import LinksAwakeningWorldOptions, DungeonItemShuffle
 
 from .Rom import LADXDeltaPatch
 
@@ -77,7 +77,8 @@ class LinksAwakeningWorld(World):
     game = LINKS_AWAKENING  # name of the game/world
     web = LinksAwakeningWebWorld()
     
-    option_definitions = links_awakening_options  # options the player can set
+    options_dataclass = LinksAwakeningWorldOptions  # assign the options dataclass to the world
+    options: LinksAwakeningWorldOptions  # typing for option results
     settings: typing.ClassVar[LinksAwakeningSettings]
     topology_present = True  # show path to required location checks in spoiler
 
@@ -110,8 +111,6 @@ class LinksAwakeningWorld(World):
 
     prefill_dungeon_items = None
 
-    player_options = None
-
     rupees = {
         ItemName.RUPEES_20: 20,
         ItemName.RUPEES_50: 50,
@@ -121,11 +120,7 @@ class LinksAwakeningWorld(World):
     }
 
     def convert_ap_options_to_ladxr_logic(self):
-        self.player_options = {
-            option: getattr(self.multiworld, option)[self.player] for option in self.option_definitions
-        }
-
-        self.laxdr_options = LADXRSettings(self.player_options)
+        self.laxdr_options = LADXRSettings(self.options)
         
         self.laxdr_options.validate()
         world_setup = LADXRWorldSetup()
@@ -189,7 +184,7 @@ class LinksAwakeningWorld(World):
         
         for option in ["maps", "compasses", "small_keys", "nightmare_keys", "stone_beaks"]:
             option = "shuffle_" + option
-            option = self.player_options[option]
+            option = getattr(self.options, option)
 
             dungeon_item_types[option.ladxr_item] = option.value
 
@@ -481,21 +476,21 @@ class LinksAwakeningWorld(World):
         rom = generator.generateRom(
             args,
             self.laxdr_options,
-            self.player_options,
+            self.options,
             self.multi_key,
             self.multiworld.seed_name,
             self.ladxr_logic,
             rnd=self.multiworld.per_slot_randoms[self.player],
             player_name=name_for_rom,
             player_names=all_names,
-            player_id = self.player,
+            player_id=self.player,
             multiworld=self.multiworld)
       
         with open(out_path, "wb") as handle:
             rom.save(handle, name="LADXR")
 
         # Write title screen after everything else is done - full gfxmods may stomp over the egg tiles
-        if self.player_options["ap_title_screen"]:
+        if self.options.ap_title_screen:
             with tempfile.NamedTemporaryFile(delete=False) as title_patch:
                 title_patch.write(pkgutil.get_data(__name__, "LADXR/patches/title_screen.bdiff4"))
         

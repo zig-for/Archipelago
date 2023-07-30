@@ -1,9 +1,12 @@
+import logging
 import os.path
 import typing
-import logging
-from Options import Choice, Option, Toggle, DefaultOnToggle, Range, FreeText
 from collections import defaultdict
+from dataclasses import dataclass
+
 import Utils
+from Options import (Choice, DefaultOnToggle, FreeText,
+                     PerGameCommonOptions, Range, Toggle)
 
 DefaultOffToggle = Toggle
 
@@ -174,7 +177,7 @@ class Goal(Choice, LADXROption):
 
     def to_ladxr_option(self, all_options):
         if self.value == self.option_instruments:
-            return ("goal", all_options["instrument_count"])
+            return ("goal", all_options.instrument_count)
         else:
             return LADXROption.to_ladxr_option(self, all_options)
 
@@ -372,36 +375,35 @@ class Palette(Choice):
     option_pink = 4
     option_inverted = 5
     
-links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
-    'logic': Logic,
-    # 'heartpiece': DefaultOnToggle, # description='Includes heart pieces in the item pool'),                
-    # 'seashells': DefaultOnToggle, # description='Randomizes the secret sea shells hiding in the ground/trees. (chest are always randomized)'),                
-    # 'heartcontainers': DefaultOnToggle, # description='Includes boss heart container drops in the item pool'),                
-    # 'instruments': DefaultOffToggle, # description='Instruments are placed on random locations, dungeon goal will just contain a random item.'),                
-    'tradequest': TradeQuest, # description='Trade quest items are randomized, each NPC takes its normal trade quest item, but gives a random item'),                
-    # 'witch': DefaultOnToggle, # description='Adds both the toadstool and the reward for giving the toadstool to the witch to the item pool'),                
-    # 'rooster': DefaultOnToggle, # description='Adds the rooster to the item pool. Without this option, the rooster spot is still a check giving an item. But you will never find the rooster. Any rooster spot is accessible without rooster by other means.'),                
-    # 'boomerang': Boomerang,
-    # 'randomstartlocation': DefaultOffToggle, # 'Randomize where your starting house is located'),
-    'experimental_dungeon_shuffle': DungeonShuffle, # 'Randomizes the dungeon that each dungeon entrance leads to'),
-    'experimental_entrance_shuffle': EntranceShuffle,
-    # 'bossshuffle': BossShuffle,
-    # 'minibossshuffle': BossShuffle,
-    'goal': Goal,
-    'instrument_count': InstrumentCount,
-    # 'itempool': ItemPool,
-    # 'bowwow': Bowwow,
-    # 'overworld': Overworld,
-    'link_palette': LinkPalette,
-    'trendy_game': TrendyGame,
-    'gfxmod': GfxMod,
-    'palette': Palette,
-    'shuffle_nightmare_keys': ShuffleNightmareKeys,
-    'shuffle_small_keys': ShuffleSmallKeys,
-    'shuffle_maps': ShuffleMaps,
-    'shuffle_compasses': ShuffleCompasses,
-    'shuffle_stone_beaks': ShuffleStoneBeaks,
-    'music_change_condition': MusicChangeCondition,
-    'nag_messages': NagMessages,
-    'ap_title_screen': APTitleScreen,
-}
+@dataclass
+class LinksAwakeningWorldOptions(PerGameCommonOptions):
+    logic: Logic
+    # heartpiece: DefaultOnToggle, # description=Includes heart pieces in the item pool),                
+    # seashells: DefaultOnToggle, # description=Randomizes the secret sea shells hiding in the ground/trees. (chest are always randomized)),                
+    # heartcontainers: DefaultOnToggle, # description=Includes boss heart container drops in the item pool),                
+    # instruments: DefaultOffToggle, # description=Instruments are placed on random locations, dungeon goal will just contain a random item.),                
+    tradequest: TradeQuest
+    # witch: DefaultOnToggle, # description=Adds both the toadstool and the reward for giving the toadstool to the witch to the item pool),                
+    # boomerang: Boomerang
+    # randomstartlocation: DefaultOffToggle, # Randomize where your starting house is located)
+    experimental_dungeon_shuffle: DungeonShuffle # Randomizes the dungeon that each dungeon entrance leads to)
+    experimental_entrance_shuffle: EntranceShuffle
+    # bossshuffle: BossShuffle
+    # minibossshuffle: BossShuffle
+    goal: Goal
+    instrument_count: InstrumentCount
+    # itempool: ItemPool
+    # bowwow: Bowwow
+    # overworld: Overworld
+    link_palette: LinkPalette
+    trendy_game: TrendyGame
+    gfxmod: GfxMod
+    palette: Palette
+    shuffle_nightmare_keys: ShuffleNightmareKeys
+    shuffle_small_keys: ShuffleSmallKeys
+    shuffle_maps: ShuffleMaps
+    shuffle_compasses: ShuffleCompasses
+    shuffle_stone_beaks: ShuffleStoneBeaks
+    music_change_condition: MusicChangeCondition
+    nag_messages: NagMessages
+    ap_title_screen: APTitleScreen
