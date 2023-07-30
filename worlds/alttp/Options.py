@@ -473,11 +473,19 @@ class ShopShuffle(FreeText):
     fpu: 0 # Generate new inventories, randomize prices and shuffle capacity upgrades into item pool
     uip: 0 # Shuffle inventories, randomize prices and shuffle capacity upgrades into the item pool
     """
+
+    # Validate the string, a separate function so that error messages are nice
+    @staticmethod
+    def should_only_contain_gfipuwP(s):
+        # Handle default, 'off', and restricted user defined strings
+        return s == '0' or s == 'False' or all(c in 'gfipuwP' for c in s)
+    
     schema = Schema(
-        lambda s: s == '0' or all(c in 'gfipuwP' for c in s)
+       should_only_contain_gfipuwP
     )
     
     # TODO: we should consider warning if g and f
+    # TODO: consider handling "true" as 'g'
     def randomize_shops(self):
         return 'g' in self.value or 'f' in self.value
     
