@@ -707,7 +707,7 @@ class ALTTPWorld(World):
                              bool_to_text(self.multiworld.shop_shuffle[self.player].randomize_potion_shop()))
         spoiler_handle.write('Enemy health:                    %s\n' % self.multiworld.enemy_health[self.player])
         spoiler_handle.write('Enemy damage:                    %s\n' % self.multiworld.enemy_damage[self.player])
-        spoiler_handle.write('Prize shuffle                    %s\n' % self.multiworld.shuffle_prizes[self.player])
+        spoiler_handle.write('Prize shuffle                    %s\n' % self.multiworld.shuffle_prizes[self.player].value)
 
     def write_spoiler(self, spoiler_handle: typing.TextIO) -> None:
         spoiler_handle.write("\n\nMedallions:\n")

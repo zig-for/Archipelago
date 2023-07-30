@@ -142,7 +142,6 @@ class MultiWorld():
             set_player_attr('treasure_hunt_icon', 'Triforce Piece')
             set_player_attr('treasure_hunt_count', 0)
             set_player_attr('can_take_damage', True)
-            set_player_attr('shuffle_prizes', "g")
             set_player_attr('sprite_pool', [])
             set_player_attr('dark_room_logic', "lamp")
             set_player_attr('plando_items', [])

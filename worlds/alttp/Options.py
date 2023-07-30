@@ -460,6 +460,22 @@ class PotShuffle(Toggle):
     """Shuffle contents of pots within "supertiles" (item will still be nearby original placement)."""
     display_name = "Pot Shuffle"
 
+class PrizeShuffle(FreeText):
+    @staticmethod
+    def should_only_contain_b_or_g(s):
+        # Handle default, 'off', and restricted user defined strings
+        return s == '0' or s == 'False' or all(c in 'bg' for c in s)
+    
+    schema = Schema(
+       should_only_contain_b_or_g
+    )
+
+    def randomize_bonk_prizes(self):
+        return 'b' in self.value
+
+    def randomize_general_prizes(self):
+        return 'g' in self.value
+
 class ShopShuffle(FreeText):
     """
     g: 0 # Generate new default inventories for overworld/underworld shops, and unique shops
@@ -716,6 +732,7 @@ alttp_options: typing.Dict[str, type(Option)] = {
     "enemy_health": EnemyHealth,
     "enemy_damage": EnemyDamage,
     # required_medallions??
-    # shuffle_prizes sprite_pool dark_room_logic shop_shuffle
+    # sprite_pool dark_room_logic shop_shuffle
     "shop_shuffle": ShopShuffle,
+    "shuffle_prizes": PrizeShuffle,
 }
