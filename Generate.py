@@ -27,11 +27,8 @@ from worlds.AutoWorld import AutoWorldRegister
 from worlds.generic import PlandoConnection
 
 
-
-# import argparse
-# import copy
-# import textwrap
-# import shlex
+import textwrap
+import shlex
 
 
 class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
@@ -40,6 +37,7 @@ class ArgumentDefaultsHelpFormatter(argparse.RawTextHelpFormatter):
         return textwrap.dedent(action.help)
 
 
+# TODO: rather than parsing args multiple times, this could be used as a base argparse
 def parse_arguments(argv, no_defaults=False):
     def defval(value):
         return value if not no_defaults else None
@@ -117,8 +115,6 @@ def mystery_argparse():
                         help='List of options that can be set manually. Can be combined, for example "bosses, items"')
     parser.add_argument("--skip_prog_balancing", action="store_true",
                         help="Skip progression balancing step during generation.")
-    parser.add_argument("--no_zip", dest="zip", default=True, action="store_false",
-                        help="Skips creating a zip, and instead leaves a folder")
     args = parser.parse_args()
     if not os.path.isabs(args.weights_file_path):
         args.weights_file_path = os.path.join(args.player_files_path, args.weights_file_path)
