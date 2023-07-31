@@ -514,12 +514,9 @@ class LinksAwakeningWorld(World):
     def modify_multidata(self, multidata: dict):
         multidata["connect_names"][binascii.hexlify(self.multi_key).decode()] = multidata["connect_names"][self.multiworld.player_name[self.player]]
 
-    def collect_item(self, state, item, remove=False):
-        if not item.advancement:
-            return {}
-        
+    def collect_item(self, state, item, remove=False) -> typing.Tuple[typing.Optional[str], int]:
         if item.name in self.rupees:
             assert item.advancement
-            return {"RUPEES": self.rupees[item.name]}
+            return "RUPEES", self.rupees[item.name]
         
-        return item.name
+        return super().collect_item(state, item, remove)

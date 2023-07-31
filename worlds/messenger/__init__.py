@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
 from BaseClasses import Tutorial, ItemClassification, CollectionState, Item, MultiWorld
 from worlds.AutoWorld import World, WebWorld
@@ -181,11 +181,9 @@ class MessengerWorld(World):
             self.total_shards += count
         return MessengerItem(name, self.player, item_id, override_prog, count)
 
-    def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Optional[str]:
+    def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Tuple[Optional[str], int]:
         if item.advancement and "Time Shard" in item.name:
             shard_count = int(item.name.strip("Time Shard ()"))
-            if remove:
-                shard_count = -shard_count
-            state.prog_items["Shards", self.player] += shard_count
+            return "Shards", shard_count
 
         return super().collect_item(state, item, remove)

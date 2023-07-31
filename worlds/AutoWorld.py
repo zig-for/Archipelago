@@ -6,7 +6,6 @@ import pathlib
 import sys
 from typing import Any, Callable, ClassVar, Dict, FrozenSet, List, Optional, Set, TYPE_CHECKING, TextIO, Tuple, Type, \
     Union
-from collections.abc import Iterable
 
 from BaseClasses import CollectionState
 from Options import AssembleOptions
@@ -360,58 +359,37 @@ class World(metaclass=AutoWorldRegister):
         return self.multiworld.random.choice(tuple(self.item_name_to_id.keys()))
 
     # decent place to implement progressive items, in most cases can stay as-is
-    def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Union[str, List[str], Dict[str, int], None]:
+    def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Tuple[Optional[str], int]:
         """Collect an item name into state. For speed reasons items that aren't logically useful get skipped.
         Collect None to skip item.
         :param state: CollectionState to collect into
         :param item: Item to decide on if it should be collected into state
         :param remove: indicate if this is meant to remove from state instead of adding."""
-        if item.advancement:
-            return item.name
-        return None
+        return item.name, 1
 
     # called to create all_state, return Items that are created during pre_fill
     def get_pre_fill_items(self) -> List["Item"]:
         return []
 
     # following methods should not need to be overridden.
-    def collect(self, state: "CollectionState", item: "Item") -> bool:
-        item_or_items = self.collect_item(state, item)
-        if item_or_items:
-            if type(item_or_items) is str:
-                state.prog_items[item_or_items, self.player] += 1
-            elif type(item_or_items) is list:
-                for replacement_item in item_or_items:
-                    state.prog_items[replacement_item, self.player] += 1
-            elif type(item_or_items) is dict:
-                for replacement_item, count in item_or_items.items():
-                    print(f"Add {count}")
-                    state.prog_items[replacement_item, self.player] += count
-            else:
-                assert False
+    def collect(self, state: CollectionState, item: Item) -> bool:
+        if not item.advancement:
+            return False
+        name, count = self.collect_item(state, item)
+        if name:
+            state.prog_items[name, self.player] += count
             return True
         return False
 
-    def remove(self, state: "CollectionState", item: "Item") -> bool:
-        item_or_items = self.collect_item(state, item, True)
-        if item_or_items:
-            keys: Iterable[str] = item_or_items
-            if type(item_or_items) is str:
-                state.prog_items[item_or_items, self.player] -= 1
-            elif type(item_or_items) is list:
-                for replacement_item in item_or_items:
-                    state.prog_items[replacement_item, self.player] -= 1
-            elif type(item_or_items) is dict:    
-                keys = item_or_items.keys()
-                for replacement_item, count in item_or_items.items():
-                    print(f"Sub {count}")
-                    state.prog_items[replacement_item, self.player] -= count
-            else:
-                assert False
-            for key in keys:
-                if state.prog_items[key, self.player] < 1:
-                    assert state.prog_items[key, self.player] == 0
-                    del (state.prog_items[key, self.player])
+    def remove(self, state: CollectionState, item: Item) -> bool:
+        if not item.advancement:
+            return False
+        name, count = self.collect_item(state, item, True)
+        if name:
+            state.prog_items[name, self.player] -= count
+            if state.prog_items[name, self.player] < 1:
+                assert state.prog_items[name, self.player] == 0
+                del (state.prog_items[name, self.player])
             return True
         return False
 
