@@ -404,7 +404,7 @@ class ALTTPWorld(World):
             else:
                 if 'Sword' in item_name:
                     if state.has('Golden Sword', item.player):
-                        return
+                        return None, 0
                     elif state.has('Tempered Sword', item.player) and self.multiworld.difficulty_requirements[
                         item.player].progressive_sword_limit >= 4:
                         item_name = 'Golden Sword'
@@ -417,14 +417,14 @@ class ALTTPWorld(World):
                         item_name = 'Fighter Sword'
                 elif 'Glove' in item_name:
                     if state.has('Titans Mitts', item.player):
-                        return
+                        return None, 0
                     elif state.has('Power Glove', item.player):
                         item_name = 'Titans Mitts'
                     else:
                         item_name = 'Power Glove'
                 elif 'Shield' in item_name:
                     if state.has('Mirror Shield', item.player):
-                        return
+                        return None, 0
                     elif state.has('Red Shield', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 3:
                         item_name = 'Mirror Shield'
                     elif state.has('Blue Shield', item.player) and self.multiworld.difficulty_requirements[item.player].progressive_shield_limit >= 2:
@@ -433,7 +433,7 @@ class ALTTPWorld(World):
                         item_name = 'Blue Shield'
                 elif 'Bow' in item_name:
                     if state.has('Silver Bow', item.player):
-                        return
+                        return None, 0
                     elif state.has('Bow', item.player) and (self.multiworld.difficulty_requirements[item.player].progressive_bow_limit >= 2
                                                             or self.multiworld.logic[item.player] == 'noglitches'
                                                             or self.multiworld.swordless[item.player]): # modes where silver bow is always required for ganon
