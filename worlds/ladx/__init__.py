@@ -515,9 +515,11 @@ class LinksAwakeningWorld(World):
         multidata["connect_names"][binascii.hexlify(self.multi_key).decode()] = multidata["connect_names"][self.multiworld.player_name[self.player]]
 
     def collect_item(self, state, item, remove=False):
+        if not item.advancement:
+            return {}
+        
         if item.name in self.rupees:
             assert item.advancement
-            value = (1 - 2 * remove) * self.rupees[item.name]
-            state.prog_items["RUPEES", self.player] += value
-
-        return super(LinksAwakeningWorld, self).collect_item(state, item, remove)
+            return {"RUPEES": self.rupees[item.name]}
+        
+        return item.name
