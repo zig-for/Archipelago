@@ -516,7 +516,6 @@ class LinksAwakeningWorld(World):
 
     def collect_item(self, state, item, remove=False) -> typing.Tuple[typing.Optional[str], int]:
         if item.name in self.rupees:
-            assert item.advancement
             return "RUPEES", self.rupees[item.name]
         
         return super().collect_item(state, item, remove)

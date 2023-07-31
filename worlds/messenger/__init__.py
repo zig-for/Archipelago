@@ -182,7 +182,7 @@ class MessengerWorld(World):
         return MessengerItem(name, self.player, item_id, override_prog, count)
 
     def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Tuple[Optional[str], int]:
-        if item.advancement and "Time Shard" in item.name:
+        if "Time Shard" in item.name:
             shard_count = int(item.name.strip("Time Shard ()"))
             return "Shards", shard_count
 
