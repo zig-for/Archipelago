@@ -359,33 +359,36 @@ class World(metaclass=AutoWorldRegister):
         return self.multiworld.random.choice(tuple(self.item_name_to_id.keys()))
 
     # decent place to implement progressive items, in most cases can stay as-is
-    def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Optional[str]:
+    def collect_item(self, state: "CollectionState", item: "Item", remove: bool = False) -> Tuple[Optional[str], int]:
         """Collect an item name into state. For speed reasons items that aren't logically useful get skipped.
         Collect None to skip item.
         :param state: CollectionState to collect into
         :param item: Item to decide on if it should be collected into state
         :param remove: indicate if this is meant to remove from state instead of adding."""
-        if item.advancement:
-            return item.name
-        return None
+        return item.name, 1
 
     # called to create all_state, return Items that are created during pre_fill
     def get_pre_fill_items(self) -> List["Item"]:
         return []
 
     # following methods should not need to be overridden.
-    def collect(self, state: "CollectionState", item: "Item") -> bool:
-        name = self.collect_item(state, item)
+    def collect(self, state: CollectionState, item: Item) -> bool:
+        if not item.advancement:
+            return False
+        name, count = self.collect_item(state, item)
         if name:
-            state.prog_items[name, self.player] += 1
+            state.prog_items[name, self.player] += count
             return True
         return False
 
-    def remove(self, state: "CollectionState", item: "Item") -> bool:
-        name = self.collect_item(state, item, True)
+    def remove(self, state: CollectionState, item: Item) -> bool:
+        if not item.advancement:
+            return False
+        name, count = self.collect_item(state, item, True)
         if name:
-            state.prog_items[name, self.player] -= 1
+            state.prog_items[name, self.player] -= count
             if state.prog_items[name, self.player] < 1:
+                assert state.prog_items[name, self.player] == 0
                 del (state.prog_items[name, self.player])
             return True
         return False

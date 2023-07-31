@@ -137,17 +137,17 @@ class RaftWorld(World):
     def create_resourcePack(self, rpName: str) -> Item:
         return RaftItem(rpName, ItemClassification.filler, self.item_name_to_id[rpName], player=self.player)
     
-    def collect_item(self, state, item, remove=False):
+    def collect_item(self, state, item, remove=False) -> typing.Tuple[typing.Optional[str], int]:
         if item.name in progressive_item_list:
             prog_table = progressive_item_list[item.name]
             if remove:
                 for item_name in reversed(prog_table):
                     if state.has(item_name, item.player):
-                        return item_name
+                        return item_name, 1
             else:
                 for item_name in prog_table:
                     if not state.has(item_name, item.player):
-                        return item_name
+                        return item_name, 1
 
         return super(RaftWorld, self).collect_item(state, item, remove)
 

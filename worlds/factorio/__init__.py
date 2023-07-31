@@ -293,17 +293,17 @@ class Factorio(World):
             elif loc.revealed:
                 start_location_hints.add(loc.name)
 
-    def collect_item(self, state, item, remove=False):
-        if item.advancement and item.name in progressive_technology_table:
+    def collect_item(self, state, item, remove=False) -> typing.Tuple[typing.Optional[str], int]:
+        if item.name in progressive_technology_table:
             prog_table = progressive_technology_table[item.name].progressive
             if remove:
                 for item_name in reversed(prog_table):
                     if state.has(item_name, item.player):
-                        return item_name
+                        return item_name, 1
             else:
                 for item_name in prog_table:
                     if not state.has(item_name, item.player):
-                        return item_name
+                        return item_name, 1
 
         return super(Factorio, self).collect_item(state, item, remove)
 
