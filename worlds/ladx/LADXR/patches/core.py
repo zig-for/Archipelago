@@ -25,23 +25,23 @@ def fixWrongWarp(rom):
 
 def bugfixBossroomTopPush(rom):
     rom.patch(0x14, 0x14D9, ASM("""
-        ldh  a, [$99]
+        ldh  a, [$FF99]
         dec  a
-        ldh  [$99], a
+        ldh  [$FF99], a
     """), ASM("""
         jp   $7F80
     """), fill_nop=True)
     rom.patch(0x14, 0x3F80, "00" * 0x80, ASM("""
-        ldh  a, [$99]
+        ldh  a, [$FF99]
         cp   $50
         jr   nc, up
 down:
         inc  a
-        ldh  [$99], a
+        ldh  [$FF99], a
         jp   $54DE
 up:
         dec  a
-        ldh  [$99], a
+        ldh  [$FF99], a
         jp   $54DE
     """), fill_nop=True)
 
