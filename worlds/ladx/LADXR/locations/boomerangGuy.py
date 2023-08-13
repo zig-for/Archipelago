@@ -24,6 +24,7 @@ class BoomerangGuy(ItemInfo):
     # But SHIELD, BOMB and MAGIC_POWDER would most likely break things.
     # SWORD and POWER_BRACELET would most likely introduce the lv0 shield/bracelet issue
     def patch(self, rom, option, *, multiworld=None):
+        return
         # Always have the boomerang trade guy enabled (normally you need the magnifier)
         rom.patch(0x19, 0x05EC, ASM("ld a, [wTradeSequenceItem]\ncp $0E"), ASM("ld a, $0E\ncp $0E"), fill_nop=True)  # show the guy
         rom.patch(0x00, 0x3199, ASM("ld a, [wTradeSequenceItem]\ncp $0E"), ASM("ld a, $0E\ncp $0E"), fill_nop=True)  # load the proper room layout
