@@ -50,12 +50,7 @@ class OOTLogic(LogicMixin):
     # If self.age[player] is not None, then it will compare it to the 'age' parameter, and return True iff they are equal. 
     #   This lets us fake the OOT accessibility check that cares about age. Unfortunately it's still tied to the ground region. 
     def _oot_reach_as_age(self, regionname, age, player): 
-        if self.age[player] is None: 
-            self.age[player] = age
-            can_reach = self.multiworld.get_region(regionname, player).can_reach(self)
-            self.age[player] = None
-            return can_reach
-        return self.age[player] == age
+        return self.multiworld.starting_age[player].current_key == age or  self.has('Time Travel', player) 
 
     def _oot_reach_at_time(self, regionname, tod, already_checked, player):
         name_map = {

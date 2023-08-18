@@ -49,20 +49,17 @@ class OOTCollectionState(metaclass=AutoLogicRegister):
         self.day_reachable_regions = {player: set() for player in all_ids}
         self.dampe_reachable_regions = {player: set() for player in all_ids}
         self.age = {player: None for player in all_ids}
-
     def copy_mixin(self, ret) -> CollectionState:
-        ret.child_reachable_regions = {player: copy.copy(self.child_reachable_regions[player]) for player in
-                                       self.child_reachable_regions}
-        ret.adult_reachable_regions = {player: copy.copy(self.adult_reachable_regions[player]) for player in
-                                       self.adult_reachable_regions}
-        ret.child_blocked_connections = {player: copy.copy(self.child_blocked_connections[player]) for player in
-                                         self.child_blocked_connections}
-        ret.adult_blocked_connections = {player: copy.copy(self.adult_blocked_connections[player]) for player in
-                                         self.adult_blocked_connections}
-        ret.day_reachable_regions = {player: copy.copy(self.adult_reachable_regions[player]) for player in
-                                     self.day_reachable_regions}
-        ret.dampe_reachable_regions = {player: copy.copy(self.adult_reachable_regions[player]) for player in
-                                       self.dampe_reachable_regions}
+        for attr in ['child_reachable_regions',
+            'adult_reachable_regions',
+            'child_blocked_connections',
+            'adult_blocked_connections',
+            'day_reachable_regions',
+            'dampe_reachable_regions',
+            'age']:
+            source = getattr(self, attr)
+            copied = {player: copy.copy(source[player]) for player in source}
+            setattr(ret, attr, copied)
         return ret
 
 
@@ -196,9 +193,7 @@ class OOTWorld(World):
             new_sp.append('adult')
         self.spawn_positions = new_sp
 
-        # Closed forest and adult start are not compatible; closed forest takes priority
-        if self.open_forest == 'closed':
-            self.starting_age = 'child'
+        if self.open_forest == 'open_forest':
             # These ER options force closed forest to become closed deku
             if (self.shuffle_interior_entrances == 'all' or self.shuffle_overworld_entrances or self.warp_songs or self.spawn_positions):
                 self.open_forest = 'closed_deku'
@@ -688,6 +683,11 @@ class OOTWorld(World):
         self.fill_bosses()
 
     def set_rules(self):
+        # Closed forest and adult start are not compatible; closed forest takes priority
+        from .Options import StartingAge, Forest
+        if self.multiworld.open_forest == Forest.option_open:
+            self.multiworld.starting_age = StartingAge.option_child
+
         # This has to run AFTER creating items but BEFORE set_entrances_based_rules
         if self.entrance_shuffle:
             # 10 attempts at shuffling entrances

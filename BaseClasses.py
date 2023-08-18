@@ -1138,7 +1138,7 @@ class Spoiler():
         from itertools import chain
         # get locations containing progress items
         multiworld = self.multiworld
-        prog_locations = {location for location in multiworld.get_filled_locations() if location.item.advancement}
+        prog_locations = {location for location in multiworld.get_filled_locations()}
         state_cache = [None]
         collection_spheres: List[Set[Location]] = []
         state = CollectionState(multiworld)
@@ -1181,14 +1181,15 @@ class Spoiler():
                 # we remove the item at location and check if game is still beatable
                 logging.debug('Checking if %s (Player %d) is required to beat the game.', location.item.name,
                               location.item.player)
-                old_item = location.item
-                location.item = None
-                if multiworld.can_beat_game(state_cache[num]):
-                    to_delete.add(location)
-                    restore_later[location] = old_item
-                else:
-                    # still required, got to keep it around
-                    location.item = old_item
+                # Commented out to force spheres generation of junk too
+                # old_item = location.item
+                # location.item = None
+                # if multiworld.can_beat_game(state_cache[num]):
+                #     to_delete.add(location)
+                #     restore_later[location] = old_item
+                # else:
+                #     # still required, got to keep it around
+                #    location.item = old_item
 
             # cull entries in spheres for spoiler walkthrough at end
             sphere -= to_delete
