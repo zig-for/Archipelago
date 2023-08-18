@@ -66,7 +66,6 @@ class OOTRegion(Region):
     def can_reach(self, state):
         if state.stale[self.player]:
             stored_age = state.age[self.player]
-            state.age[self.player] = None
             state._oot_update_age_reachable_regions(self.player)
             state.age[self.player] = stored_age
 
