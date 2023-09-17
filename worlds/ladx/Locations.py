@@ -67,6 +67,8 @@ class LinksAwakeningLocation(Location):
 
         address = None
         if not self.event:
+            assert name in locations_to_id, ladxr_item
+
             address = locations_to_id[name]
         super().__init__(player, name, address)
         self.parent_region = region

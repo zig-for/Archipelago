@@ -40,7 +40,11 @@ class Logic:
             world.updateIndoorLocation("d8", dungeon8.NoDungeon8(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d0", dungeonColor.NoDungeonColor(configuration_options, world_setup, r).entrance)
         elif configuration_options.overworld != "random":
-            world.updateIndoorLocation("d1", dungeon1.Dungeon1(configuration_options, world_setup, r).entrance)
+            d1 = dungeon1.Dungeon1(configuration_options, world_setup, r)
+            d1.randomize(world_setup.rnd, d1.unlink_and_return_rooms())
+            
+            d1.finalize()
+            world.updateIndoorLocation("d1", d1.entrance)
             world.updateIndoorLocation("d2", dungeon2.Dungeon2(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d3", dungeon3.Dungeon3(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d4", dungeon4.Dungeon4(configuration_options, world_setup, r).entrance)
