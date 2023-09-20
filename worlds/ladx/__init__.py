@@ -166,6 +166,13 @@ class LinksAwakeningWorld(World):
             # "d7"
         ]
    
+        self.world_setup.entrance_mapping["madambowwow"] = "d1"
+        self.world_setup.entrance_mapping["kennel"] = "d2"
+        self.world_setup.entrance_mapping["d1"] = "madambowwow"
+        self.world_setup.entrance_mapping["d2"] = "kennel"
+        
+
+
         from .LADXR.logic.overworld import World
         entrance_pools = {}
         indoor_pools = {}

@@ -12,9 +12,12 @@ class Direction(IntEnum):
     Up = 2
     Down = 3
     Stairs = 4
-
+    Drop = 5
+    DropTarget = 6
 
 opposite_dir = {
+    Direction.Drop: Direction.DropTarget,
+    Direction.DropTarget: Direction.Drop,
     Direction.Stairs: Direction.Stairs,
     Direction.Right: Direction.Left,
     Direction.Left: Direction.Right,
@@ -78,25 +81,30 @@ class RoomLogic:
 from typing import Set
 @dataclass
 class Exit:
-    room: 'Room'
+    target: 'Room'
     door_type: DoorType
     direction: Direction
     mask: Optional[int]
     locked: bool = False
+    parent: 'Room' = None
     other_exits: Set = None
+
+    def __hash__(self) -> int:
+        return hash((self.parent, self.door_type, self.direction, self.mask))
 
 class Room:
     def __init__(self, id, name, borders, logic = [], two_d = False):
-        self.id = id
+        self.room_id = id
         self.borders = borders
         for border in self.borders:
             if isinstance(border, list):
                 border.sort()
             else:
                 border = [border]
-        if len(self.borders) <= 4:
-            self.borders.append(None)
+        if len(self.borders) < 7:
+            self.borders.extend([None] * (7 - len(self.borders)))
         self.exits = []
+        self.exits_by_dir_mask = {}
         self.location = None
         self.logic = logic
         self.two_d = two_d
@@ -108,8 +116,15 @@ class Room:
                 l.start = (l.start, self.borders[l.start])
             if isinstance(l.end, Direction):
                 l.end = (l.end, self.borders[l.end])
+
+    def post_exits_added(self):
+        for exit in self.exits:
+            exit.parent = self
+            self.exits_by_dir_mask[(exit.direction, exit.mask)] = exit
+
     def __repr__(self) -> str:
         return self.name
+
     def connect(self, other, direction, door, other_door = None, mask = None, locked = False):
         if direction != Direction.Stairs:
             our_border = self.borders[direction]
@@ -131,16 +146,19 @@ class Room:
             assert other_door and other_door == DoorType.OneWayBlocked
         if other_door == DoorType.OneWay:
             assert door and door == DoorType.OneWayBlocked
+        if door == DoorType.Drop:
+            assert other_door and other_door == DoorType.DropTarget
+            assert locked
 
         # TODO: do we always want to do this?
-        other.exits.append(Exit(self, other_door or door, opposite_dir[direction], mask))
+        other.exits.append(Exit(self, other_door or door, opposite_dir[direction], mask, locked))
 
     def add(self, locations):
         self.locations.append(locations)
 
     # Why doesn't this live on room?
     def location_for_dir_mask(self, mask, dir):
-        if dir == Direction.Stairs:
+        if dir >= Direction.Stairs:
             # TODO: really should just add stairs as an optional bit
             border = None
         else:
@@ -157,17 +175,23 @@ class Dungeon:
     instrument: Room
     boss_room: Room
 
-    def __init__(self, index):
-        self.index = index
+    def __init__(self, dungeon_id):
+        self.dungeon_id = dungeon_id
 
     def unlink_and_return_rooms(self):
-        all_rooms = set()        
+        all_rooms = set()
         self.walk_rooms(None, None, walked=all_rooms)
 
         for room in all_rooms:
+            room.post_exits_added()
+        for room in all_rooms:
+            for exit in room.exits:
+                self.fill_other_exits_for_exit(exit)
+        for room in all_rooms:
             for exit in room.exits:
                 if not exit.locked:
-                    exit.room = None
+                    exit.target = None
+        
         all_rooms = list(all_rooms)
         # Hmm
         # all_rooms.sort()
@@ -179,128 +203,236 @@ class Dungeon:
         return pool[opposite_dir[exit.direction]][exit.mask]
 
     @staticmethod
-    def remove_from_door_pool(door_pool, room, exit):        
-        door_pool[exit.direction][exit.mask].remove((room, exit))
+    def remove_from_door_pool(door_pool, exit):        
+        door_pool[exit.direction][exit.mask].remove(exit)
 
     # TODO: doesn't use self
-    def fill_other_exits_for_exit(self, room, exit):
+    def find_other_exits_for_exit(self, exit_to_search, other_exits, seen_exits = None):
         # Find out where we can go
         # TODO: handle higher logic
         # TODO: handle chained logic
         # TODO: handle locked room pairs
+
+        # this is totally wrong lmao
+
         
-        going_to = set()
+        room = exit_to_search.parent
+
+        if seen_exits == None:
+            seen_exits = set()
+
+        if exit_to_search in seen_exits:
+            return
+        seen_exits.add(exit_to_search)        
         # TODO: this should be a set of exits
         # we need to re-associate dir->mask, maybe in logic
         # probably in logic, it will be more sane
-        going_to.add((exit.direction, exit.mask))
+        # other_exits.add(exit)
         # why are we tracking seen things?
-        seen_things = set()
         has_any_door_logic = False
         for logic in room.logic:
             if logic.start != None:
                 has_any_door_logic = True
                 break
-        
+
+        locked_exits = set()
+
         if has_any_door_logic:
-            continue_loop = True
-            while continue_loop:
-                continue_loop = False
+            logicked_exits = []
+            for logic in room.logic:
+                # TODO: translate the logic on room creation
+                # TODO: translate whole room logic on room creation
+                if isinstance(logic.start, (tuple, type(None))) and isinstance(logic.end, (tuple, type(None))):
+                    start_exit = room.exits_by_dir_mask[logic.start] if logic.start else None
+                    end_exit = room.exits_by_dir_mask[logic.end] if logic.end else None
+                    if start_exit:
+                        logicked_exits.append(start_exit)
+                    if end_exit:
+                        logicked_exits.append(end_exit)
+                    
+            unlogicked_exits = [exit for exit in room.exits if exit not in logicked_exits]
+
+            exits_to_walk = [exit_to_search]
+            while exits_to_walk:
+                popped_exit = exits_to_walk.pop()
                 for logic in room.logic:
+                    # TODO: translate the logic on room creation
+                    # TODO: translate whole room logic on room creation
                     if isinstance(logic.start, (tuple, type(None))) and isinstance(logic.end, (tuple, type(None))):
-                        seen_things.add(logic.start)
-                        seen_things.add(logic.end)
+                        start_exit = room.exits_by_dir_mask[logic.start] if logic.start else None
+                        end_exit = room.exits_by_dir_mask[logic.end] if logic.end else None
 
-                        if logic.start in going_to and logic.end not in going_to:
-                            going_to.add(logic.end)
-                            continue_loop = True
-                        elif logic.end in going_to and logic.start not in going_to and not logic.one_way:
-                            going_to.add(logic.start)
-                            continue_loop = True
+                        if start_exit == popped_exit:
+                            opposite_exit = end_exit
+                        elif end_exit == popped_exit and not logic.one_way:
+                            opposite_exit = start_exit
+                        else:
+                            continue
+
+                        if not opposite_exit:
+                            for exit in unlogicked_exits:
+                                if exit not in seen_exits:
+                                    seen_exits.add(exit)
+                                    if exit.locked:
+                                        locked_exits.add(exit)
+                                    else:
+                                        other_exits.add(exit)
+                                    exits_to_walk.append(exit)          
+                                    
+                            
+                        elif opposite_exit not in seen_exits:
+                            seen_exits.add(opposite_exit)
+                            if opposite_exit.locked:
+                                locked_exits.add(opposite_exit)
+                            else:
+                                other_exits.add(opposite_exit)
+                            exits_to_walk.append(opposite_exit)
         else:
-            going_to = set()
-            going_to.add(None)
-            for other_exit in room.exits:
-                seen_things.add((other_exit.direction, other_exit.mask))
+            for exit in room.exits:
+                if exit not in seen_exits:
+                    seen_exits.add(exit)
+                    if exit.locked:
+                        locked_exits.add(exit)
+                    else:
+                        other_exits.add(exit)
+        for locked_exit in locked_exits:
+            self.find_other_exits_for_exit(locked_exit.target.exits_by_dir_mask[(opposite_dir[locked_exit.direction], locked_exit.mask)], other_exits, seen_exits)
 
-        if None in going_to:
-            going_to.remove(None)
-            for other_exit in room.exits:
-                going_to.add((other_exit.direction, other_exit.mask))
 
-        #for dir, exit in going_to:
-        #    assert not exit.locked
-        assert going_to != None
-        exit.other_exits = going_to
+
+    def fill_other_exits_for_exit(self, exit):
+        other_exits = set()
+        self.find_other_exits_for_exit(exit, other_exits)
+        other_exits = {other_exit for other_exit in other_exits if not other_exit.locked and other_exit != exit}
+        exit.other_exits = other_exits
 
     
     def randomize(self, random, room_pool):
-        # unseen_entrances = {
-        #     Direction.Left: defaultdict(list),
-        #     Direction.Right: defaultdict(list),
-        #     Direction.Up: defaultdict(list),
-        #     Direction.Down: defaultdict(list),
-        #     Direction.Stairs: defaultdict(list),
-        #     }
         unseen_exits = []
         # TODO: comprehension
         assert self.entrance_room in room_pool
+        print("Adding everything to unseen exits")
         for room in room_pool:
             for exit in room.exits:
-                self.fill_other_exits_for_exit(room, exit)
-                unseen_exits.append((room, exit))
-            if room is self.entrance_room:
-                print(room.exits)
+                unseen_exits.append(exit)
+
+        # TODO: can we just do seen_but_unconnected?
         seen_exits = {
             Direction.Left: defaultdict(list),
             Direction.Right: defaultdict(list),
             Direction.Up: defaultdict(list),
             Direction.Down: defaultdict(list),
             Direction.Stairs: defaultdict(list),
+            Direction.Drop: defaultdict(list),
+            Direction.DropTarget: defaultdict(list),
             }
         
+        print("Filtering out locked exits")
+        
+        locked_exits = [exit for exit in unseen_exits if exit.target]
+        for exit in locked_exits:
+            print("Seen exit: ", exit.parent.name, exit.direction, exit.mask)
+            print("opposing: ", exit.target.exits)
+            unseen_exits.remove(exit)
+            seen_exits[exit.direction][exit.mask].append(exit)
+
         random.shuffle(unseen_exits)
 
         # TODO: assumes all exits are viable - is this true?
+        
         for exit in self.entrance_room.exits:
-            self.see_exit(self.entrance_room, exit, unseen_exits, seen_exits)
+            self.see_exit(exit, unseen_exits, seen_exits)
+            
+       
+
+        def connect(a, b):
+            print(f"Connecting {a.parent.name} {a.direction} {a.mask} to {b.parent.name} {b.direction} {b.mask}")
+            assert not a.target, (a.parent.name, b.parent.name, a, b)
+            assert not b.target, (a.parent.name, b.parent.name, a, b)
+            a.target = b.parent
+            b.target = a.parent
+
+        done_with_connectors = False
 
         while unseen_exits:
-            # print(len(unseen_exits))
-            connector_exits = [(room, exit) for room, exit in unseen_exits if len(exit.other_exits) > 1]
-            # Hey this almost works! we sometimes hit this
-            assert connector_exits
-            random.shuffle(connector_exits) 
+            print(len(unseen_exits))
+            for exit in unseen_exits:
+                # How?!
+                assert exit not in seen_exits[exit.direction][exit.mask]
+                assert not exit.target, exit.parent.name
 
+            # TODO: we need to special case lava, etc
+            # TODO: just lock them together...
+            
+            if not done_with_connectors:
+                candidate_exits = [exit for exit in unseen_exits if len(exit.other_exits) > 0]
+                done_with_connectors = len(candidate_exits) == 0
+                if done_with_connectors:
+                    print("Done with connectors!")
+            if done_with_connectors:
+                for exit in unseen_exits:
+                    assert not exit.other_exits
+                candidate_exits = unseen_exits
+            random.shuffle(candidate_exits) 
             # TODO: check if this is mathematically sound        
-            for room, exit in connector_exits:
+            for exit in candidate_exits:
                 # We have a room we haven't seen before, try to link with one we have
-                print(f"Search for {room.name} {exit.direction} {exit.mask}")
+                # print(f"Search for {exit.parent.name} {exit.direction} {exit.mask}")
                 # TODO: split seen, unseen, pool
                 pool = self.get_opposite_door_list(seen_exits, exit)
-                unfiltered_pool = pool
-                pool = [(room, exit_) for room, exit_ in pool if not exit_.room and len(exit_.other_exits) > 1]
 
-                # Note: we can't allow closing off here
-                # Need to separate unseen exits into things that are deadends and things that aren't
+                # Is there a point to this?
+                pool = [exit_ for exit_ in pool if not exit_.target] # and (done_with_connectors or len(exit_.other_exits) > 0)]
+
                 if pool:
-                    # Found it
-                    other_room, other_exit = random.choice(pool)
-                    pool.remove((other_room, other_exit))
-                    exit.room = other_room
-                    other_exit.room = room
+                    other_exit = random.choice(pool)
+                    pool.remove(other_exit)
+                    connect(exit, other_exit)
                     assert exit != other_exit
-                    print(f"chose {other_room.name} -> {room.name} {exit.direction} {exit.mask} ")
+                    #old_len = len(unseen_exits)
+                    assert other_exit not in unseen_exits
 
-                    print(pool)
-                    old_len = len(unseen_exits)
-                    self.see_exit(room, exit, unseen_exits, seen_exits)
-                    assert len(unseen_exits) != old_len
+                    self.see_exit(exit, unseen_exits, seen_exits)
+                    assert exit not in unseen_exits
+                    assert other_exit not in unseen_exits
+                    #assert len(unseen_exits) != old_len
                     break
                 else:
-                    print(f"None found (unfiltered {len(unfiltered_pool)})")
+                    #print(f"None found")
+                    pass
             else:
-                assert False, unseen_exits
+                print("Ran out of seen exits that aren't connected. Remaining exits:")
+                for l in seen_exits.values():
+                    for k in l.values():
+                        for j in k:   
+                            if not j.target:
+                                print('\t', j.parent.name, j.direction, j.mask)
+                print("Remaining unseen exits (connectors):")
+                for j in unseen_exits:
+                    if j.other_exits:
+                        print('\t', j.parent.name, j.direction, j.mask)
+                print("Remaining unseen exits (dead ends):")
+                for j in unseen_exits:
+                    if not j.other_exits:
+                        print('\t', j.parent.name, j.direction, j.mask)
+                assert False
+
+        
+        for l in seen_exits.values():
+            for mask, exits in l.items():
+                l[mask] = [exit for exit in exits if not exit.target]
+
+        for direction, l in seen_exits.items():
+            for mask, exits in l.items():
+                opposite_exits = seen_exits[opposite_dir[direction]][mask]
+                assert len(exits) == len(opposite_exits)
+                random.shuffle(exits)
+                for exit, opposite_exit in zip(exits, opposite_exits):
+                    connect(exit, opposite_exit)
+                exits.clear()
+                opposite_exits.clear()
+        # TODO: somtimes this results in inaccessible items
+        # probably oneways lol        
 
                 
 
@@ -318,39 +450,34 @@ class Dungeon:
 
     # ahhhhhh how will this deal with one way and broken paths
     # this needs to do unseen entrances
-    def see_exit(self, room, exit_to_see, unseen_exits, seen_exits):
-        if (room, exit_to_see) in seen_exits[exit_to_see.direction][exit_to_see.mask]:
+    def see_exit(self, exit_to_see, unseen_exits, seen_exits):
+        if exit_to_see in seen_exits[exit_to_see.direction][exit_to_see.mask]:
+            print("bail on see_exit")
             return False
 
-        going_to = exit_to_see.other_exits
-        assert going_to, room.name
-        new_exits = []
+        seen_exits[exit_to_see.direction][exit_to_see.mask].append(exit_to_see)
+        unseen_exits.remove(exit_to_see)
 
-        for exit in room.exits:
-            if (exit.direction, exit.mask) in going_to:
-                if (room, exit) in unseen_exits:
-                    seen_exits[exit.direction][exit.mask].append((room, exit))
-                    unseen_exits.remove((room, exit))
-                    new_exits.append(exit)
 
+        for exit in exit_to_see.other_exits:
+            if exit in unseen_exits:
+                print(f"seeing exit {exit_to_see.direction} {exit_to_see.mask}, adding to pool")
+                seen_exits[exit.direction][exit.mask].append(exit)
+                unseen_exits.remove(exit)
+                assert not exit.locked
+
+  
         # Handle any locked rooms
-        for exit in new_exits:
-            if exit.locked:
-                self.see_exit(exit.room, exit, unseen_exits, seen_exits)        
+        # for exit in new_exits:
+        #     if exit.locked:
+        #         assert False
+        #         self.see_exit(exit, unseen_exits, seen_exits)
 
-        # self.remove_from_door_pool(unlinked_entrances, room, exit)
 
-                #possibles = self.get_opposite_door_list(unlinked_entrances, exit)
-        #         chosen_room, chosen_exit = random.choice(possibles)
-        #         exit.room = chosen_room
-        #         chosen_exit.room = room
-        #         chosen_rooms.add(chosen_room)
-        # for room in chosen_rooms:
-        #     self.randomize_from_room(random, door_pool, room, walked)
 
     def finalize(self):
         def initialize_locations(room):
-            room.location = Location(room.name, dungeon=self.index)
+            room.location = Location(room.name, dungeon=self.dungeon_id)
             room.exit_locations = {}
             # TODO staircase, etc
             for dir, border in enumerate(room.borders):
@@ -359,6 +486,7 @@ class Dungeon:
                     for sub_border in border:
                         room.exit_locations[(dir, sub_border)] = None
                 else:
+                    # assert False
                     room.exit_locations[(dir, border)] = None
             room.exit_locations[(Direction.Stairs, None)] = None
 
@@ -372,7 +500,7 @@ class Dungeon:
                 def get_loc_for_logic_endpoint(endpoint):
                     if endpoint:
                         if isinstance(endpoint, ItemInfo):
-                            loc = Location(dungeon=self.index)
+                            loc = Location(dungeon=self.dungeon_id)
                             loc.add(endpoint)
                             return loc
                         elif isinstance(endpoint, Direction):
@@ -386,7 +514,7 @@ class Dungeon:
                             assert False, endpoint
 
                         if not room.exit_locations[key]:
-                            room.exit_locations[key] = Location(f"{room.name} {endpoint}", dungeon=self.index)
+                            room.exit_locations[key] = Location(f"{room.name} {endpoint}", dungeon=self.dungeon_id)
                         return room.exit_locations[key]
                     else:
                         return room.location
@@ -400,14 +528,14 @@ class Dungeon:
         def set_connections(room):
             for exit in room.exits:
                 if exit.door_type not in skip_door_connect:
-                    exit_location = room.location_for_dir_mask(exit.mask, dir)
-                    enter_location = exit.room.location_for_dir_mask(exit.mask, opposite_dir[dir])
+                    exit_location = room.location_for_dir_mask(exit.mask, exit.direction)
+                    enter_location = exit.target.location_for_dir_mask(exit.mask, opposite_dir[exit.direction])
                     exit_location.connect(enter_location, req=None, one_way=True)
 
         self.walk_rooms(set_connections)
 
         def print_connection(room, dir, exit):
-            print(f"{room.name} -> {exit.room.name}")
+            print(f"{room.name} -> {exit.target.name}")
 
         self.walk_rooms(connection_cb=print_connection)
 
@@ -426,14 +554,19 @@ class Dungeon:
         for exit in room.exits:
             if connection_cb:
                 connection_cb(room, dir, exit)
-            self.walk_rooms(room_cb, connection_cb, room=exit.room, walked=walked)
+            self.walk_rooms(room_cb, connection_cb, room=exit.target, walked=walked)
 
 
 class Dungeon1(Dungeon):
     def __init__(self, options, world_setup, r):
         super().__init__(1)
         
-        # TODO: missing an item!
+        # Rules for logic creation
+        # if one room has multiple distinct parts, split them into two rooms
+        # TODO: _should_ they be split? What about superjump shenanagins?
+        # what happens if you jump into an area you shouldn't be in?
+        # probably you just get stuck when you transition :) :) :)
+        # fuck around and find out
 
         self.miniboss_req = r.miniboss_requirements[world_setup.miniboss_mapping[0]]
         self.boss_req = r.boss_requirements[world_setup.boss_mapping[0]]
@@ -460,7 +593,6 @@ class Dungeon1(Dungeon):
         # Technically needs enemy kills to exit, but it's a deadend
         four_zol.connect(hard_hat_room, Direction.Right, DoorType.Shutter, DoorType.Open)
         
-        # TODO: dupe room?
         block_room_up = Room(0x10F, "Tail Cave Block Room", [DoorDir.LR, 0b11011111, 0b1111111011, DoorDir.UD])
         block_room_down = Room(0x10F, "Tail Cave Block Room", [DoorDir.LR, 0b11110011, 0b1111111011, DoorDir.UD])
 
@@ -525,7 +657,7 @@ class Dungeon1(Dungeon):
         boss_key.connect(boss_key_right, Direction.Right, DoorType.Open)
         
         boss_key_underlook = Room(0x108, "D1 Nightmare Key Underlook", [Impassable, 0b11111011, Impassable, 0b1100000001])
-        boss_key_underlook.connect(blade_block_room, Direction.Left, DoorType.Pit)
+        boss_key_underlook.connect(blade_block_room, Direction.Left, DoorType.Pit, locked=True)
         boss_key_underlook.connect(moldom_sparks_room, Direction.Down, DoorType.Open)
         
         spark_jump_room = Room(0x110, "Spark Jump Room", [DoorDir.LR, DoorDir.LR, TwoWideGapUD, Impassable],
@@ -537,7 +669,7 @@ class Dungeon1(Dungeon):
         three_kind.connect(spark_jump_room, Direction.Down, DoorType.Open, DoorType.Open)
 
         miniboss = Room(0x111, "D1 Miniboss", [Impassable, DoorDir.LR, DoorDir.UD, Impassable],
-                          [RoomLogic(Direction.Left, KillMiniboss, None)])
+                          [RoomLogic(Direction.Left, KillMiniboss, Direction.Up)])
         miniboss.connect(spark_jump_room, Direction.Left, DoorType.Shutter, DoorType.Open)
 
         boss_foyer = Room(0x10B, "D1 Boss Foyer", [Impassable, Impassable, DoorDir.UD, DoorDir.UD])
@@ -550,7 +682,7 @@ class Dungeon1(Dungeon):
         boss.connect(boss_foyer, Direction.Down, DoorType.Shutter, DoorType.Open)
 
         fail_left = Room(0x11A, "D1 Fall Left", [0b00000001, Impassable, Impassable, Impassable], two_d=True)
-        boss.connect(fail_left, Direction.Stairs, DoorType.Drop, DoorType.DropTarget, locked=True)
+        boss.connect(fail_left, Direction.Drop, DoorType.Drop, DoorType.DropTarget, locked=True)
         fail_right = Room(0x11B, "D1 Fall Right", [Impassable, 0b00000001, Impassable, Impassable], two_d=True)
         fail_right.connect(fail_left, Direction.Left, DoorType.Open)
         fail_right.connect(boss_foyer, Direction.Stairs, DoorType.Stairs)

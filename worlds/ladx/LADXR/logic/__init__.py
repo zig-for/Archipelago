@@ -29,6 +29,8 @@ class Logic:
         else:
             world = overworld.World(configuration_options, world_setup, r)
 
+        self.dungeons = []
+
         if configuration_options.overworld == "nodungeons":
             world.updateIndoorLocation("d1", dungeon1.NoDungeon1(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d2", dungeon2.NoDungeon2(configuration_options, world_setup, r).entrance)
@@ -42,8 +44,8 @@ class Logic:
         elif configuration_options.overworld != "random":
             d1 = dungeon1.Dungeon1(configuration_options, world_setup, r)
             d1.randomize(world_setup.rnd, d1.unlink_and_return_rooms())
-            
             d1.finalize()
+            self.dungeons.append(d1)
             world.updateIndoorLocation("d1", d1.entrance)
             world.updateIndoorLocation("d2", dungeon2.Dungeon2(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d3", dungeon3.Dungeon3(configuration_options, world_setup, r).entrance)
