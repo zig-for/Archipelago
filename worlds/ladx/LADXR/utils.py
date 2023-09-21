@@ -148,7 +148,7 @@ VWF = True
 
 vwf_widthtable = None
 
-VWF_LINE_WIDTH_MAX=7*16
+VWF_LINE_WIDTH_MAX=7*15
 
 def vwf_char_width(c):
     global vwf_widthtable
@@ -198,19 +198,8 @@ def formatText(instr: str, *, center: bool = False, ask: Optional[str] = None) -
         return result + b'    ' + askbytes + b'\xfe'
     return result.rstrip() + b'\xff'
 
-  
-    if ask is not None:
-        askbytes = ask.encode("ascii")
-        result = result.rstrip()
-        while len(result) % 32 != 16:
-            result += b' '
-        return result + b'    ' + askbytes + b'\xfe'
-
-    return result.rstrip() + b'\xff'
-
 
 def vwfify(s) -> bytes:
-    # TODO move the symbols
     def padLine(line: bytes) -> bytes:
         return line + b'\xFD'
     line_max = VWF_LINE_WIDTH_MAX
@@ -219,12 +208,24 @@ def vwfify(s) -> bytes:
 
     # Add line breaks back in as spaces
     chunked_by_16  =[s[i:i+16] for i in range(0,len(s),16)]
-    s = b' '.join(chunked_by_16)
     for c in chunked_by_16:
         print('\t', c)
     
+    ask_line = None
+    if s and s[-1] == 0xFE:
+        ask_line = chunked_by_16[-1]
+        if len(ask_line) == 1:
+            chunked_by_16 = chunked_by_16[:-1]
+            ask_line = chunked_by_16[-1] + b'\xFE'
+        
+        chunked_by_16 = chunked_by_16[:-1]
+
+    s = b' '.join(chunked_by_16)
+
+
     result_line = b''        
     for word in s.split(b' '):
+
         if not word:
             continue
         if vwf_word_width(result_line) + vwf_word_width(word) > line_max:
@@ -234,16 +235,36 @@ def vwfify(s) -> bytes:
             result_line += b' '
         result_line += word
     if result_line:
-        result += padLine(result_line)
-    # TODO: fix "ask" handling
+        result += result_line
+
+    if ask_line:
+        result = b'\0' + result + b'\xFD'
+        
+        ask_line = [w for w in ask_line.split(b' ') if w]
+        yes_pad = b'      \x03'
+        yes = yes_pad + ask_line[0]
+        no = b' '.join(ask_line[1:])
+        yes_len = vwf_word_width(yes)
+        # X position in text box for "No" text
+        needed_len = 73
+        rem_len = needed_len - yes_len
+        if rem_len > 0:
+            yes += b' ' * (rem_len // 5)
+            yes += chr(rem_len % 5).encode('ascii')
+        result += yes + no[:-1]
+        # Doesn't appear to need a space pad
+        # as the FE character seems to force a render
+        result += b'\xFE'
+        return result
 
     # TODO: Two bugs:
     # 1. the first frame the text box comes up, it has stale data from the last time it was used.
     # So we prepend a ZWSP to force the render to spend a frame resetting
     # 2. the last frame of the text box doesn't render the leftovers from the last character
-    result = b'\0' + result[:-1] + b'  \xFF'
+    if result:
+        print(hex(result[-1]))
+    return b'\0' + result[:-1] + b'\x08\xFF'
     
-    return result
 
     # if ask is not None:
     #     askbytes = ask.encode("ascii")
