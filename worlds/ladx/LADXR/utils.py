@@ -235,7 +235,14 @@ def vwfify(s) -> bytes:
         result_line += word
     if result_line:
         result += padLine(result_line)
-    result.replace(b'\xFF', b' \xFF')
+    # TODO: fix "ask" handling
+
+    # TODO: Two bugs:
+    # 1. the first frame the text box comes up, it has stale data from the last time it was used.
+    # So we prepend a ZWSP to force the render to spend a frame resetting
+    # 2. the last frame of the text box doesn't render the leftovers from the last character
+    result = b'\0' + result[:-1] + b'  \xFF'
+    
     return result
 
     # if ask is not None:

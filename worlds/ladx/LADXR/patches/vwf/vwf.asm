@@ -11,8 +11,11 @@ variableWidthFont:
 	call z, newLinebreak
 
 	; If it's blank
-	cp $00
-	ret z
+	; cp $00
+	; ret z
+	nop
+	nop
+	nop
 	
 	; If it's the first character
 	ld a, [wDialogCharacterIndex]

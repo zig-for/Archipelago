@@ -19,12 +19,13 @@ class Texts(PointerTable):
 
     def store(self, rom):
         data = self._PointerTable__data
+        
         for k, v in enumerate(data):
-            if type(v) == bytes:
+            if type(v) == bytes or type(v) == bytearray:
                 print(v)
                 data[k] = vwfify(v)
                 print(data[k])
-                
+
         super().store(rom)
             
 class Entities(PointerTable):
