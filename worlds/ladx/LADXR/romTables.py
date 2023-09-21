@@ -2,6 +2,7 @@ from .rom import ROM
 from .pointerTable import PointerTable
 from .assembler import ASM
 
+from .utils import vwfify
 
 class Texts(PointerTable):
     END_OF_DATA = (0xfe, 0xff)
@@ -16,7 +17,16 @@ class Texts(PointerTable):
             "expand_to_end_of_bank": {0x09}
         })
 
-
+    def store(self, rom):
+        data = self._PointerTable__data
+        for k, v in enumerate(data):
+            if type(v) == bytes:
+                print(v)
+                data[k] = vwfify(v)
+                print(data[k])
+                
+        super().store(rom)
+            
 class Entities(PointerTable):
     def __init__(self, rom):
         super().__init__(rom, {

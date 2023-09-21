@@ -146,6 +146,26 @@ def setReplacementName(key: str, value: str) -> None:
 
 VWF = True
 
+vwf_widthtable = None
+
+VWF_LINE_WIDTH_MAX=7*16
+
+def vwf_char_width(c):
+    global vwf_widthtable
+    if not vwf_widthtable:
+        from .assembler import ASM
+        import pkgutil
+        import binascii
+        vwf_widthtable_text = pkgutil.get_data(__name__, "patches/vwf/vwf_widthtable.asm").decode().replace("\r", "")
+        vwf_widthtable_text = vwf_widthtable_text[:vwf_widthtable_text.index("saveLetterWidths")]
+        vwf_widthtable = binascii.unhexlify(ASM(vwf_widthtable_text))
+        assert len(vwf_widthtable) == 0x100, len(vwf_widthtable)
+    return vwf_widthtable[c]
+
+def vwf_word_width(word):
+    return sum(vwf_char_width(c) for c in word)
+
+
 def formatText(instr: str, *, center: bool = False, ask: Optional[str] = None) -> bytes:
     instr = instr.format(**_NAMES)
     s = instr.encode("ascii")
@@ -157,21 +177,19 @@ def formatText(instr: str, *, center: bool = False, ask: Optional[str] = None) -
         def padLine(line: bytes) -> bytes:
             padding = (16 - len(line))
             return b' ' * (padding // 2) + line + b' ' * (padding - padding // 2)
-    if VWF:
-        result = s
-    else:
-        result = b''
-        for line in s.split(b'\n'):
-            result_line = b''
-            for word in line.split(b' '):
-                if len(result_line) + 1 + len(word) > 16:
-                    result += padLine(result_line)
-                    result_line = b''
-                elif result_line:
-                    result_line += b' '
-                result_line += word
-            if result_line:
+
+    result = b''
+    for line in s.split(b'\n'):
+        result_line = b''
+        for word in line.split(b' '):
+            if len(result_line) + 1 + len(word) > 16:
                 result += padLine(result_line)
+                result_line = b''
+            elif result_line:
+                result_line += b' '
+            result_line += word
+        if result_line:
+            result += padLine(result_line)
     if ask is not None:
         askbytes = ask.encode("ascii")
         result = result.rstrip()
@@ -179,6 +197,55 @@ def formatText(instr: str, *, center: bool = False, ask: Optional[str] = None) -
             result += b' '
         return result + b'    ' + askbytes + b'\xfe'
     return result.rstrip() + b'\xff'
+
+  
+    if ask is not None:
+        askbytes = ask.encode("ascii")
+        result = result.rstrip()
+        while len(result) % 32 != 16:
+            result += b' '
+        return result + b'    ' + askbytes + b'\xfe'
+
+    return result.rstrip() + b'\xff'
+
+
+def vwfify(s) -> bytes:
+    # TODO move the symbols
+    def padLine(line: bytes) -> bytes:
+        return line + b'\xFD'
+    line_max = VWF_LINE_WIDTH_MAX
+
+    result = b''
+
+    # Add line breaks back in as spaces
+    chunked_by_16  =[s[i:i+16] for i in range(0,len(s),16)]
+    s = b' '.join(chunked_by_16)
+    for c in chunked_by_16:
+        print('\t', c)
+    
+    result_line = b''        
+    for word in s.split(b' '):
+        if not word:
+            continue
+        if vwf_word_width(result_line) + vwf_word_width(word) > line_max:
+            result += padLine(result_line)
+            result_line = b''
+        elif result_line:
+            result_line += b' '
+        result_line += word
+    if result_line:
+        result += padLine(result_line)
+    result.replace(b'\xFF', b' \xFF')
+    return result
+
+    # if ask is not None:
+    #     askbytes = ask.encode("ascii")
+    #     result = result.rstrip()
+    #     while word_width(result) % (line_max * 2) < line_max:
+    #         result += b' '
+    #     # TODO: handle remaining padding
+    #     return result + b'    ' + askbytes + b'\xfe'
+
 
 
 def tileDataToString(data: bytes, key: str = " 123") -> str:
