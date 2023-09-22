@@ -743,6 +743,9 @@ ItemMessageForOtherPlayer:
     pop hl
     pop bc
     ;dec  de
+#IF VWF
+    call AddVWFSuffix
+#ENDIF
     ld   a, $C9
     jp   $2385 ; Opendialog in $000-$0FF range
 

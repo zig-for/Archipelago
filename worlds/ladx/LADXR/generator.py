@@ -66,7 +66,8 @@ from ..Options import TrendyGame, Palette, MusicChangeCondition
 def patch_vwf(rom, assembler):
     def get_asm(name):
         return pkgutil.get_data(__name__, os.path.join("patches/vwf", name)).decode().replace("\r", "")
-    
+    assert 'saveLetterWidths' not in assembler.CONST_MAP
+    assembler.resetConsts()
     assembler.const("CURR_CHAR_GFX"		,0xD608)
     assembler.const("CURR_CHAR"			,0xD638)
     assembler.const("CURR_CHAR_SIZE"		,0xD63A)
@@ -213,8 +214,9 @@ def patch_vwf(rom, assembler):
 # Function to generate a final rom, this patches the rom with all required patches
 def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, multiworld=None, player_name=None, player_names=[], player_id = 0):
     rom_patches = []
+    vwf = ap_settings["variable_width_font"]
 
-    rom = ROMWithTables(args.input_filename, rom_patches)
+    rom = ROMWithTables(args.input_filename, rom_patches, vwf=vwf)
     rom.player_names = player_names
     pymods = []
     if args.pymod:
@@ -258,6 +260,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
     assembler.const("wLinkSpawnDelay", 0xDE13)
 
     #assembler.const("HARDWARE_LINK", 1)
+    assembler.const("VWF", 1 if vwf else 0)
     assembler.const("HARD_MODE", 1 if settings.hardmode != "none" else 0)
 
     patches.core.cleanup(rom)
@@ -274,7 +277,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
     patches.enemies.fixArmosKnightAsMiniboss(rom)
     patches.bank3e.addBank3E(rom, auth, player_id, player_names)
     patches.bank3f.addBank3F(rom)
-    patches.bank34.addBank34(rom, item_list)
+    patches.bank34.addBank34(rom, item_list, vwf=vwf)
     patches.core.removeGhost(rom)
     patches.core.fixMarinFollower(rom)
     patches.core.fixWrongWarp(rom)

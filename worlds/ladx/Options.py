@@ -201,6 +201,11 @@ class NagMessages(DefaultOffToggle, LADXROption):
 
     ladxr_name = "nagmessages"
 
+class VariableWidthFont(DefaultOnToggle):
+    """
+    Controls if Variable Width Font mod is on or not (makes text easier to read)
+    """
+
 class MusicChangeCondition(Choice):
     """
     Controls how the music changes.
@@ -410,5 +415,6 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'shuffle_stone_beaks': ShuffleStoneBeaks,
     'music_change_condition': MusicChangeCondition,
     'nag_messages': NagMessages,
+    'variable_width_font': VariableWidthFont,
     'ap_title_screen': APTitleScreen,
 }

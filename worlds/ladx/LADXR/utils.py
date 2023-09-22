@@ -153,6 +153,7 @@ VWF_LINE_WIDTH_MAX=7*15
 def vwf_char_width(c):
     global vwf_widthtable
     if not vwf_widthtable:
+        # Break gross circular dependency
         from .assembler import ASM
         import pkgutil
         import binascii
@@ -199,7 +200,7 @@ def formatText(instr: str, *, center: bool = False, ask: Optional[str] = None) -
     return result.rstrip() + b'\xff'
 
 
-def vwfify(s) -> bytes:
+def vwfify(s, add_fixes=True) -> bytes:
     def padLine(line: bytes) -> bytes:
         return line + b'\xFD'
     line_max = VWF_LINE_WIDTH_MAX
@@ -208,8 +209,6 @@ def vwfify(s) -> bytes:
 
     # Add line breaks back in as spaces
     chunked_by_16  =[s[i:i+16] for i in range(0,len(s),16)]
-    for c in chunked_by_16:
-        print('\t', c)
     
     ask_line = None
     if s and s[-1] == 0xFE:
@@ -225,7 +224,6 @@ def vwfify(s) -> bytes:
 
     result_line = b''        
     for word in s.split(b' '):
-
         if not word:
             continue
         if vwf_word_width(result_line) + vwf_word_width(word) > line_max:
@@ -254,16 +252,19 @@ def vwfify(s) -> bytes:
         result += yes + no[:-1]
         # Doesn't appear to need a space pad
         # as the FE character seems to force a render
-        result += b'\xFE'
+        if add_fixes:
+            result += b'\xFE'
         return result
 
     # TODO: Two bugs:
     # 1. the first frame the text box comes up, it has stale data from the last time it was used.
     # So we prepend a ZWSP to force the render to spend a frame resetting
     # 2. the last frame of the text box doesn't render the leftovers from the last character
-    if result:
-        print(hex(result[-1]))
-    return b'\0' + result[:-1] + b'\x08\xFF'
+    if add_fixes:
+        if result and result[-1] == 0xFF:
+            result = result[:-1]
+        result = b'\0' + result + b'\x08\xFF'
+    return result
     
 
     # if ask is not None:

@@ -7,7 +7,8 @@ from .utils import vwfify
 class Texts(PointerTable):
     END_OF_DATA = (0xfe, 0xff)
 
-    def __init__(self, rom):
+    def __init__(self, rom, vwf):
+        self.vwf = vwf
         super().__init__(rom, {
             "count": 0x2B0,
             "pointers_addr": 1,
@@ -20,11 +21,10 @@ class Texts(PointerTable):
     def store(self, rom):
         data = self._PointerTable__data
         
-        for k, v in enumerate(data):
-            if type(v) == bytes or type(v) == bytearray:
-                print(v)
-                data[k] = vwfify(v)
-                print(data[k])
+        if self.vwf:
+            for k, v in enumerate(data):
+                if type(v) == bytes or type(v) == bytearray:
+                    data[k] = vwfify(v)
 
         super().store(rom)
             
@@ -192,11 +192,11 @@ class IndoorRoomSpriteData(PointerTable):
 
 
 class ROMWithTables(ROM):
-    def __init__(self, filename, patches=None):
+    def __init__(self, filename, patches=None, vwf=False):
         super().__init__(filename, patches)
 
         # Ability to patch any text in the game with different text
-        self.texts = Texts(self)
+        self.texts = Texts(self, vwf)
 
         # Ability to modify rooms
         self.entities = Entities(self)
