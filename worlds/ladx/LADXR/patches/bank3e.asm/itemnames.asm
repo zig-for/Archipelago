@@ -267,245 +267,717 @@ ItemNamePointers:
     dw ItemTradeQuest14
 
 ItemNameNone:
-    db $00, m"NONE  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"NONE  ", $ff
+
 
 ItemNamePowerBracelet:
-    db $00, m"Got the {POWER_BRACELET}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {POWER_BRACELET}  ", $ff
+
 ItemNameShield:
-    db $00, m"Got a {SHIELD}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {SHIELD}  ", $ff
+
 ItemNameBow:
-    db $00, m"Got the {BOW}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {BOW}  ", $ff
+
 ItemNameHookshot:
-    db $00, m"Got the {HOOKSHOT}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {HOOKSHOT}  ", $ff
+
 ItemNameMagicRod:
-    db $00, m"Got the {MAGIC_ROD}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAGIC_ROD}  ", $ff
+
 ItemNamePegasusBoots:
-    db $00, m"Got the {PEGASUS_BOOTS}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {PEGASUS_BOOTS}  ", $ff
+
 ItemNameOcarina:
-    db $00, m"Got the {OCARINA}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {OCARINA}  ", $ff
+
 ItemNameFeather:
-    db $00, m"Got the {FEATHER}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {FEATHER}  ", $ff
+
 ItemNameShovel:
-    db $00, m"Got the {SHOVEL}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {SHOVEL}  ", $ff
+
 ItemNameMagicPowder:
-    db $00, m"Got {MAGIC_POWDER}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got {MAGIC_POWDER}  ", $ff
+
 ItemNameBomb:
-    db $00, m"Got {BOMB}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got {BOMB}  ", $ff
+
 ItemNameSword:
-    db $00, m"Got a {SWORD}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {SWORD}  ", $ff
+
 ItemNameFlippers:
-    db $00, m"Got the {FLIPPERS}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {FLIPPERS}  ", $ff
+
 ItemNameBoomerang:
-    db $00, m"Got the {BOOMERANG}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {BOOMERANG}  ", $ff
+
 ItemNameSlimeKey:
-    db $00, m"Got the {SLIME_KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {SLIME_KEY}  ", $ff
+
 ItemNameMedicine:
-    db $00, m"Got some {MEDICINE}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got some {MEDICINE}  ", $ff
+
 ItemNameTailKey:
-    db $00, m"Got the {TAIL_KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {TAIL_KEY}  ", $ff
+
 ItemNameAnglerKey:
-    db $00, m"Got the {ANGLER_KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {ANGLER_KEY}  ", $ff
+
 ItemNameFaceKey:
-    db $00, m"Got the {FACE_KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {FACE_KEY}  ", $ff
+
 ItemNameBirdKey:
-    db $00, m"Got the {BIRD_KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {BIRD_KEY}  ", $ff
+
 ItemNameGoldLeaf:
-    db $00, m"Got the {GOLD_LEAF}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {GOLD_LEAF}  ", $ff
+
 ItemNameMap:
-    db $00, m"Got the {MAP}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP}  ", $ff
+
 ItemNameCompass:
-    db $00, m"Got the {COMPASS}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS}  ", $ff
+
 ItemNameStoneBeak:
-    db $00, m"Got the {STONE_BEAK}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK}  ", $ff
+
 ItemNameNightmareKey:
-    db $00, m"Got the {NIGHTMARE_KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY}  ", $ff
+
 ItemNameSmallKey:
-    db $00, m"Got a {KEY}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY}  ", $ff
+
 ItemNameRupees50:
-    db $00, m"Got 50 {RUPEES}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got 50 {RUPEES}  ", $ff
+
 ItemNameRupees20:
-    db $00, m"Got 20 {RUPEES}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got 20 {RUPEES}  ", $ff
+
 ItemNameRupees100:
-    db $00, m"Got 100 {RUPEES}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got 100 {RUPEES}  ", $ff
+
 ItemNameRupees200:
-    db $00, m"Got 200 {RUPEES}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got 200 {RUPEES}  ", $ff
+
 ItemNameRupees500:
-    db $00, m"Got 500 {RUPEES}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got 500 {RUPEES}  ", $ff
+
 ItemNameSeashell:
-    db $00, m"Got a {SEASHELL}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {SEASHELL}  ", $ff
+
 ItemNameGel:
-    db $00, m"Got a Zol Attack  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a Zol Attack  ", $ff
+
 ItemNameMessage:
-    db $00, m"Got ... nothing?  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got ... nothing?  ", $ff
+
 ItemNameKey1:
-    db $00, m"Got a {KEY1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY1}  ", $ff
+
 ItemNameKey2:
-    db $00, m"Got a {KEY2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY2}  ", $ff
+
 ItemNameKey3:
-    db $00, m"Got a {KEY3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY3}  ", $ff
+
 ItemNameKey4:
-    db $00, m"Got a {KEY4}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY4}  ", $ff
+
 ItemNameKey5:
-    db $00, m"Got a {KEY5}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY5}  ", $ff
+
 ItemNameKey6:
-    db $00, m"Got a {KEY6}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY6}  ", $ff
+
 ItemNameKey7:
-    db $00, m"Got a {KEY7}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY7}  ", $ff
+
 ItemNameKey8:
-    db $00, m"Got a {KEY8}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY8}  ", $ff
+
 ItemNameKey9:
-    db $00, m"Got a {KEY9}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {KEY9}  ", $ff
+
 ItemNameMap1:
-    db $00, m"Got the {MAP1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP1}  ", $ff
+
 ItemNameMap2:
-    db $00, m"Got the {MAP2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP2}  ", $ff
+
 ItemNameMap3:
-    db $00, m"Got the {MAP3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP3}  ", $ff
+
 ItemNameMap4:
-    db $00, m"Got the {MAP4}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP4}  ", $ff
+
 ItemNameMap5:
-    db $00, m"Got the {MAP5}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP5}  ", $ff
+
 ItemNameMap6:
-    db $00, m"Got the {MAP6}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP6}  ", $ff
+
 ItemNameMap7:
-    db $00, m"Got the {MAP7}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP7}  ", $ff
+
 ItemNameMap8:
-    db $00, m"Got the {MAP8}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP8}  ", $ff
+
 ItemNameMap9:
-    db $00, m"Got the {MAP9}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAP9}  ", $ff
+
 ItemNameCompass1:
-    db $00, m"Got the {COMPASS1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS1}  ", $ff
+
 ItemNameCompass2:
-    db $00, m"Got the {COMPASS2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS2}  ", $ff
+
 ItemNameCompass3:
-    db $00, m"Got the {COMPASS3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS3}  ", $ff
+
 ItemNameCompass4:
-    db $00, m"Got the {COMPASS4}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS4}  ", $ff
+
 ItemNameCompass5:
-    db $00, m"Got the {COMPASS5}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS5}  ", $ff
+
 ItemNameCompass6:
-    db $00, m"Got the {COMPASS6}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS6}  ", $ff
+
 ItemNameCompass7:
-    db $00, m"Got the {COMPASS7}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS7}  ", $ff
+
 ItemNameCompass8:
-    db $00, m"Got the {COMPASS8}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS8}  ", $ff
+
 ItemNameCompass9:
-    db $00, m"Got the {COMPASS9}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {COMPASS9}  ", $ff
+
 ItemNameStoneBeak1:
-    db $00, m"Got the {STONE_BEAK1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK1}  ", $ff
+
 ItemNameStoneBeak2:
-    db $00, m"Got the {STONE_BEAK2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK2}  ", $ff
+
 ItemNameStoneBeak3:
-    db $00, m"Got the {STONE_BEAK3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK3}  ", $ff
+
 ItemNameStoneBeak4:
-    db $00, m"Got the {STONE_BEAK4}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK4}  ", $ff
+
 ItemNameStoneBeak5:
-    db $00, m"Got the {STONE_BEAK5}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK5}  ", $ff
+
 ItemNameStoneBeak6:
-    db $00, m"Got the {STONE_BEAK6}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK6}  ", $ff
+
 ItemNameStoneBeak7:
-    db $00, m"Got the {STONE_BEAK7}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK7}  ", $ff
+
 ItemNameStoneBeak8:
-    db $00, m"Got the {STONE_BEAK8}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK8}  ", $ff
+
 ItemNameStoneBeak9:
-    db $00, m"Got the {STONE_BEAK9}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {STONE_BEAK9}  ", $ff
+
 ItemNameNightmareKey1:
-    db $00, m"Got the {NIGHTMARE_KEY1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY1}  ", $ff
+
 ItemNameNightmareKey2:
-    db $00, m"Got the {NIGHTMARE_KEY2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY2}  ", $ff
+
 ItemNameNightmareKey3:
-    db $00, m"Got the {NIGHTMARE_KEY3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY3}  ", $ff
+
 ItemNameNightmareKey4:
-    db $00, m"Got the {NIGHTMARE_KEY4}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY4}  ", $ff
+
 ItemNameNightmareKey5:
-    db $00, m"Got the {NIGHTMARE_KEY5}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY5}  ", $ff
+
 ItemNameNightmareKey6:
-    db $00, m"Got the {NIGHTMARE_KEY6}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY6}  ", $ff
+
 ItemNameNightmareKey7:
-    db $00, m"Got the {NIGHTMARE_KEY7}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY7}  ", $ff
+
 ItemNameNightmareKey8:
-    db $00, m"Got the {NIGHTMARE_KEY8}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY8}  ", $ff
+
 ItemNameNightmareKey9:
-    db $00, m"Got the {NIGHTMARE_KEY9}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {NIGHTMARE_KEY9}  ", $ff
+
 ItemNameToadstool:
-    db $00, m"Got the {TOADSTOOL}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {TOADSTOOL}  ", $ff
+
 
 ItemNameHeartPiece:
-    db $00, m"Got the {HEART_PIECE}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {HEART_PIECE}  ", $ff
+
 ItemNameBowwow:
-    db $00, m"Got the {BOWWOW}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {BOWWOW}  ", $ff
+
 ItemName10Arrows:
-    db $00, m"Got {ARROWS_10}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got {ARROWS_10}  ", $ff
+
 ItemNameSingleArrow:
-    db $00, m"Got the {SINGLE_ARROW}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {SINGLE_ARROW}  ", $ff
+
 ItemNamePowderUpgrade:
-    db $00, m"Got the {MAX_POWDER_UPGRADE}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAX_POWDER_UPGRADE}  ", $ff
+
 ItemNameBombUpgrade:
-    db $00, m"Got the {MAX_BOMBS_UPGRADE}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAX_BOMBS_UPGRADE}  ", $ff
+
 ItemNameArrowUpgrade:
-    db $00, m"Got the {MAX_ARROWS_UPGRADE}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {MAX_ARROWS_UPGRADE}  ", $ff
+
 ItemNameRedTunic:
-    db $00, m"Got the {RED_TUNIC}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {RED_TUNIC}  ", $ff
+
 ItemNameBlueTunic:
-    db $00, m"Got the {BLUE_TUNIC}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {BLUE_TUNIC}  ", $ff
+
 ItemNameHeartContainer:
-    db $00, m"Got a {HEART_CONTAINER}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got a {HEART_CONTAINER}  ", $ff
+
 ItemNameBadHeartContainer:
-    db $00, m"Got the {BAD_HEART_CONTAINER}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {BAD_HEART_CONTAINER}  ", $ff
+
 ItemNameSong1:
-    db $00, m"Got the {SONG1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got the {SONG1}  ", $ff
+
 ItemNameSong2:
-    db $00, m"Got {SONG2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got {SONG2}  ", $ff
+
 ItemNameSong3:
-    db $00, m"Got {SONG3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"Got {SONG3}  ", $ff
+
 
 ItemInstrument1:
-    db $00, m"You've got the {INSTRUMENT1}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT1}  ", $ff
+
 ItemInstrument2:
-    db $00, m"You've got the {INSTRUMENT2}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT2}  ", $ff
+
 ItemInstrument3:
-    db $00, m"You've got the {INSTRUMENT3}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT3}  ", $ff
+
 ItemInstrument4:
-    db $00, m"You've got the {INSTRUMENT4}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT4}  ", $ff
+
 ItemInstrument5:
-    db $00, m"You've got the {INSTRUMENT5}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT5}  ", $ff
+
 ItemInstrument6:
-    db $00, m"You've got the {INSTRUMENT6}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT6}  ", $ff
+
 ItemInstrument7:
-    db $00, m"You've got the {INSTRUMENT7}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT7}  ", $ff
+
 ItemInstrument8:
-    db $00, m"You've got the {INSTRUMENT8}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {INSTRUMENT8}  ", $ff
+
 
 ItemRooster:
-    db $00, m"You've got the {ROOSTER}  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the {ROOSTER}  ", $ff
+
 
 ItemTradeQuest1:
-    db $00, m"You've got the Yoshi Doll  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Yoshi Doll  ", $ff
+
 ItemTradeQuest2:
-    db $00, m"You've got the Ribbon  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Ribbon  ", $ff
+
 ItemTradeQuest3:
-    db $00, m"You've got the Dog Food  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Dog Food  ", $ff
+
 ItemTradeQuest4:
-    db $00, m"You've got the Bananas  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Bananas  ", $ff
+
 ItemTradeQuest5:
-    db $00, m"You've got the Stick  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Stick  ", $ff
+
 ItemTradeQuest6:
-    db $00, m"You've got the Honeycomb  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Honeycomb  ", $ff
+
 ItemTradeQuest7:
-    db $00, m"You've got the Pineapple  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Pineapple  ", $ff
+
 ItemTradeQuest8:
-    db $00, m"You've got the Hibiscus  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Hibiscus  ", $ff
+
 ItemTradeQuest9:
-    db $00, m"You've got the Letter  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Letter  ", $ff
+
 ItemTradeQuest10:
-    db $00, m"You've got the Broom  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Broom  ", $ff
+
 ItemTradeQuest11:
-    db $00, m"You've got the Fishing Hook  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Fishing Hook  ", $ff
+
 ItemTradeQuest12:
-    db $00, m"You've got the Necklace  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Necklace  ", $ff
+
 ItemTradeQuest13:
-    db $00, m"You've got the Scale  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Scale  ", $ff
+
 ItemTradeQuest14:
-    db $00, m"You've got the Magnifying Lens  ", $ff
+#IF VWF
+db $00
+#ENDIF
+db m"You've got the Magnifying Lens  ", $ff
+
 
 MultiNamePointers:

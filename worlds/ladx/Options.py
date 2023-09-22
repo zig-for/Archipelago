@@ -201,7 +201,7 @@ class NagMessages(DefaultOffToggle, LADXROption):
 
     ladxr_name = "nagmessages"
 
-class VariableWidthFont(DefaultOnToggle):
+class VariableWidthFont(DefaultOffToggle):
     """
     Controls if Variable Width Font mod is on or not (makes text easier to read)
     """
