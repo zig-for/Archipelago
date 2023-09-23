@@ -3,7 +3,7 @@ import binascii
 import pkgutil
 
 from ..assembler import ASM
-from ..utils import formatText
+from ..utils import vwfify
 
 ItemNameLookupTable = 0x0100
 ItemNameLookupSize = 2
@@ -14,8 +14,11 @@ ItemNameStringBufferStart = ItemNameLookupTable + \
     TotalRoomCount * ItemNameLookupSize
 
 
-def addBank34(rom, item_list):
-    rom.patch(0x34, 0x0000, ItemNameLookupTable, ASM("""
+def addBank34(rom, item_list, vwf):
+    # TODO: need to add a newline after the item name
+    # TODO: need to VWF splitting for long item names
+    
+    bank34 = """
         ; Get the pointer in the lookup table, doubled as it's two bytes
         ld  hl, $2080
         push de
@@ -34,6 +37,11 @@ def addBank34(rom, item_list):
 
         ld   de, wCustomMessage
         ; Copy "Got " to de
+#IF VWF
+        xor a
+        ld  [de], a
+        inc de
+#ENDIF
         ld  a, 71
         ld  [de], a
         inc de
@@ -47,7 +55,7 @@ def addBank34(rom, item_list):
         ld  [de], a
         inc de
         ; Copy in our item name
-        call   MessageCopyString
+        call MessageCopyString
     SwitchBackTo3E:
         ; Bail
         ld   a,  $3e   ; Set bank number
@@ -75,15 +83,13 @@ def addBank34(rom, item_list):
     .notCavesA:
         add  hl, de
         ret
-    """ + pkgutil.get_data(__name__, os.path.join("bank3e.asm", "message.asm")).decode().replace("\r", ""), 0x4000), fill_nop=True)
+    """ + pkgutil.get_data(__name__, os.path.join("bank3e.asm", "message.asm")).decode().replace("\r", "")
 
+    rom.patch(0x34, 0x0000, ItemNameLookupTable, ASM(bank34, 0x4000), fill_nop=True)
     nextItemLookup = ItemNameStringBufferStart
     nameLookup = {
 
     }
-
-    name = AnItemText
-
     def add_or_get_name(name):
         nonlocal nextItemLookup
         if name in nameLookup:
@@ -97,8 +103,8 @@ def addBank34(rom, item_list):
         nextItemLookup += patch_len
         return nameLookup[name]
 
-    item_text_addr = add_or_get_name(AnItemText)
-    #error_text_addr = add_or_get_name("Please report this check to #bug-reports in the AP discord")
+    add_or_get_name(AnItemText)
+
     def swap16(x):
         assert x <= 0xFFFF
         return (x >> 8) | ((x & 0xFF) << 8)
@@ -118,7 +124,13 @@ def addBank34(rom, item_list):
         # Item names of exactly 255 characters will cause overwrites to occur in the text box
         # assert len(item.custom_item_name) < 0x100
         # Custom text is only 95 bytes long, restrict to 50
-        addr = add_or_get_name(item.custom_item_name[:50])
+        item_name = item.custom_item_name[:50]
+        if vwf:
+            # Add line breaks
+            item_name = vwfify("Got " + item_name, add_fixes=False)
+            item_name = item_name[len("Got "):]
+            item_name += ' '
+        addr = add_or_get_name(item_name)
         rom.patch(0x34, ItemNameLookupTable + item.room *
                   ItemNameLookupSize, None, to_hex_address(addr))
         if item.extra:
