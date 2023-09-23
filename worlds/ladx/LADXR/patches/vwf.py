@@ -1,6 +1,10 @@
 import os.path
 import pkgutil
 
+# TODO: fix final owl text (goes past 255 chars?)
+# TODO: fix final text from windfish
+# TODO: 
+
 def patch_vwf(rom, assembler):
     def get_asm(name):
         return pkgutil.get_data(__name__, os.path.join("vwf", name)).decode().replace("\r", "")
