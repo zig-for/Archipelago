@@ -57,7 +57,7 @@ def export_world(libfolder, world_type, output_dir):
         for path in world_directory.rglob("*.*"):
             relative_path = os.path.join(*path.parts[path.parts.index("worlds")+1:])
             zf.write(path, relative_path)
-        zf.writestr("metadata.json", json.dumps(metadata, indent=4))
+        zf.writestr("manifest.json", json.dumps(metadata, indent=4))
     return output_name
 
 if __name__ == "__main__":
