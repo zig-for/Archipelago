@@ -196,6 +196,26 @@ class World(metaclass=AutoWorldRegister):
     request a new DataPackage, if necessary.
     """
 
+    world_version: ClassVar[str] = "0.0.0"
+    """
+    Increment this every time you make a new release.
+
+    Of the form:
+    Major.Minor.Patch-Tag
+
+    TODO: make decisions on what this actually means
+
+    Major: Incremented when you make incompatible API changes.
+    Minor: Incremented when you add functionality in a backwards-compatible manner.
+    Patch: Incremented when you make backwards-compatible bug fixes.
+    Tag: Optional - can be used for flagging this version as having a special feature. If set, version will only auto-update with same tag.78
+    """
+    
+    patch_description: ClassVar[Optional[str]] = None
+    """
+    If tag is set in world_version, this should also be set to provide information for what your branch is doing.
+    """
+
     required_client_version: Tuple[int, int, int] = (0, 1, 6)
     """
     override this if changes to a world break forward-compatibility of the client

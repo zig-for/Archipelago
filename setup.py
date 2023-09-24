@@ -367,23 +367,15 @@ class BuildExeCommand(cx_Freeze.command.build_exe.BuildEXE):
         os.makedirs(self.buildfolder / "Players" / "Templates", exist_ok=True)
         from Options import generate_yaml_templates
         from worlds.AutoWorld import AutoWorldRegister
+        from worlds.ExportWorld import export_world
         assert not non_apworlds - set(AutoWorldRegister.world_types), \
             f"Unknown world {non_apworlds - set(AutoWorldRegister.world_types)} designated for .apworld"
         folders_to_remove: typing.List[str] = []
         generate_yaml_templates(self.buildfolder / "Players" / "Templates", False)
         for worldname, worldtype in AutoWorldRegister.world_types.items():
             if worldname not in non_apworlds:
-                file_name = os.path.split(os.path.dirname(worldtype.__file__))[1]
-                world_directory = self.libfolder / "worlds" / file_name
-                # this method creates an apworld that cannot be moved to a different OS or minor python version,
-                # which should be ok
-                with zipfile.ZipFile(self.libfolder / "worlds" / (file_name + ".apworld"), "x", zipfile.ZIP_DEFLATED,
-                                     compresslevel=9) as zf:
-                    for path in world_directory.rglob("*.*"):
-                        relative_path = os.path.join(*path.parts[path.parts.index("worlds")+1:])
-                        zf.write(path, relative_path)
-                    folders_to_remove.append(file_name)
-                shutil.rmtree(world_directory)
+                export_world(worldtype)
+                shutil.rmtree(self.libfolder / "worlds" / worldname)
         shutil.copyfile("meta.yaml", self.buildfolder / "Players" / "Templates" / "meta.yaml")
         # TODO: fix LttP options one day
         shutil.copyfile("playerSettings.yaml", self.buildfolder / "Players" / "Templates" / "A Link to the Past.yaml")
