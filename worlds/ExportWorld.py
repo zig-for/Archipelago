@@ -26,29 +26,33 @@ METADATA_KEYS = [
     # maintainers
 ]
 
-def create_world_meta(world_key, world_type):
+def create_world_meta(world_key, world_type, is_frozen):
     metadata = {}
     for key in METADATA_KEYS:
         metadata[key] = getattr(world_type, key)
     if world_type.__doc__ != World.__doc__:
         metadata["description"] = world_type.__doc__.strip()
     metadata["id"] = world_key
-
-    metadata["arch"] = platform.machine()
-    metadata["os"] = platform.system() # TODO: linux 
+    metadata["frozen"] = is_frozen
+    if is_frozen:
+        metadata["arch"] = platform.machine()
+        metadata["os"] = platform.system() # TODO: linux 
+        metadata["pyversion"] = f"{sys.version_info[0]}.{sys.version_info[1]}"
+    else:
+        metadata["arch"] = "any"
+        metadata["os"] = "any"
+        metadata["pyversion"] = "any"
     return metadata
 
-def export_world(libfolder, world_type, output_dir):
+def export_world(libfolder, world_type, output_dir, is_frozen):
     world_key = os.path.split(os.path.dirname(world_type.__file__))[1]
     world_directory = libfolder / "worlds" / world_key
-    # this method creates an apworld that cannot be moved to a different OS or minor python version,
-    # which should be ok
     
-    metadata = create_world_meta(world_key, world_type)
+    metadata = create_world_meta(world_key, world_type, is_frozen)
 
     arch = metadata["arch"]
     os_type = metadata["os"]
-    base_file_name = f"{world_key}-{arch}-{os_type}-py{sys.version_info[0]}.{sys.version_info[1]}-{metadata['world_version']}"
+    base_file_name = f"{world_key}-{arch}-{os_type}-py{metadata['pyversion']}-{metadata['world_version']}"
     world_file_name = f"{base_file_name}.apworld"
 
     output_name = output_dir / world_file_name
@@ -57,7 +61,7 @@ def export_world(libfolder, world_type, output_dir):
         for path in world_directory.rglob("*.*"):
             relative_path = os.path.join(*path.parts[path.parts.index("worlds")+1:])
             zf.write(path, relative_path)
-        zf.writestr("manifest.json", json.dumps(metadata, indent=4))
+        zf.writestr("metadata.json", json.dumps(metadata, indent=4))
     return output_name
 
 if __name__ == "__main__":
@@ -68,6 +72,6 @@ if __name__ == "__main__":
     parser.add_argument("output_dir", help="Export directory.", type=Path, default=ap_root_path / "worlds", nargs='?')
     args = parser.parse_args()
     
-    output = export_world(ap_root_path, AutoWorldRegister.world_types[args.world_name], args.output_dir)
+    output = export_world(ap_root_path, AutoWorldRegister.world_types[args.world_name], args.output_dir, is_frozen=False)
     print(f"Output to {output}")
     

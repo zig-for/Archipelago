@@ -374,8 +374,12 @@ class BuildExeCommand(cx_Freeze.command.build_exe.BuildEXE):
         generate_yaml_templates(self.buildfolder / "Players" / "Templates", False)
         for worldname, worldtype in AutoWorldRegister.world_types.items():
             if worldname not in non_apworlds:
-                export_world(worldtype)
-                shutil.rmtree(self.libfolder / "worlds" / worldname)
+                export_world(libfolder=self.libfolder, world_type=worldtype, output_dir=self.libfolder / "worlds", is_frozen=True)
+                file_name = os.path.split(os.path.dirname(worldtype.__file__))[1]
+                folders_to_remove.append(file_name)
+                world_directory = self.libfolder / "worlds" / file_name
+                # Why doesn't this work any more?
+                shutil.rmtree(world_directory)
         shutil.copyfile("meta.yaml", self.buildfolder / "Players" / "Templates" / "meta.yaml")
         # TODO: fix LttP options one day
         shutil.copyfile("playerSettings.yaml", self.buildfolder / "Players" / "Templates" / "A Link to the Past.yaml")

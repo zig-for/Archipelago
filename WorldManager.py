@@ -5,28 +5,48 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.gridlayout import GridLayout
 from kivy.config import Config
+from kivy.uix.dropdown import DropDown
+from kivy.uix.button import Button
 
+from collections import defaultdict
+from dataclasses import dataclass
+import requests
+import json
+import os
 import typing
+import zipfile
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-Config.set('graphics', 'width', '1200')
+Config.set('graphics', 'width', '1600')
+Config.write()
 
 Builder.load_string('''
 <Widget>:
     canvas.after:
         Line:
-            rectangle: self.x+1,self.y+1,self.width-1,self.height-1
+            rectangle: self.x,self.y,self.width,self.height
             # Can't figure out line colors lmao
-            # This is not the proper way to do this
-            # dash_offset: 5
-            # dash_length: 3
-                    
+
+<CustomDropDown>:
+    Button:
+        text: 'My first Item'
+        size_hint_y: None
+        height: 44
+        on_release: root.select('item1')
+    Label:
+        text: 'Unselectable item'
+        size_hint_y: None
+        height: 44
+    Button:
+        text: 'My second Item'
+        size_hint_y: None
+        height: 44
+        on_release: root.select('item2')                   
 <ApWorldLayout@RecycleKVIDsDataViewBehavior+StackLayout>:
     size_hint_y: None
     height: 30
 
     Label:
         id: world_name
-        # text: world_data.name  # uses the text StringProperty
         text: ' Game'
         size_hint: None, None
         size: 300, 30
@@ -35,48 +55,92 @@ Builder.load_string('''
         valign: 'middle'
     Label:
         id: installed
-        # text: world_data.name  # uses the text StringProperty
         text: 'Installed Version'
         size_hint: None, None
         size: 150, 30
     Label:
-        id: foobar
-        # text: world_data.name  # uses the text StringProperty
+        id: available
         text: 'Newest Available'
         size_hint: None, None
         size: 150, 30
-    Label:
+    InfoButton:
         id: info
-        # text: world_data.name  # uses the text StringProperty
         text: 'Info'
         size_hint: None, None
-        size: 300, 30
-    Button:
-        id: available
-        # text: world_data.name  # uses the text StringProperty
+        size: 75, 30
+    InstallButton:
+        id: install
         text: 'Install'
         size_hint: None, None
+        size: 75, 30
+    DropBut:
+        id: available_versions
+        size_hint: None, None
         size: 150, 30
-    # DropDown:
-    #     id: versions
-                    
-<RV>:
+        background_color: 0,0,0
+        text: 'Install Version...'
+    CheckBox:
+        id: is_installed
+        size_hint: None, None
+        size: 75, 30
+
+
+<PackagesRV>:
     viewclass: 'ApWorldLayout'
+
     RecycleBoxLayout:
         default_size: None, 30
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
         orientation: 'vertical'
-<LoginScreen>:
-
+<MainLayout>:
     ApWorldLayout:
         id: header
-    RV:
-        id: rv             
+    PackagesRV:
+        id: rv        
+    GridLayout:
+        columns: 2
+        rows: 1
+        size_hint_y: None
+        row_default_height: 1
+        Button:
+            id: refresh
+            text: 'Refresh'
+            size_hint_y: None
+        Button:
+            id: autoupdate
+            text: 'Auto-Update'
+            size_hint_y: None
 ''')
+from kivy.properties import ListProperty
+class DropBut(Button):
+    options = ListProperty(['test'])
+    foobar = StringProperty()
+    def __init__(self, **kwargs):
+        super(DropBut, self).__init__(**kwargs)
+        
+        self.drop_list = None
+        self.drop_list = DropDown()
 
-from dataclasses import dataclass
+        # options = ['1.1.0', '1.1.1', '1.1.1-doors']
+       
+        self.bind(on_release=self.drop_list.open)
+
+        def on_drop_list_select(instance, x):
+            setattr(self, 'text', x)
+        self.drop_list.bind(on_select=on_drop_list_select)
+
+    def on_options(self, instance, value):
+        for i in value:
+            btn = Button(text=i, size_hint_y=None, height=25)
+            btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
+           
+            self.drop_list.add_widget(btn)
+
+
+class CustomDropDown(DropDown):
+    pass
 
 
 @dataclass
@@ -84,75 +148,112 @@ class ApWorldVersion:
     blessed: bool
 
 @dataclass
-class ApWorldMetadata:
+class ApWorldMetadataAllVersions:
     name: str
     developers: list[str]
     installed_version: typing.Optional[str]
     versions: dict[str, ApWorldVersion]
 
-# TODO: check against from source
-
-TEST_WORLDS = [
-    ApWorldMetadata("Link to the Past", ["AP Core Team"], '1.0.0', {"1.0.0": True}),
-    ApWorldMetadata("Link's Awakening", ["zig"], None, {"1.0.0": ApWorldVersion(True), "1.1.0": ApWorldVersion(False)}),
-    ApWorldMetadata('adventure', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('alttp', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('archipidle', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('bk_sudoku', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('blasphemous', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('bumpstik', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('checksfinder', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('clique', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('dark_souls_3', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('dkc3', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('dlcquest', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('doom_1993', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('factorio', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('ff1', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('hk', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('hylics2', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('kh2', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('ladx', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('lufia2ac', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('meritous', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('messenger', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('minecraft', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('mmbn3', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('musedash', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('noita', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('oot', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('oribf', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('overcooked2', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('pokemon_rb', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('raft', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('rogue_legacy', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('ror2', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('sa2b', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('sc2wol', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('sm', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('sm64ex', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('smw', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('smz3', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('soe', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('spire', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('stardew_valley', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('subnautica', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('terraria', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('timespinner', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('tloz', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('undertale', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('v6', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('wargroove', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('witness', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-    ApWorldMetadata('zillion', ['test data'], None, {"0.1.0": ApWorldVersion(True)}),
-
-]
+from enum import Enum
 
 
+class WorldSource(Enum):
+    SOURCE_CODE = 0
+    LOCAL = 1
+    REMOTE_BLESSED = 2
+    REMOTE = 3
+
+@dataclass
+class ApWorldMetadata:
+    source: WorldSource
+    source_url: typing.Optional[str]
+    data: dict[str, typing.Any]
+    # source: WorldSource
+
+    # TODO: .validate()
+
+    @property
+    def id(self) -> str:
+        return self.data['metadata']['id']
+    
+    @property
+    def name(self) -> str:
+        return self.data['metadata']['game']
+    
+    @property
+    def world_version(self) -> str:
+        return self.data['metadata']['world_version']
+
+
+class Repository:
+    def __init__(self, world_source: WorldSource, path: str) -> None:
+        self.path = path
+        self.index_json = None
+        self.world_source = world_source
+
+        self.worlds: typing.List[ApWorldMetadata] = []
+
+    def refresh(self):
+        self.get_repository_json()
+
+    def get_repository_json(self):
+        if self.world_source == WorldSource.REMOTE or self.world_source == WorldSource.REMOTE_BLESSED:
+            response = requests.get(self.path)
+            self.index_json = response.json()
+
+            self.worlds = [
+                ApWorldMetadata(self.world_source, self.path, world) for world in self.index_json['worlds']
+            ]
+        elif self.world_source == WorldSource.LOCAL:
+            self.worlds = []
+            print(self.path)
+            for file in os.listdir(self.path):
+                try:
+                    metadata_str = zipfile.ZipFile(os.path.join(self.path, file)).read('metadata.json')
+                    metadata = json.loads(metadata_str)
+                    metadata = {
+                        'metadata': metadata
+                    }
+                    self.worlds.append(ApWorldMetadata(self.world_source, self.path, metadata))
+                except:
+                    continue
+        
+                # ApWorldMetadata(self.world_source, self.path, world) for world in self.index_json['worlds']
+            
+        else:
+            assert False
+        self.worlds.sort(key = lambda x: x.name)
+
+class RepositoryManager:
+    def __init__(self) -> None:
+        self.all_known_package_ids: typing.Set[str] = set()
+        self.repositories: typing.List[Repository] = []
+        self.local_packages_by_id: typing.Dict[str, ApWorldMetadata] = {}
+        self.packages_by_id_version: typing.DefaultDict[str, typing.Dict[str, ApWorldMetadata]] = defaultdict(dict)
+
+    def add_local_dir(self, path: str):
+        self.repositories.append(Repository(WorldSource.LOCAL, path))
+        
+    def add_remote_repository(self, url: str, blessed=False) -> None:
+        self.repositories.append(Repository(WorldSource.REMOTE_BLESSED if blessed else WorldSource.REMOTE, url))
+
+    def refresh(self):
+        self.packages_by_id_version.clear()
+        for repo in self.repositories:
+            repo.refresh()
+            if repo.world_source == WorldSource.LOCAL:
+                for world in repo.worlds:
+                    self.all_known_package_ids.add(world.id)
+                    self.local_packages_by_id[world.id] = world
+            else:
+                for world in repo.worlds:
+                    self.all_known_package_ids.add(world.id)
+                    self.packages_by_id_version[world.id][world.world_version] = world
+        print(self.packages_by_id_version)
 
 class ApWorldLayout(BoxLayout):
     show = ObjectProperty(None)
-    text = StringProperty('Abba')
+    # text = StringProperty('None')
 
     # # Do I need this?
     # def on_show(self, instance, new_obj):
@@ -168,29 +269,100 @@ class ApWorldLayout(BoxLayout):
     #     # add the new obj to this MyObject instance
     #     self.add_widget(new_obj)
 
-class RV(RecycleView):
-    def __init__(self, **kwargs):
-        super(RV, self).__init__(**kwargs)
-        self.data = [{
-            'world_name.text': ' ' + world.name,
-            'installed.text': str(world.installed_version),
-            'available.text': 'click me'
-                      }
-                     for world in TEST_WORLDS]
+class InfoButton(Button):
+    def on_press(self):
+        try:
+            game_id = getattr(self.parent, 'game_id')
+        except:
+            return
         
-class LoginScreen(GridLayout):
+        print(f'The info button <{game_id}> is being pressed')
+    
+
+class InstallButton(Button):
+    def on_press(self):
+        try:
+            game_id = getattr(self.parent, 'game_id')
+        except:
+            return
+        
+        print(f'The install button <{game_id}> is being pressed')
+
+class PackagesRV(RecycleView):
+    def __init__(self, **kwargs):
+        super(PackagesRV, self).__init__(**kwargs)
+        self.data = []
+        self.repositories = None
+
+    def set_repositories(self, repositories):
+        self.repositories = repositories
+        self.data = []
+
+        for world_id in repositories.all_known_package_ids:
+            available_versions = set()
+            world_info = {
+                'game_id': world_id,
+                # 'info.game_id': world_id,
+                'available.text': 'N/A',
+                'install.disabled': True,
+                'available_versions.text': 'N/A'
+            }
+            for world in repositories.packages_by_id_version[world_id].values():
+                # Note, probably we need to use actual "properties" here to get good refresh
+                world_info['world_name.text'] = world.name
+                world_info['available.text'] = str(world.world_version)
+                world_info['install.disabled'] = False
+                available_versions.add(world.world_version)
+                
+            if world_id in repositories.local_packages_by_id:
+                world = repositories.local_packages_by_id[world_id]
+                world_info['world_name.text'] = world.name
+                world_info['installed.text'] = str(world.world_version)
+                available_versions.add(world.world_version)
+                world_info['available_versions.text'] = str(world.world_version)
+            else:
+                world_info['installed.text'] = 'N/A'
+            world_info['available_versions.options'] = list(available_versions)
+            
+            world_info['world_name.text'] = ' ' + world_info['world_name.text']
+            self.data.append(world_info)
+        from Utils import title_sorted
+        self.data = title_sorted(self.data, key=lambda x: x['world_name.text'])
+
+class MainLayout(GridLayout):
 
     def __init__(self, **kwargs):
-        super(LoginScreen, self).__init__(**kwargs)
+        super(MainLayout, self).__init__(**kwargs)
         self.cols = 1
 
 
 
 class WorldManagerApp(App):
-
+    def __init__(self, repositories) -> None:
+        self.repositories = repositories
+        super().__init__()
+    
     def build(self):
-        return LoginScreen()
+        layout = MainLayout()
+        
+        layout.ids['rv'].set_repositories(self.repositories)
+
+        return layout
+
+
+import asyncio
 
 
 if __name__ == '__main__':
-    WorldManagerApp().run()
+    local_dir = './worlds_test_dir'
+
+    repositories = RepositoryManager()
+    repositories.add_remote_repository('http://localhost:8080/index.json')
+    repositories.add_local_dir(local_dir)
+    repositories.refresh()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    app = WorldManagerApp(repositories)
+    loop.run_until_complete(app.async_run())
+    loop.close()
+    
