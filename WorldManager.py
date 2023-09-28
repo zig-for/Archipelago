@@ -1,12 +1,12 @@
-from kivy.app import App
+from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty
-from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.gridlayout import GridLayout
 from kivy.config import Config
 from kivy.uix.dropdown import DropDown
-from kivy.uix.button import Button
+from kivymd.uix.button import MDFlatButton, MDRaisedButton
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -16,127 +16,8 @@ import os
 import typing
 import zipfile
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-Config.set('graphics', 'width', '1600')
+# Config.set('graphics', 'width', '1600')
 Config.write()
-
-Builder.load_string('''
-<Widget>:
-    canvas.after:
-        Line:
-            rectangle: self.x,self.y,self.width,self.height
-            # Can't figure out line colors lmao
-
-<CustomDropDown>:
-    Button:
-        text: 'My first Item'
-        size_hint_y: None
-        height: 44
-        on_release: root.select('item1')
-    Label:
-        text: 'Unselectable item'
-        size_hint_y: None
-        height: 44
-    Button:
-        text: 'My second Item'
-        size_hint_y: None
-        height: 44
-        on_release: root.select('item2')                   
-<ApWorldLayout@RecycleKVIDsDataViewBehavior+StackLayout>:
-    size_hint_y: None
-    height: 30
-
-    Label:
-        id: world_name
-        text: ' Game'
-        size_hint: None, None
-        size: 300, 30
-        text_size: self.size
-        halign: 'left'
-        valign: 'middle'
-    Label:
-        id: installed
-        text: 'Installed Version'
-        size_hint: None, None
-        size: 150, 30
-    Label:
-        id: available
-        text: 'Newest Available'
-        size_hint: None, None
-        size: 150, 30
-    InfoButton:
-        id: info
-        text: 'Info'
-        size_hint: None, None
-        size: 75, 30
-    InstallButton:
-        id: install
-        text: 'Install'
-        size_hint: None, None
-        size: 75, 30
-    DropBut:
-        id: available_versions
-        size_hint: None, None
-        size: 150, 30
-        background_color: 0,0,0
-        text: 'Install Version...'
-    CheckBox:
-        id: is_installed
-        size_hint: None, None
-        size: 75, 30
-
-
-<PackagesRV>:
-    viewclass: 'ApWorldLayout'
-
-    RecycleBoxLayout:
-        default_size: None, 30
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: 'vertical'
-<MainLayout>:
-    ApWorldLayout:
-        id: header
-    PackagesRV:
-        id: rv        
-    GridLayout:
-        columns: 2
-        rows: 1
-        size_hint_y: None
-        row_default_height: 1
-        Button:
-            id: refresh
-            text: 'Refresh'
-            size_hint_y: None
-        Button:
-            id: autoupdate
-            text: 'Auto-Update'
-            size_hint_y: None
-''')
-from kivy.properties import ListProperty
-class DropBut(Button):
-    options = ListProperty(['test'])
-    foobar = StringProperty()
-    def __init__(self, **kwargs):
-        super(DropBut, self).__init__(**kwargs)
-        
-        self.drop_list = None
-        self.drop_list = DropDown()
-
-        # options = ['1.1.0', '1.1.1', '1.1.1-doors']
-       
-        self.bind(on_release=self.drop_list.open)
-
-        def on_drop_list_select(instance, x):
-            setattr(self, 'text', x)
-        self.drop_list.bind(on_select=on_drop_list_select)
-
-    def on_options(self, instance, value):
-        for i in value:
-            btn = Button(text=i, size_hint_y=None, height=25)
-            btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-           
-            self.drop_list.add_widget(btn)
 
 
 class CustomDropDown(DropDown):
@@ -251,7 +132,7 @@ class RepositoryManager:
                     self.packages_by_id_version[world.id][world.world_version] = world
         print(self.packages_by_id_version)
 
-class ApWorldLayout(BoxLayout):
+class ApWorldLayout(MDBoxLayout):
     show = ObjectProperty(None)
     # text = StringProperty('None')
 
@@ -269,65 +150,6 @@ class ApWorldLayout(BoxLayout):
     #     # add the new obj to this MyObject instance
     #     self.add_widget(new_obj)
 
-class InfoButton(Button):
-    def on_press(self):
-        try:
-            game_id = getattr(self.parent, 'game_id')
-        except:
-            return
-        
-        print(f'The info button <{game_id}> is being pressed')
-    
-
-class InstallButton(Button):
-    def on_press(self):
-        try:
-            game_id = getattr(self.parent, 'game_id')
-        except:
-            return
-        
-        print(f'The install button <{game_id}> is being pressed')
-
-class PackagesRV(RecycleView):
-    def __init__(self, **kwargs):
-        super(PackagesRV, self).__init__(**kwargs)
-        self.data = []
-        self.repositories = None
-
-    def set_repositories(self, repositories):
-        self.repositories = repositories
-        self.data = []
-
-        for world_id in repositories.all_known_package_ids:
-            available_versions = set()
-            world_info = {
-                'game_id': world_id,
-                # 'info.game_id': world_id,
-                'available.text': 'N/A',
-                'install.disabled': True,
-                'available_versions.text': 'N/A'
-            }
-            for world in repositories.packages_by_id_version[world_id].values():
-                # Note, probably we need to use actual "properties" here to get good refresh
-                world_info['world_name.text'] = world.name
-                world_info['available.text'] = str(world.world_version)
-                world_info['install.disabled'] = False
-                available_versions.add(world.world_version)
-                
-            if world_id in repositories.local_packages_by_id:
-                world = repositories.local_packages_by_id[world_id]
-                world_info['world_name.text'] = world.name
-                world_info['installed.text'] = str(world.world_version)
-                available_versions.add(world.world_version)
-                world_info['available_versions.text'] = str(world.world_version)
-            else:
-                world_info['installed.text'] = 'N/A'
-            world_info['available_versions.options'] = list(available_versions)
-            
-            world_info['world_name.text'] = ' ' + world_info['world_name.text']
-            self.data.append(world_info)
-        from Utils import title_sorted
-        self.data = title_sorted(self.data, key=lambda x: x['world_name.text'])
 
 class MainLayout(GridLayout):
 
@@ -335,20 +157,174 @@ class MainLayout(GridLayout):
         super(MainLayout, self).__init__(**kwargs)
         self.cols = 1
 
+from kivymd.uix.datatables import MDDataTable
+from kivymd.uix.screen import MDScreen
+from kivy.metrics import dp
 
+from kivymd.uix.list import OneLineAvatarIconListItem
+from kivymd.uix.list import OneLineAvatarListItem
 
-class WorldManagerApp(App):
+from kivymd.uix.list import OneLineListItem
+
+KV = '''
+<Item>
+    MDRaisedButton:
+        text: root.text
+    ImageLeftWidget:
+        source: root.source
+
+'''
+class Item(OneLineListItem):
+    divider = None
+    # source = StringProperty()
+
+class WorldManagerApp(MDApp):
     def __init__(self, repositories) -> None:
         self.repositories = repositories
         super().__init__()
     
-    def build(self):
-        layout = MainLayout()
+    def get_world_info(self):
+        world_info = []
+        self.world_name_to_id = {}
+        self.available_versions = {}
+        self.descriptions = {}
+        for world_id in repositories.all_known_package_ids:
+            available_versions = set()
+            self.available_versions[world_id] = available_versions
+            world_name = world_id
+            installed_version = 'N/A'
+
+            for world in self.repositories.packages_by_id_version[world_id].values():
+                # Note, probably we need to use actual "properties" here to get good refresh
+                world_name = world.name
+                #world_info['available.text'] = str(world.world_version)
+                available_versions.add(world.world_version)
+                installed_version = world.world_version
+                self.descriptions[world_id] = world.data['metadata']['description']
+                
+            if world_id in self.repositories.local_packages_by_id:
+                world = self.repositories.local_packages_by_id[world_id]
+                world_name = world.name
+                #world_info['installed.text'] = str(world.world_version)
+                available_versions.add(world.world_version)
+                self.descriptions[world_id] = world.data['metadata']['description']
+
+
+            available_versions.add("1.1.0")
+            available_versions.add("1.1.1")
+            available_versions.add("1.2.0")
+            available_versions.add("1.3.0")
+
+
+            # Unfortunate
+            self.world_name_to_id[world_name] = world_id
+            
+            world_info.append([
+                world_name,
+                installed_version,
+                list(available_versions)[-1],
+                'Info/Set Version...',
+            ])
         
-        layout.ids['rv'].set_repositories(self.repositories)
+        return world_info
+    def build(self):
+        self.theme_cls.theme_style = "Dark"
+        self.rows = self.get_world_info()
+        self.data_tables = MDDataTable(
+            use_pagination=False,
+            check=True,
+            column_data=[
+                ("Game", dp(80)),
+                ("Installed Version", dp(30)),
+                ("Newest Available", dp(30)),
+                ("Set Version...", dp(40)),
+            ],
+            row_data=self.rows,
+            sorted_on="Game",
+            sorted_order="ASC",
+            # elevation=200,
+            rows_num=10000,
+        )
+        self.data_tables.bind(on_row_press=self.on_row_press)
+        # self.data_tables.bind(on_check_press=self.on_check_press)
+        screen = MDScreen()
+        screen.add_widget(self.data_tables)
 
-        return layout
+        screen.add_widget(MDRaisedButton(text="Update"))
+        screen.add_widget(MDRaisedButton(text="Install"))
+        screen.add_widget(MDRaisedButton(text="Uninstall"))
 
+        return screen
+    
+    def on_row_press(self, instance_table, instance_row):
+        '''Called when a table row is clicked.'''
+       
+        index = instance_row.index
+        cols_num = len(instance_table.column_data)
+        row_num = int(index/cols_num)
+        col_num = index%cols_num
+
+        cell_row = instance_table.table_data.view_adapter.get_visible_view(row_num*cols_num)
+            
+        # instance_table.background_color = self.theme_cls.primary_light
+        # for id, widget in instance_row.ids.items():
+        #     if id == "label":
+        #         widget.color = self.theme_cls.primary_color
+        
+        # instance_row.add_widget(MDFlatButton(text="test"))
+        #print(instance_table, instance_row, cell_row)
+        #print(instance_row.text)
+        if cols_num - 1 == col_num:
+            # menu_items = [
+            #     {
+            #         "text": f"1.{i}.0",
+            #         "viewclass": "OneLineListItem",
+
+            #         "on_release": lambda x=f"Item {i}": print(x),
+            #     } for i in range(3)
+            # ]
+            # MDDropdownMenu(
+            #     caller=instance_row,
+            #     items=menu_items,             
+            #     width_mult=2,
+            #     opening_time=0,
+    
+            # ).open()
+            from kivymd.uix.dialog import MDDialog
+
+            world_name = cell_row.text
+            world_id = self.world_name_to_id[world_name]
+            available_versions = self.available_versions[world_id]
+            print(available_versions)
+            desc = self.descriptions[world_id].replace('\n','')
+            dialog = MDDialog(
+                    type="simple",
+                    # TODO: type="custom", would let us make our own buttons
+
+                    text=f"[b]{cell_row.text}[/b]\n\n{desc}",
+                    items = [
+                       OneLineAvatarIconListItem(text=f'Install {version}') for version in available_versions
+                    ],
+                    buttons=[
+                        MDRaisedButton(
+                            text="Close",
+                            on_release=lambda x: dialog.dismiss(force=True),
+                        ),
+                    ],
+                    on_release=lambda x: print(x)
+                )
+            # dialog.add_widget(
+            #         MDRaisedButton(
+            #             text="v1.1.0",
+            #             on_release=lambda x: dialog.dismiss(force=True))
+            #     )
+            dialog.open()
+        # if cell_row.ids.check.state == 'normal':
+        #     instance_table.table_data.select_all('normal')
+        #     cell_row.ids.check.state = 'down'
+        # else:
+        #     cell_row.ids.check.state = 'normal'
+        # instance_table.table_data.on_mouse_select(instance_row)
 
 import asyncio
 
