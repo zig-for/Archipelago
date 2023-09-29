@@ -1,20 +1,23 @@
 from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty
-from kivymd.uix.boxlayout import MDBoxLayout
+# from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.gridlayout import GridLayout
 from kivy.config import Config
 from kivy.uix.dropdown import DropDown
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
-
+from kivymd.uix.boxlayout import MDBoxLayout
 from collections import defaultdict
 from dataclasses import dataclass
+import hashlib
 import requests
 import json
 import os
+import shutil
 import typing
 import zipfile
+from Utils import title_sorted
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 # Config.set('graphics', 'width', '1600')
 Config.write()
@@ -47,10 +50,9 @@ class WorldSource(Enum):
 @dataclass
 class ApWorldMetadata:
     source: WorldSource
-    source_url: typing.Optional[str]
     data: dict[str, typing.Any]
+    is_in_cache = False
     # source: WorldSource
-
     # TODO: .validate()
 
     @property
@@ -65,13 +67,16 @@ class ApWorldMetadata:
     def world_version(self) -> str:
         return self.data['metadata']['world_version']
 
+    @property
+    def source_url(self) -> str:
+        return self.data['source_url']
 
 class Repository:
-    def __init__(self, world_source: WorldSource, path: str) -> None:
+    def __init__(self, world_source: WorldSource, path: str, apworld_cache_path) -> None:
         self.path = path
         self.index_json = None
         self.world_source = world_source
-
+        self.apworld_cache_path = apworld_cache_path
         self.worlds: typing.List[ApWorldMetadata] = []
 
     def refresh(self):
@@ -83,27 +88,50 @@ class Repository:
             self.index_json = response.json()
 
             self.worlds = [
-                ApWorldMetadata(self.world_source, self.path, world) for world in self.index_json['worlds']
+                ApWorldMetadata(self.world_source, world) for world in self.index_json['worlds']
             ]
+            for world in self.worlds:
+                world.data['source_url'] = self.path
+                
         elif self.world_source == WorldSource.LOCAL:
             self.worlds = []
-            print(self.path)
             for file in os.listdir(self.path):
+                path = os.path.join(self.path, file)
+                
                 try:
-                    metadata_str = zipfile.ZipFile(os.path.join(self.path, file)).read('metadata.json')
+                    with open(path, 'rb') as f:
+                        hash_sha256 = hashlib.sha256(f.read()).hexdigest()
+                    metadata_str = zipfile.ZipFile(path).read('metadata.json')
                     metadata = json.loads(metadata_str)
                     metadata = {
-                        'metadata': metadata
+                        'metadata': metadata,
+                        'hash_sha256': hash_sha256,
+                        'size': os.path.getsize(path),
+                        'source_url': self.path,
                     }
-                    self.worlds.append(ApWorldMetadata(self.world_source, self.path, metadata))
-                except:
+                    world = ApWorldMetadata(self.world_source, metadata)
+                    self.worlds.append(world)
+                except Exception as e:
                     continue
-        
-                # ApWorldMetadata(self.world_source, self.path, world) for world in self.index_json['worlds']
-            
+                
+                cache_dir = os.path.join(self.apworld_cache_path, hash_sha256)
+                if not os.path.exists(cache_dir):
+                    os.mkdir(cache_dir)
+                world_cache_path = os.path.join(cache_dir, file)
+                json_cache_path = os.path.join(cache_dir, 'metadata.json')
+                if not os.path.exists(world_cache_path) or not os.path.exists(json_cache_path):
+                    json.dump(metadata, open(json_cache_path, 'w'))
+                    shutil.copyfile(path, world_cache_path)
+                    print(f"Copied {file} to cache")
+                    # TODO: Log this
+                world.is_in_cache = True
+                
         else:
             assert False
+        
         self.worlds.sort(key = lambda x: x.name)
+
+from Utils import cache_path
 
 class RepositoryManager:
     def __init__(self) -> None:
@@ -111,12 +139,14 @@ class RepositoryManager:
         self.repositories: typing.List[Repository] = []
         self.local_packages_by_id: typing.Dict[str, ApWorldMetadata] = {}
         self.packages_by_id_version: typing.DefaultDict[str, typing.Dict[str, ApWorldMetadata]] = defaultdict(dict)
+        self.apworld_cache_path = cache_path("apworlds")
+        os.makedirs(self.apworld_cache_path, exist_ok=True)
 
     def add_local_dir(self, path: str):
-        self.repositories.append(Repository(WorldSource.LOCAL, path))
+        self.repositories.append(Repository(WorldSource.LOCAL, path, self.apworld_cache_path))
         
     def add_remote_repository(self, url: str, blessed=False) -> None:
-        self.repositories.append(Repository(WorldSource.REMOTE_BLESSED if blessed else WorldSource.REMOTE, url))
+        self.repositories.append(Repository(WorldSource.REMOTE_BLESSED if blessed else WorldSource.REMOTE, url, self.apworld_cache_path))
 
     def refresh(self):
         self.packages_by_id_version.clear()
@@ -130,25 +160,8 @@ class RepositoryManager:
                 for world in repo.worlds:
                     self.all_known_package_ids.add(world.id)
                     self.packages_by_id_version[world.id][world.world_version] = world
-        print(self.packages_by_id_version)
+        
 
-class ApWorldLayout(MDBoxLayout):
-    show = ObjectProperty(None)
-    # text = StringProperty('None')
-
-    # # Do I need this?
-    # def on_show(self, instance, new_obj):
-    #     # handle the ObjectProperty named show
-    #     if new_obj.parent:
-    #         # remove this obj from any other MyObject instance
-    #         new_obj.parent.remove_widget(new_obj)
-    #     for ch in self.children:
-    #         if isinstance(ch, Image):
-    #             # remove any previous obj instances
-    #             self.remove_widget(ch)
-    #             break
-    #     # add the new obj to this MyObject instance
-    #     self.add_widget(new_obj)
 
 
 class MainLayout(GridLayout):
@@ -176,7 +189,7 @@ KV = '''
 '''
 class Item(OneLineListItem):
     divider = None
-    # source = StringProperty()
+    source = StringProperty()
 
 class WorldManagerApp(MDApp):
     def __init__(self, repositories) -> None:
@@ -188,34 +201,29 @@ class WorldManagerApp(MDApp):
         self.world_name_to_id = {}
         self.available_versions = {}
         self.descriptions = {}
+        self.installed_version = {}
         for world_id in repositories.all_known_package_ids:
-            available_versions = set()
+            available_versions = {}
             self.available_versions[world_id] = available_versions
             world_name = world_id
-            installed_version = 'N/A'
 
             for world in self.repositories.packages_by_id_version[world_id].values():
                 # Note, probably we need to use actual "properties" here to get good refresh
                 world_name = world.name
                 #world_info['available.text'] = str(world.world_version)
-                available_versions.add(world.world_version)
-                installed_version = world.world_version
+                available_versions[world.world_version] = world
                 self.descriptions[world_id] = world.data['metadata']['description']
                 
             if world_id in self.repositories.local_packages_by_id:
                 world = self.repositories.local_packages_by_id[world_id]
                 world_name = world.name
                 #world_info['installed.text'] = str(world.world_version)
-                available_versions.add(world.world_version)
+                available_versions[world.world_version] = world
                 self.descriptions[world_id] = world.data['metadata']['description']
-
-
-            available_versions.add("1.1.0")
-            available_versions.add("1.1.1")
-            available_versions.add("1.2.0")
-            available_versions.add("1.3.0")
-
-
+                self.installed_version[world_id] = world.world_version
+            
+            installed_version = self.installed_version.get(world_id, 'N/A')
+            
             # Unfortunate
             self.world_name_to_id[world_name] = world_id
             
@@ -225,8 +233,14 @@ class WorldManagerApp(MDApp):
                 list(available_versions)[-1],
                 'Info/Set Version...',
             ])
-        
+
+        world_info = title_sorted(world_info, key=lambda x: x[0])
         return world_info
+    
+    def refresh(self):
+        self.repositories.refresh()
+        self.data_tables.update_row_data(self.data_tables, self.get_world_info())
+
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.rows = self.get_world_info()
@@ -248,11 +262,19 @@ class WorldManagerApp(MDApp):
         self.data_tables.bind(on_row_press=self.on_row_press)
         # self.data_tables.bind(on_check_press=self.on_check_press)
         screen = MDScreen()
-        screen.add_widget(self.data_tables)
+        layout = MDBoxLayout(orientation='vertical')
+        header = MDBoxLayout(orientation='horizontal', adaptive_height=True)
+        header.add_widget(MDRaisedButton(text="Refresh", on_release=lambda x: self.refresh()))
 
-        screen.add_widget(MDRaisedButton(text="Update"))
-        screen.add_widget(MDRaisedButton(text="Install"))
-        screen.add_widget(MDRaisedButton(text="Uninstall"))
+        footer = MDBoxLayout(orientation='horizontal', adaptive_height=True)
+
+        footer.add_widget(MDRaisedButton(text="Update"))
+        footer.add_widget(MDRaisedButton(text="Install"))
+        footer.add_widget(MDRaisedButton(text="Uninstall"))
+        layout.add_widget(header)
+        layout.add_widget(self.data_tables)
+        layout.add_widget(footer)
+        screen.add_widget(layout)
 
         return screen
     
@@ -291,19 +313,25 @@ class WorldManagerApp(MDApp):
     
             # ).open()
             from kivymd.uix.dialog import MDDialog
-
+            from inspect import cleandoc
             world_name = cell_row.text
             world_id = self.world_name_to_id[world_name]
             available_versions = self.available_versions[world_id]
-            print(available_versions)
-            desc = self.descriptions[world_id].replace('\n','')
+            
+            install_text = [
+                f'Install {version}' if version != self.installed_version.get(world_id, 'N/A') else f'Install {version} (Installed)' for version in available_versions
+            ]
+            disabled = [
+                version == self.installed_version.get(world_id, 'N/A') for version in available_versions
+            ]
+            desc = cleandoc(self.descriptions[world_id]).replace('\n',' ')
             dialog = MDDialog(
                     type="simple",
                     # TODO: type="custom", would let us make our own buttons
 
                     text=f"[b]{cell_row.text}[/b]\n\n{desc}",
                     items = [
-                       OneLineAvatarIconListItem(text=f'Install {version}') for version in available_versions
+                       OneLineAvatarIconListItem(text=t, disabled=disabled[i]) for i, t in enumerate(install_text)
                     ],
                     buttons=[
                         MDRaisedButton(
@@ -333,12 +361,14 @@ if __name__ == '__main__':
     local_dir = './worlds_test_dir'
 
     repositories = RepositoryManager()
-    repositories.add_remote_repository('http://localhost:8080/index.json')
     repositories.add_local_dir(local_dir)
+    repositories.add_remote_repository('http://localhost:8080/index.json')
+    # Comment this out to test refresh from nothing
     repositories.refresh()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     app = WorldManagerApp(repositories)
+    
     loop.run_until_complete(app.async_run())
     loop.close()
     
