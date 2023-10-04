@@ -68,22 +68,23 @@ class WorldSetup:
         return entrances
 
     def randomize(self, settings, rnd):
+        self.rnd = rnd
         if settings.overworld == "dungeondive":
             self.entrance_mapping = {"d%d" % (n): "d%d" % (n) for n in range(9)}
-        if settings.randomstartlocation and settings.entranceshuffle == "none":
-            start_location = start_locations[rnd.randrange(len(start_locations))]
-            if start_location != "start_house":
-                self.entrance_mapping[start_location] = "start_house"
-                self.entrance_mapping["start_house"] = start_location
+        # if settings.randomstartlocation and settings.entranceshuffle == "none":
+        #     start_location = start_locations[rnd.randrange(len(start_locations))]
+        #     if start_location != "start_house":
+        #         self.entrance_mapping[start_location] = "start_house"
+        #         self.entrance_mapping["start_house"] = start_location
         
-        entrances = self.getEntrancePool(settings)
-        for entrance in entrances.copy():
-            self.entrance_mapping[entrance] = entrances.pop(rnd.randrange(len(entrances)))
+        # # entrances = self.getEntrancePool(settings)
+        # for entrance in entrances.copy():
+        #     self.entrance_mapping[entrance] = entrances.pop(rnd.randrange(len(entrances)))
 
-        # Shuffle connectors among themselves
-        entrances = self.getEntrancePool(settings, connectorsOnly=True)
-        for entrance in entrances.copy():
-            self.entrance_mapping[entrance] = entrances.pop(rnd.randrange(len(entrances)))
+        # # Shuffle connectors among themselves
+        # entrances = self.getEntrancePool(settings, connectorsOnly=True)
+        # for entrance in entrances.copy():
+        #     self.entrance_mapping[entrance] = entrances.pop(rnd.randrange(len(entrances)))
 
         if settings.boss != "default":
             values = list(range(9))

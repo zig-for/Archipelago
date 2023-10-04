@@ -29,6 +29,8 @@ class Logic:
         else:
             world = overworld.World(configuration_options, world_setup, r)
 
+        self.dungeons = []
+
         if configuration_options.overworld == "nodungeons":
             world.updateIndoorLocation("d1", dungeon1.NoDungeon1(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d2", dungeon2.NoDungeon2(configuration_options, world_setup, r).entrance)
@@ -40,7 +42,11 @@ class Logic:
             world.updateIndoorLocation("d8", dungeon8.NoDungeon8(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d0", dungeonColor.NoDungeonColor(configuration_options, world_setup, r).entrance)
         elif configuration_options.overworld != "random":
-            world.updateIndoorLocation("d1", dungeon1.Dungeon1(configuration_options, world_setup, r).entrance)
+            d1 = dungeon1.Dungeon1(configuration_options, world_setup, r)
+            d1.randomize(world_setup.rnd, d1.unlink_and_return_rooms())
+            d1.finalize()
+            self.dungeons.append(d1)
+            world.updateIndoorLocation("d1", d1.entrance)
             world.updateIndoorLocation("d2", dungeon2.Dungeon2(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d3", dungeon3.Dungeon3(configuration_options, world_setup, r).entrance)
             world.updateIndoorLocation("d4", dungeon4.Dungeon4(configuration_options, world_setup, r).entrance)
@@ -133,152 +139,3 @@ class Logic:
             self.__recursiveFindAll(connection)
         for connection, requirement in location.gated_connections:
             self.__recursiveFindAll(connection)
-
-
-class MultiworldLogic:
-    def __init__(self, settings, rnd=None, *, world_setups=None):
-        assert rnd or world_setups
-        self.worlds = []
-        self.start = Location()
-        self.location_list = [self.start]
-        self.iteminfo_list = []
-
-        for n in range(settings.multiworld):
-            options = settings.multiworld_settings[n]
-            world = None
-            if world_setups:
-                world = Logic(options, world_setup=world_setups[n])
-            else:
-                for cnt in range(1000):  # Try the world setup in case entrance randomization generates unsolvable logic
-                    world_setup = WorldSetup()
-                    world_setup.randomize(options, rnd)
-                    world = Logic(options, world_setup=world_setup)
-                    if options.entranceshuffle not in ("advanced", "expert", "insanity") or len(world.iteminfo_list) == sum(itempool.ItemPool(options, rnd).toDict().values()):
-                        break
-
-            for ii in world.iteminfo_list:
-                ii.world = n
-
-            req_done_set = set()
-            for loc in world.location_list:
-                loc.simple_connections = [(target, addWorldIdToRequirements(req_done_set, n, req)) for target, req in loc.simple_connections]
-                loc.gated_connections = [(target, addWorldIdToRequirements(req_done_set, n, req)) for target, req in loc.gated_connections]
-                loc.items = [MultiworldItemInfoWrapper(n, options, ii) for ii in loc.items]
-                self.iteminfo_list += loc.items
-
-            self.worlds.append(world)
-            self.start.simple_connections += world.start.simple_connections
-            self.start.gated_connections += world.start.gated_connections
-            self.start.items += world.start.items
-            world.start.items.clear()
-            self.location_list += world.location_list
-
-        self.entranceMapping = None
-
-
-class MultiworldMetadataWrapper:
-    def __init__(self, world, metadata):
-        self.world = world
-        self.metadata = metadata
-
-    @property
-    def name(self):
-        return self.metadata.name
-
-    @property
-    def area(self):
-        return "P%d %s" % (self.world + 1, self.metadata.area)
-
-
-class MultiworldItemInfoWrapper:
-    def __init__(self, world, configuration_options, target):
-        self.world = world
-        self.world_count = configuration_options.multiworld
-        self.target = target
-        self.dungeon_items = configuration_options.dungeon_items
-        self.MULTIWORLD_OPTIONS = None
-        self.item = None
-
-    @property
-    def nameId(self):
-        return self.target.nameId
-
-    @property
-    def forced_item(self):
-        if self.target.forced_item is None:
-            return None
-        if "_W" in self.target.forced_item:
-            return self.target.forced_item
-        return "%s_W%d" % (self.target.forced_item, self.world)
-
-    @property
-    def room(self):
-        return self.target.room
-
-    @property
-    def metadata(self):
-        return MultiworldMetadataWrapper(self.world, self.target.metadata)
-
-    @property
-    def MULTIWORLD(self):
-        return self.target.MULTIWORLD
-
-    def read(self, rom):
-        world = rom.banks[0x3E][0x3300 + self.target.room] if self.target.MULTIWORLD else self.world
-        return "%s_W%d" % (self.target.read(rom), world)
-
-    def getOptions(self):
-        if self.MULTIWORLD_OPTIONS is None:
-            options = self.target.getOptions()
-            if self.target.MULTIWORLD and len(options) > 1:
-                self.MULTIWORLD_OPTIONS = []
-                for n in range(self.world_count):
-                    self.MULTIWORLD_OPTIONS += ["%s_W%d" % (t, n) for t in options if n == self.world or self.canMultiworld(t)]
-            else:
-                self.MULTIWORLD_OPTIONS = ["%s_W%d" % (t, self.world) for t in options]
-        return self.MULTIWORLD_OPTIONS
-
-    def patch(self, rom, option):
-        idx = option.rfind("_W")
-        world = int(option[idx+2:])
-        option = option[:idx]
-        if not self.target.MULTIWORLD:
-            assert self.world == world
-            self.target.patch(rom, option)
-        else:
-            self.target.patch(rom, option, multiworld=world)
-
-    # Return true if the item is allowed to be placed in any world, or false if it is
-    # world specific for this check.
-    def canMultiworld(self, option):
-        if self.dungeon_items in {'', 'smallkeys'}:
-            if option.startswith("MAP"):
-                return False
-            if option.startswith("COMPASS"):
-                return False
-            if option.startswith("STONE_BEAK"):
-                return False
-        if self.dungeon_items in {'', 'localkeys'}:
-            if option.startswith("KEY"):
-                return False
-        if self.dungeon_items in {'', 'localkeys', 'localnightmarekey', 'smallkeys'}:
-            if option.startswith("NIGHTMARE_KEY"):
-                return False
-        return True
-
-    @property
-    def location(self):
-        return self.target.location
-
-    def __repr__(self):
-        return "W%d:%s" % (self.world, repr(self.target))
-
-
-def addWorldIdToRequirements(req_done_set, world, req):
-    if req is None:
-        return None
-    if isinstance(req, str):
-        return "%s_W%d" % (req, world)
-    if req in req_done_set:
-        return req
-    return req.copyWithModifiedItemNames(lambda item: "%s_W%d" % (item, world))

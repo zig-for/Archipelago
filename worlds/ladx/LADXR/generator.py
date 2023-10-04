@@ -59,6 +59,8 @@ from .patches.aesthetics import rgb_to_bin, bin_to_rgb
 
 from .locations.keyLocation import KeyLocation
 
+from .patches.dungeonshuffle import patch_dungeon_logic
+
 from BaseClasses import ItemClassification
 from ..Locations import LinksAwakeningLocation
 from ..Options import TrendyGame, Palette, MusicChangeCondition
@@ -115,6 +117,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
     assembler.const("HARD_MODE", 1 if settings.hardmode != "none" else 0)
 
     patches.core.cleanup(rom)
+    patches.core.fixD7exit(rom)
     patches.save.singleSaveSlot(rom)
     patches.phone.patchPhone(rom)
     patches.photographer.fixPhotographer(rom)
@@ -280,6 +283,8 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
         return hint
 
     hints.addHints(rom, rnd, gen_hint)
+
+    patch_dungeon_logic(rom, logic.dungeons)
 
     if world_setup.goal == "raft":
         patches.goal.setRaftGoal(rom)
