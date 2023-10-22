@@ -56,13 +56,10 @@ from .patches import bank34
 from .patches.vwf import patch_vwf
 from . import hints
 
-<<<<<<< HEAD
 from .patches import bank34
 from .utils import formatText
 from ..Options import TrendyGame, Palette
 from .roomEditor import RoomEditor, Object
-=======
->>>>>>> zig/ladx/vwf
 from .patches.aesthetics import rgb_to_bin, bin_to_rgb
 
 from .locations.keyLocation import KeyLocation
