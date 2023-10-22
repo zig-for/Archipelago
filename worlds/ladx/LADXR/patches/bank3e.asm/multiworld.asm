@@ -73,6 +73,10 @@ MainLoop:
     ; Paste the player name
     ld  a, [wLinkGiveItemFrom]
     call MessageAddPlayerName
+#IF VWF
+    ; Add newline
+    call AddVWFSuffix
+#ENDIF
     ld   a, $C9
     ; hl = $wLinkStatusBits
     ld   hl, wLinkStatusBits
@@ -353,3 +357,10 @@ RandomTeleportPositions:
     db $55, $55, $55, $55, $46, $55, $55, $56, $55, $55, $55, $54, $55, $45, $55, $55
     db $55, $55, $54, $55, $55, $55, $65, $55, $55, $46, $55, $55, $56, $55, $55, $55
     db $55, $55, $54, $55, $55, $55, $45, $36, $53, $51, $57, $53, $56, $54, $45, $46
+
+AddVWFSuffix:
+    ld a, 8
+    ld  [de], a
+    inc de
+    ld a, $ff
+    ld [de], a

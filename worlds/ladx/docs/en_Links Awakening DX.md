@@ -58,6 +58,9 @@ The following sprite sheets have been included with permission of their respecti
 
 Title screen graphics by toomanyteeth✨ (https://instagram.com/toomanyyyteeth)
 
+Variable Width Font adapted from code and graphics by Toruzz (https://twitter.com/toruzz)
+(Used under the "you can do whatever you want with it" license).
+
 ## Some tips from LADXR...
 
 <h3>Locations</h3>
