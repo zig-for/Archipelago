@@ -29,7 +29,7 @@ from .Options import links_awakening_options, DungeonItemShuffle
 
 from .Rom import LADXDeltaPatch
 
-DEVELOPER_MODE = False
+DEVELOPER_MODE = True
 
 
 class LinksAwakeningSettings(settings.Group):
