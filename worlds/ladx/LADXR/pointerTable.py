@@ -165,6 +165,9 @@ class PointerTable:
         else:
             while bank[pointer] not in self.END_OF_DATA:
                 pointer += 1
+            if len(self.END_OF_DATA) == 2:
+                while bank[pointer] in self.END_OF_DATA:
+                    pointer += 1
             pointer += 1
         self._addStorage(bank_nr, start, pointer)
         return bank[start:pointer]

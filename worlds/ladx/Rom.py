@@ -24,9 +24,9 @@ def get_base_rom_bytes(file_name: str = "") -> bytes:
 
         basemd5 = hashlib.md5()
         basemd5.update(base_rom_bytes)
-        if LADX_HASH != basemd5.hexdigest():
-            raise Exception('Supplied Base Rom does not match known MD5 for USA release. '
-                            'Get the correct game and version, then dump it')
+#        if LADX_HASH != basemd5.hexdigest():
+#            raise Exception('Supplied Base Rom does not match known MD5 for USA release. '
+#                            'Get the correct game and version, then dump it')
         get_base_rom_bytes.base_rom_bytes = base_rom_bytes
     return base_rom_bytes
 

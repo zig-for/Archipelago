@@ -421,12 +421,14 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
         if args.spoiler:
             world.spoiler.to_file(os.path.join(temp_dir, '%s_Spoiler.txt' % outfilebase))
 
-        zipfilename = output_path(f"AP_{world.seed_name}.zip")
+        zipfilename = output_path(f"AP_{world.seed_name}")
         logger.info(f"Creating final archive at {zipfilename}")
-        with zipfile.ZipFile(zipfilename, mode="w", compression=zipfile.ZIP_DEFLATED,
-                             compresslevel=9) as zf:
-            for file in os.scandir(temp_dir):
-                zf.write(file.path, arcname=file.name)
+        # with zipfile.ZipFile(zipfilename, mode="w", compression=zipfile.ZIP_DEFLATED,
+        #                      compresslevel=9) as zf:
+        #     for file in os.scandir(temp_dir):
+        #         zf.write(file.path, arcname=file.name)
+        import shutil
+        shutil.copytree(temp_dir, zipfilename, dirs_exist_ok=True)
 
     logger.info('Done. Enjoy. Total Time: %s', time.perf_counter() - start)
     return world

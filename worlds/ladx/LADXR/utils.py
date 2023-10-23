@@ -168,6 +168,7 @@ def formatText(instr: str, *, center: bool = False, ask: Optional[str] = None) -
             result_line += word
         if result_line:
             result += padLine(result_line)
+    result = s
     if ask is not None:
         askbytes = ask.encode("ascii")
         result = result.rstrip()

@@ -15,8 +15,10 @@ class Texts(PointerTable):
             "banks_bank": 0x1C,
             "expand_to_end_of_bank": {0x09}
         })
-
-
+        for d in self:
+            print(d)
+            
+        #print(self.storage)
 class Entities(PointerTable):
     def __init__(self, rom):
         super().__init__(rom, {
