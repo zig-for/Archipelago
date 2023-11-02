@@ -68,12 +68,22 @@ class OOTRegion(Region):
             stored_age = state.age[self.player]
             state._oot_update_age_reachable_regions(self.player)
             state.age[self.player] = stored_age
-        if state.age[self.player] == 'child': 
-            return self in state.child_reachable_regions[self.player]
-        elif state.age[self.player] == 'adult': 
-            return self in state.adult_reachable_regions[self.player]
-        else: # we don't care about age
+
+        if state.has('Time Travel', self.player):
             return self in state.child_reachable_regions[self.player] or self in state.adult_reachable_regions[self.player]
+        
+        age = state.age[self.player]
+
+        if state.age[self.player] == None:
+            age = self.multiworld.starting_age[self.player].current_key
+            
+        if age != self.multiworld.starting_age[self.player].current_key:
+            return False
+
+        if age == 'child': 
+            return self in state.child_reachable_regions[self.player]
+        elif age == 'adult': 
+            return self in state.adult_reachable_regions[self.player]
 
     def set_hint_data(self, hint):
         if self.dungeon:
