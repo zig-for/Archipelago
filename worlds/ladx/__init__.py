@@ -26,7 +26,7 @@ from .Locations import (LinksAwakeningLocation, LinksAwakeningRegion,
 from .Options import DungeonItemShuffle, links_awakening_options
 from .Rom import LADXDeltaPatch
 
-DEVELOPER_MODE = True
+DEVELOPER_MODE = False
 
 
 class LinksAwakeningSettings(settings.Group):
