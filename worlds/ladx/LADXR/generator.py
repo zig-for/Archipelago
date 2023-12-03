@@ -1,9 +1,11 @@
 import binascii
 import importlib.util
 import importlib.machinery
+import json
 import os
 import pkgutil
 from collections import defaultdict
+from pathlib import Path
 
 from .romTables import ROMWithTables
 from . import assembler
@@ -85,7 +87,7 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
         pymod.prePatch(rom)
 
     if settings.gfxmod:
-        patches.aesthetics.gfxMod(rom, os.path.join("data", "sprites", "ladx", settings.gfxmod))
+        patches.aesthetics.gfxMod(rom, settings.gfxmod)
 
     item_list = [item for item in logic.iteminfo_list if not isinstance(item, KeyLocation)]
 
@@ -402,9 +404,15 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
 
     if ap_settings["warp_improvements"]:
         patches.core.addWarpImprovements(rom, ap_settings["additional_warp_points"])
+    link_palette = None
+    if settings.gfxmod:
+        palette_file = Path(settings.gfxmod).with_suffix(".palette")
+        if os.path.exists(palette_file):
+            link_palette = json.load(open(palette_file))
+   
 
     palette = ap_settings["palette"]
-    if palette != Palette.option_normal:
+    if palette != Palette.option_normal or link_palette:
         ranges = {
             # Object palettes
             # Overworld palettes
@@ -432,7 +440,11 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
             for address in range(start, end, 2):
                 packed = (rom.banks[bank][address + 1] << 8) | rom.banks[bank][address]
                 r,g,b = bin_to_rgb(packed)
-
+                
+                if (address == 0x1518 + 6 or address == 0x1518 + 6 + 16 or address == 0x151A + 16 + 8 + 4) and link_palette:
+                    r = link_palette[0]
+                    g = link_palette[1]
+                    b = link_palette[2]
                 # 1 bit
                 if palette == Palette.option_1bit:
                     r &= 0b10000

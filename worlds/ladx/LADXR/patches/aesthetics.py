@@ -16,7 +16,7 @@ def imageTo2bpp(filename):
     ))
     img = PIL.Image.open(filename)
     img = img.quantize(colors=4, palette=baseimg)
-    print (f"Palette: {img.getpalette()}")
+    #print (f"Palette: {img.getpalette()}")
     assert (img.size[0] % 8) == 0
     tileheight = 8 if img.size[1] == 8 else 16
     assert (img.size[1] % tileheight) == 0
