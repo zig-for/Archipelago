@@ -2,7 +2,15 @@ from ..assembler import ASM
 import os
 import pkgutil
 
-def updateEndScreen(rom):
+default_pal = [0x00, 0x00,0x35, 0xad,0x52, 0x94,0x7F, 0xFF]
+
+def updateEndScreen(rom, cat="cats/little"):
+    palette = default_pal
+    try:
+        palette = pkgutil.get_data(__name__, cat + ".pal")
+    except:
+        pass
+    palette = [hex(i).replace("0x", "$") for i in palette]
     # Call our custom data loader in bank 3F
     rom.patch(0x00, 0x391D, ASM("""
         ld   a, $20
@@ -15,7 +23,7 @@ def updateEndScreen(rom):
     """))
     rom.patch(0x17, 0x2FCE, "B170", "D070") # Ignore the final tile data load
     
-    rom.patch(0x3F, 0x0200, None, ASM("""
+    rom.patch(0x3F, 0x0200, None, ASM(f"""
     ; Disable LCD
     xor a
     ldh  [$40], a
@@ -95,24 +103,24 @@ loadLoop2:
 
     ; Load palette
     ld   hl, $DC10
-    ld   a, $00
+    ld   a, {palette[1]}
     ldi  [hl], a
-    ld   a, $00
-    ldi  [hl], a
-
-    ld   a, $ad
-    ldi  [hl], a
-    ld   a, $35
+    ld   a, {palette[0]}
     ldi  [hl], a
 
-    ld   a, $94
+    ld   a, {palette[3]}
     ldi  [hl], a
-    ld   a, $52
+    ld   a, {palette[2]}
     ldi  [hl], a
 
-    ld   a, $FF
+    ld   a, {palette[5]}
     ldi  [hl], a
-    ld   a, $7F
+    ld   a, {palette[4]}
+    ldi  [hl], a
+
+    ld   a, {palette[7]}
+    ldi  [hl], a
+    ld   a, {palette[6]}
     ldi  [hl], a
 
     ld   a, $00
@@ -134,6 +142,6 @@ loadLoop2:
     """))
     
     addr = 0x1000
-    data = pkgutil.get_data(__name__, "nyan.bin")    
+    data = pkgutil.get_data(__name__, cat + ".bin")    
     rom.banks[0x3F][addr : addr + len(data)] = data
 
