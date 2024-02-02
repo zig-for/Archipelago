@@ -4,7 +4,7 @@ import pkgutil
 
 default_pal = [0x00, 0x00,0x35, 0xad,0x52, 0x94,0x7F, 0xFF]
 
-def updateEndScreen(rom, cat="cats/testfluffyincolor"):
+def updateEndScreen(rom, cat="cats/little"):
     palette = default_pal
     try:
         palette = pkgutil.get_data(__name__, cat + ".pal")

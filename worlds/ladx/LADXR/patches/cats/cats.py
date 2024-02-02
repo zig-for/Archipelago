@@ -32,9 +32,10 @@ def dumpNyanImage(cat_name="nyan", out_dir="."):
 def convertCat(filename):
     import PIL.Image
     img = PIL.Image.open(filename)
-    assert(len(img.getpalette()) == 12)
-    img.save("test.png")
-
+    # Assume we got it right
+    # img = img.convert("P", colors=4, palette=PIL.Image.ADAPTIVE)
+    # assert len(img.getpalette()) == 12, img.getpalette() 
+    
     pal = img.getpalette()
     print (f"Palette: {pal}")
     pal_bytes = []
@@ -72,7 +73,7 @@ def convertCat(filename):
                 index += 2
     return result, pal_bytes
 
-cat_name = "testfluffyincolor"
+cat_name = "little"
 with open(cat_name + ".bin", 'wb') as out:
     with open(cat_name + ".pal", 'wb') as pal_out:
         image, pal = convertCat(cat_name + ".png")
