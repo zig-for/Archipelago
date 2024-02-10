@@ -410,7 +410,20 @@ class AdditionalWarpPoints(DefaultOffToggle):
     [On] (requires warp improvements) Adds a warp point at Crazy Tracy's house (the Mambo teleport spot) and Eagle's Tower
     [Off] No change
     """
-     
+
+
+class MabeVillageObstacle(Choice):
+    option_rocks = 0
+    option_ground = 1
+    option_water = 2
+    option_bush = 3
+    option_grass = 4
+    option_lava = 5
+    option_crystals = 6
+    option_dash_rock = 7
+    option_solid = 8
+    option_statue = 9
+    option_pit = 10
 
 links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'logic': Logic,
@@ -447,5 +460,5 @@ links_awakening_options: typing.Dict[str, typing.Type[Option]] = {
     'music_change_condition': MusicChangeCondition,
     'nag_messages': NagMessages,
     'ap_title_screen': APTitleScreen,
-    
+    'mabe_village_obstacle': MabeVillageObstacle,
 }

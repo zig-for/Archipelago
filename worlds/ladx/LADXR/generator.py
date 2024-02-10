@@ -338,7 +338,21 @@ def generateRom(args, settings, ap_settings, auth, seed_name, logic, rnd=None, m
             for bucket_idx, (orig_idx, data) in enumerate(bucket):
                 rom.texts[shuffled[bucket_idx][0]] = data
     
+    for i in range(0, 0x100):
+        r = RoomEditor(rom, i)
+        for o in r.objects:
+            assert o.type_id != 0x88,(hex(i), r.objects)
 
+    mabe_edit = RoomEditor(rom, 0x094)
+    
+    for i, o in enumerate(mabe_edit.objects):
+        if o.y == 1 and o.x == 5:
+            mabe_edit.objects[i].type_id = 0x4F
+            #assert False, "This is a test to see if the room editor is working"
+    mabe_edit.store(rom)
+
+    rom.banks[0x2][0x3340] = 0x00
+    rom.banks[0x2][0x3341] = 0x00
     if ap_settings["trendy_game"] != TrendyGame.option_normal:
 
         # TODO: if 0 or 4, 5, remove inaccurate conveyor tiles
