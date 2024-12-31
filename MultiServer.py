@@ -1054,21 +1054,29 @@ def get_remaining(ctx: Context, team: int, slot: int) -> typing.List[typing.Tupl
 def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem):
     for target in ctx.slot_set(target_slot):
         for item in items:
-            # TODO: not if target_slot == target
-            item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
-            # Get the new game
-            magic_game = ctx.slot_info[target].game 
-            # Translate the item
-            magic_item_id = ctx.item_names_for_game(magic_game).get(item_name)
+            mapped_item = item
+            if ctx.slot_info[target_slot].group_members and target_slot != target:
+                print(ctx.slot_info[target_slot].item_mapping)
+                # This should always be an item link item name
+                item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
+                # Reverse lookup the item name
+                mapped_item_name = item_name
+                for k, v in ctx.slot_info[target].item_mapping.items():
+                    if v == item_name:
+                        mapped_item_name = k
+                        break
+                print(item_name, mapped_item_name)
+                # Get the new game
+                mapped_game = ctx.slot_info[target].game 
+                # Translate the item
+                mapped_item_id = ctx.item_names_for_game(mapped_game).get(mapped_item_name)
 
-            if magic_item_id:
-                magic_item = NetworkItem(magic_item_id, item.location, item.player, item.flags)
-            else:
-                magic_item = item
+                if mapped_item_id:
+                    mapped_item = NetworkItem(mapped_item_id, item.location, item.player, item.flags)
+                
             if item.player != target_slot:
-                get_received_items(ctx, team, target, False).append(magic_item)
-                                # get the original item name
-            get_received_items(ctx, team, target, True).append(item)
+                get_received_items(ctx, team, target, False).append(mapped_item)
+            get_received_items(ctx, team, target, True).append(mapped_item)
 
 
 def register_location_checks(ctx: Context, team: int, slot: int, locations: typing.Iterable[int],

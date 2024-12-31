@@ -260,6 +260,8 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     games[slot] = multiworld.game[slot]
                     slot_info[slot] = NetUtils.NetworkSlot(group["name"], multiworld.game[slot], multiworld.player_types[slot],
                                                            group_members=sorted(group["players"]))
+                    for player in slot_info[slot].group_members:
+                        slot_info[player].item_mapping.update(group["item_mapping"][player])
                 precollected_items = {player: [item.code for item in world_precollected if type(item.code) == int]
                                       for player, world_precollected in multiworld.precollected_items.items()}
                 precollected_hints = {player: set() for player in range(1, multiworld.players + 1 + len(multiworld.groups))}
@@ -303,6 +305,8 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                 # Hydrate the data package for the group worlds
                 for group in multiworld.groups.values():
                     worlds.network_data_package["games"][group['world'].game] = group['world'].get_data_package_data()
+                    print(group['world'].game)
+                    print(group['world'].get_data_package_data())
 
                 # embedded data package
                 data_package = {
