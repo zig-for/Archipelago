@@ -242,8 +242,8 @@ class MultiWorld():
         for player in self.player_ids:
             for item_link in self.worlds[player].options.item_links.value:
                 if item_link["name"] in item_links:
-                    if item_links[item_link["name"]]["game"] != self.game[player]:
-                        raise Exception(f"Cannot ItemLink across games. Link: {item_link['name']}")
+                    # if item_links[item_link["name"]]["game"] != self.game[player]:
+                    #     raise Exception(f"Cannot ItemLink across games. Link: {item_link['name']}")
                     current_link = item_links[item_link["name"]]
                     current_link["players"][player] = item_link["replacement_item"]
                     current_link["item_pool"] &= set(item_link["item_pool"])
@@ -348,16 +348,22 @@ class MultiWorld():
             for item in self.itempool:
                 count = common_item_count.get(item.player, {}).get(item.name, 0)
                 if count:
+                    player_item = AutoWorld.call_single(self, "create_item", item.player, item.name)
+
+
                     loc = Location(group_id, f"Item Link: {item.name} -> {self.player_name[item.player]} {count}",
                         None, region)
                     loc.access_rule = lambda state, item_name = item.name, group_id_ = group_id, count_ = count: \
                         state.has(item_name, group_id_, count_)
-
+                    print("Created", loc.name, item.name, player_item)
                     locations.append(loc)
-                    loc.place_locked_item(item)
+                    loc.place_locked_item(player_item)
                     common_item_count[item.player][item.name] -= 1
                 else:
                     new_itempool.append(item)
+                    if item.name == "Hookshot":
+                        print("item - ", item)
+
 
             itemcount = len(self.itempool)
             self.itempool = new_itempool

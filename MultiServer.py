@@ -986,7 +986,9 @@ def get_status_string(ctx: Context, team: int, tag: str):
 
 
 def get_received_items(ctx: Context, team: int, player: int, remote_items: bool) -> typing.List[NetworkItem]:
-    return ctx.received_items.setdefault((team, player, remote_items), [])
+    items = ctx.received_items.setdefault((team, player, remote_items), [])
+    print("get_received_items", ctx.player_names[(team, player)], items)
+    return items
 
 
 def get_start_inventory(ctx: Context, player: int, remote_start_inventory: bool) -> typing.List[NetworkItem]:
@@ -1052,8 +1054,20 @@ def get_remaining(ctx: Context, team: int, slot: int) -> typing.List[typing.Tupl
 def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem):
     for target in ctx.slot_set(target_slot):
         for item in items:
+            # TODO: not if target_slot == target
+            item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
+            # Get the new game
+            magic_game = ctx.slot_info[target].game 
+            # Translate the item
+            magic_item_id = ctx.item_names_for_game(magic_game).get(item_name)
+
+            if magic_item_id:
+                magic_item = NetworkItem(magic_item_id, item.location, item.player, item.flags)
+            else:
+                magic_item = item
             if item.player != target_slot:
-                get_received_items(ctx, team, target, False).append(item)
+                get_received_items(ctx, team, target, False).append(magic_item)
+                                # get the original item name
             get_received_items(ctx, team, target, True).append(item)
 
 
