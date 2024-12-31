@@ -54,6 +54,30 @@ class HasNameAndPlayer(Protocol):
     player: int
 
 
+
+def create_group_world(group_name: str, group_idx: int):
+    from worlds import AutoWorld
+    # Create an entirely new world instance per group
+    # Very minimal implementation of a world
+    class GroupWorld(AutoWorld.World):
+        game: str = "group_" + group_name
+        item_name_to_id = {}
+        location_name_to_id = {}
+        item_index: int = group_idx * -100000
+
+        def create_item(self, name: str) -> Item:
+            # If we haven't seen this item before, create a new one
+            if name not in self.item_name_to_id:
+                # It's likely we need to do more than this to support all external access to this class
+                self.item_name_to_id[name] = self.item_index
+                self.item_index -= 1
+            return Item(name, ItemClassification.filler, self.item_name_to_id[name], self.player)
+
+    return GroupWorld
+        
+
+
+
 class MultiWorld():
     debug_types = False
     player_name: Dict[int, str]
@@ -191,7 +215,7 @@ class MultiWorld():
         self.regions.add_group(new_id)
         self.game[new_id] = game
         self.player_types[new_id] = NetUtils.SlotType.group
-        world_type = AutoWorld.AutoWorldRegister.world_types[game]
+        world_type = create_group_world(name, new_id)
         self.worlds[new_id] = world_type.create_group(self, new_id, players)
         self.worlds[new_id].collect_item = AutoWorld.World.collect_item.__get__(self.worlds[new_id])
         self.worlds[new_id].collect = AutoWorld.World.collect.__get__(self.worlds[new_id])

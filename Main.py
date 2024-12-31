@@ -300,6 +300,10 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                                   for player in multiworld.groups.get(location.item.player, {}).get("players", [])]):
                             precollect_hint(location, auto_status)
 
+                # Hydrate the data package for the group worlds
+                for group in multiworld.groups.values():
+                    worlds.network_data_package["games"][group['world'].game] = group['world'].get_data_package_data()
+
                 # embedded data package
                 data_package = {
                     game_world.game: worlds.network_data_package["games"][game_world.game]
