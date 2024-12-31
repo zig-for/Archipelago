@@ -1061,7 +1061,7 @@ def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem
                 item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
                 # Reverse lookup the item name
                 mapped_item_name = item_name
-                for k, v in ctx.slot_info[target].item_mapping.items():
+                for k, v in ctx.slot_info[target].item_mapping.get(ctx.slot_info[target_slot].name, {}).items():
                     if v == item_name:
                         mapped_item_name = k
                         break
