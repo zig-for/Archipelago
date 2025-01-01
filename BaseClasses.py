@@ -271,6 +271,7 @@ class MultiWorld():
                     current_link["replacement_item"][player] = item_link["replacement_item"]
                     current_item_mapping = item_link["item_mapping"]
                     current_link["item_mapping"][player] = current_item_mapping
+                    current_link["additional_items"][player] = item_link["additional_items"]
                     current_link["item_pool"] &= set(current_item_mapping.get(item, item) for item in item_link["item_pool"])
                     current_link["exclude"] |= set(current_item_mapping.get(item, item) for item in item_link.get("exclude", []))
                     # TODO: this is likely wrong, how is one supposed to use this??
@@ -287,6 +288,7 @@ class MultiWorld():
                     item_links[item_link["name"]] = {
                         "replacement_item": {player: item_link["replacement_item"]},
                         "item_mapping": {player: item_mapping},
+                        "additional_items": {player: item_link["additional_items"]},
                         "item_pool": set(item_mapping.get(item, item) for item in item_link["item_pool"]),
                         "exclude": set(item_mapping.get(item, item) for item in item_link.get("exclude", [])),
                         "game": self.game[player],
@@ -320,6 +322,7 @@ class MultiWorld():
 
             group["item_pool"] = item_link["item_pool"]
             group["replacement_items"] = item_link["replacement_item"]
+            group["additional_items"] = item_link["additional_items"]
             group["local_items"] = item_link["local_items"]
             group["non_local_items"] = item_link["non_local_items"]
             group["link_replacement"] = replacement_prio[item_link["link_replacement"]]
@@ -330,21 +333,22 @@ class MultiWorld():
         from worlds import AutoWorld
 
         for group_id, group in self.groups.items():
-            def find_common_pool(players_item_mapping: Set[int], shared_pool: Set[str]) -> Tuple[
+            def find_common_pool(players_item_mapping: Set[int], players_additional_items: dict[int, dict[str, int]], shared_pool: Set[str]) -> Tuple[
                 Optional[Dict[int, Dict[str, int]]], Optional[Dict[str, int]]
             ]:
                 classifications: Dict[str, int] = collections.defaultdict(int)
                 counters = {player: {name: 0 for name in shared_pool} for player in players_item_mapping.keys()}
-                print(shared_pool)
+                for player, additional_items in players_additional_items.items():
+                    for item, count in additional_items.items():
+                        counters[player][players_item_mapping[player].get(item, item)] += count
                 for item in self.itempool:
-                    mapped_name = players_item_mapping[item.player].get(item.name, item.name)
-                    if mapped_name != item.name or item.name == "Pegasus Boots":
-                        print(item.player, item.name, mapped_name)
-                    if item.player in counters and mapped_name in shared_pool:
-                        counters[item.player][mapped_name] += 1
-                        classifications[mapped_name] |= item.classification
+                    if item.player in counters:
+                        mapped_name = players_item_mapping[item.player].get(item.name, item.name)
+
+                        if mapped_name in shared_pool:
+                            counters[item.player][mapped_name] += 1
+                            classifications[mapped_name] |= item.classification
                 for player in players_item_mapping.copy().keys():
-                    # TODO: do we need reverse mapping here?
                     if all([counters[player][item] == 0 for item in shared_pool]):
                         del (players_item_mapping[player])
                         del (counters[player])
@@ -362,10 +366,10 @@ class MultiWorld():
                             del (counters[player][item])
                 return counters, classifications
 
-            common_item_count, classifications = find_common_pool(group["item_mapping"], group["item_pool"])
+            common_item_count, classifications = find_common_pool(group["item_mapping"], group["additional_items"], group["item_pool"])
             if not common_item_count:
                 continue
-            print(common_item_count)
+
             new_itempool: List[Item] = []
             for item_name, item_count in next(iter(common_item_count.values())).items():
                 for _ in range(item_count):
@@ -373,6 +377,22 @@ class MultiWorld():
                     # mangle together all original classification bits
                     new_item.classification |= classifications[item_name]
                     new_itempool.append(new_item)
+            
+            additional_items_counters = {player: sum(additional_items.values()) for player, additional_items in group["additional_items"].items()}
+            # No good way of knowing if additional items are needed or not - best just to add them to the pool
+            # additional_items_counters = {}
+            # for player, additional_items in group["additional_items"].items():
+            #     additional_items_counters[player] = {}
+            #     for item, count in additional_items.items():
+            #         mapped_item_name = group["item_mapping"][player].get(item, item)
+                    
+            #         additional_items_counters[player][item] = min(count, common_item_count.get(player, {}).get(mapped_item_name, 0))
+
+            for player, additional_items in group["additional_items"].items():
+                for item, count in additional_items.items():
+                    for i in range(count):
+                        self.itempool.append(AutoWorld.call_single(self, "create_item", player, item))
+                        print("Created", player, item)
 
             region = Region(group["world"].origin_region_name, group_id, self, "ItemLink")
             self.regions.append(region)
@@ -380,15 +400,10 @@ class MultiWorld():
             # ensure that progression items are linked first, then non-progression
             self.itempool.sort(key=lambda item: item.advancement)
 
-            # reverse_item_mapping = dict()
-            # for player, item_mapping in group["item_mapping"].items():
-            #     reverse_item_mapping[player] = {v: k for k, v in item_mapping.items()}
-
             for item in self.itempool:
-                mapped_item_name = group["item_mapping"][item.player].get(item.name, item.name)
+                mapped_item_name = group["item_mapping"].get(item.player, {}).get(item.name, item.name)
                 count = common_item_count.get(item.player, {}).get(mapped_item_name, 0)
-                if item.name == "Stabby" or item.name == "Progressive Sword":
-                    print(item.player, item.name, mapped_item_name, count)
+
                 if count:
                     player_item = AutoWorld.call_single(self, "create_item", item.player, item.name)
 
@@ -406,7 +421,8 @@ class MultiWorld():
 
             itemcount = len(self.itempool)
             self.itempool = new_itempool
-
+            # Don't add junk if we added extra items to the pool
+            itemcount -= sum(additional_items_counters.values())
             while itemcount > len(self.itempool):
                 items_to_add = []
                 for player in group["players"]:

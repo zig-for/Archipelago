@@ -1367,6 +1367,7 @@ class ItemLinks(OptionList):
             Optional("non_local_items"): [And(str, len)],
             Optional("link_replacement"): Or(None, bool),
             Optional("item_mapping"): dict[str, str],
+            Optional("additional_items"): dict[str, int],
         }
     ])
 
@@ -1399,11 +1400,13 @@ class ItemLinks(OptionList):
             existing_links.add(link["name"])
 
             if "item_mapping" not in link:
-                link["item_mapping"] = dict()
-            else:
-                # TODO: verify unique values
-                # TODO: probably need to make sure that mappings aren't copied across either?
-                pass
+                link["item_mapping"] = dict()            
+            # TODO: verify unique values, valid items
+
+            if "additional_items" not in link:
+                link["additional_items"] = dict()
+            # TODO: verify valid items
+
             pool = self.verify_items(link["item_pool"], link["name"], "item_pool", world)
             local_items = set()
             non_local_items = set()
