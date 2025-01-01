@@ -271,7 +271,8 @@ class MultiWorld():
                     current_link["replacement_item"][player] = item_link["replacement_item"]
                     current_item_mapping = item_link["item_mapping"]
                     current_link["item_mapping"][player] = current_item_mapping
-                    current_link["item_pool"] &= set(current_item_mapping.get(item, item) for item in item_link["item_pool"])
+                    current_link["item_pool_by_player"][player] = set(current_item_mapping.get(item, item) for item in item_link["item_pool"])
+                    current_link["item_pool"] |= current_link["item_pool_by_player"][player]
                     current_link["exclude"] |= set(current_item_mapping.get(item, item) for item in item_link.get("exclude", []))
                     # TODO: this is likely wrong, how is one supposed to use this??
                     current_link["local_items"] &= set(current_item_mapping.get(item, item) for item in item_link.get("local_items", []))
@@ -288,6 +289,7 @@ class MultiWorld():
                         "replacement_item": {player: item_link["replacement_item"]},
                         "item_mapping": {player: item_mapping},
                         "item_pool": set(item_mapping.get(item, item) for item in item_link["item_pool"]),
+                        "item_pool_by_player": {player: item_link["item_pool"]},
                         "exclude": set(item_mapping.get(item, item) for item in item_link.get("exclude", [])),
                         "game": self.game[player],
                         "local_items": set(item_mapping.get(item, item) for item in item_link.get("local_items", [])),
@@ -297,13 +299,26 @@ class MultiWorld():
 
         for _name, item_link in item_links.items():
             current_item_name_groups = AutoWorld.AutoWorldRegister.world_types[item_link["game"]].item_name_groups
+            player_ids = set(item_link["replacement_item"])
             pool = set()
             local_items = set()
             non_local_items = set()
             for item in item_link["item_pool"]:
                 pool |= current_item_name_groups.get(item, {item})
+            # TODO: this should be keyed/run per player, now
             for item in item_link["exclude"]:
                 pool -= current_item_name_groups.get(item, {item})
+
+            # Filter out items in the pool where there's only one player
+            single_player_items = set()
+            for item in pool:
+                if sum(item in item_link["item_pool_by_player"][player] for player in player_ids) <= 1:
+                    single_player_items.add(item)
+            print("remove", single_player_items)
+            pool -= single_player_items
+            # Note that this isn't quite correct - if we end up with zero items in the pool for other players but not one,
+            # we will still pointlessly item link
+
             for item in item_link["local_items"]:
                 local_items |= current_item_name_groups.get(item, {item})
             for item in item_link["non_local_items"]:
@@ -316,9 +331,10 @@ class MultiWorld():
 
         for group_name, item_link in item_links.items():
             game = item_link["game"]
-            group_id, group = self.add_group(group_name, game, set(item_link["replacement_item"]))
+            group_id, group = self.add_group(group_name, game, player_ids)
 
             group["item_pool"] = item_link["item_pool"]
+            group["item_pool_by_player"] = item_link["item_pool_by_player"]
             group["replacement_items"] = item_link["replacement_item"]
             group["local_items"] = item_link["local_items"]
             group["non_local_items"] = item_link["non_local_items"]
@@ -330,8 +346,8 @@ class MultiWorld():
         from worlds import AutoWorld
 
         for group_id, group in self.groups.items():
-            def find_common_pool(players_item_mapping: Set[int], shared_pool: Set[str]) -> Tuple[
-                Optional[Dict[int, Dict[str, int]]], Optional[Dict[str, int]]
+            def find_common_pool(players_item_mapping: Set[int], shared_pool: Set[str], player_pools: Dict[int, Set[str]]) -> Tuple[
+                Optional[Dict[int, Dict[str, int]]], Optional[Dict[str, int]] # TODO: fix return val
             ]:
                 classifications: Dict[str, int] = collections.defaultdict(int)
                 counters = {player: {name: 0 for name in shared_pool} for player in players_item_mapping.keys()}
@@ -370,16 +386,17 @@ class MultiWorld():
                         for player in players_item_mapping.keys():
                             if USE_MAX_INSTEAD:
                                 if count != counters[player][item]:
-                                    reversed_item_name = reverse_players_item_mapping[player].get(item, item)
-                                    additional_items[player][reversed_item_name] = count - counters[player][item]
-                                    print("Adding", additional_items[player][reversed_item_name], reversed_item_name, "for", player)
+                                    if item in player_pools[player]:
+                                        reversed_item_name = reverse_players_item_mapping[player].get(item, item)
+                                        additional_items[player][reversed_item_name] = count - counters[player][item]
+                                        print("Added", additional_items[player][reversed_item_name], reversed_item_name, "for", player)
                             counters[player][item] = count
                     else:
                         for player in players_item_mapping.keys():
                             del (counters[player][item])
                 return counters, classifications, additional_items
 
-            common_item_count, classifications, player_additional_items = find_common_pool(group["item_mapping"], group["item_pool"])
+            common_item_count, classifications, player_additional_items = find_common_pool(group["item_mapping"], group["item_pool"], group["item_pool_by_player"])
             if not common_item_count:
                 continue
 
