@@ -357,6 +357,7 @@ class MultiWorld():
                     return None, None
 
                 for item in shared_pool:
+                    # TODO: swap to max, pass out additional items
                     count = min(counters[player][item] for player in players_item_mapping.keys())
                     if count:
                         for player in players_item_mapping.keys():

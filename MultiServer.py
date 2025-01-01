@@ -987,7 +987,6 @@ def get_status_string(ctx: Context, team: int, tag: str):
 
 def get_received_items(ctx: Context, team: int, player: int, remote_items: bool) -> typing.List[NetworkItem]:
     items = ctx.received_items.setdefault((team, player, remote_items), [])
-    print("get_received_items", ctx.player_names[(team, player)], items)
     return items
 
 
@@ -1052,20 +1051,22 @@ def get_remaining(ctx: Context, team: int, slot: int) -> typing.List[typing.Tupl
 
 
 def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem):
+    print("send_items_to", team, target_slot)
+    print(ctx.slot_info)
     for target in ctx.slot_set(target_slot):
         for item in items:
             mapped_item = item
             if ctx.slot_info[target_slot].group_members and target_slot != target:
-                print(ctx.slot_info[target_slot].item_mapping)
                 # This should always be an item link item name
                 item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
+                group_name = ctx.slot_info[target_slot].name
                 # Reverse lookup the item name
                 mapped_item_name = item_name
-                for k, v in ctx.slot_info[target].item_mapping.get(ctx.slot_info[target_slot].name, {}).items():
-                    if v == item_name:
-                        mapped_item_name = k
-                        break
-                print(item_name, mapped_item_name)
+                if ctx.slot_info[target].item_mapping:
+                    for k, v in ctx.slot_info[target].item_mapping.get(group_name, {}).items():
+                        if v == item_name:
+                            mapped_item_name = k
+                            break
                 # Get the new game
                 mapped_game = ctx.slot_info[target].game 
                 # Translate the item

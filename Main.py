@@ -249,19 +249,24 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                 minimum_versions = {"server": AutoWorld.World.required_server_version, "clients": client_versions}
                 slot_info = {}
                 names = [[name for player, name in sorted(multiworld.player_name.items())]]
+
+                item_mapping = {}
+
+                for slot, group in multiworld.groups.items():
+                    games[slot] = multiworld.game[slot]
+                    slot_info[slot] = NetUtils.NetworkSlot(group["name"], multiworld.game[slot], multiworld.player_types[slot],
+                                                           group_members=sorted(group["players"]))
+                    for player in slot_info[slot].group_members:
+                        item_mapping[player] = item_mapping.get(player, {}) | {group["name"]: group["item_mapping"].get(player, {})}
+        
                 for slot in multiworld.player_ids:
                     player_world: AutoWorld.World = multiworld.worlds[slot]
                     minimum_versions["server"] = max(minimum_versions["server"], player_world.required_server_version)
                     client_versions[slot] = player_world.required_client_version
                     games[slot] = multiworld.game[slot]
                     slot_info[slot] = NetUtils.NetworkSlot(names[0][slot - 1], multiworld.game[slot],
-                                                           multiworld.player_types[slot])
-                for slot, group in multiworld.groups.items():
-                    games[slot] = multiworld.game[slot]
-                    slot_info[slot] = NetUtils.NetworkSlot(group["name"], multiworld.game[slot], multiworld.player_types[slot],
-                                                           group_members=sorted(group["players"]))
-                    for player in slot_info[slot].group_members:
-                        slot_info[player].item_mapping.update({group["name"]: group["item_mapping"][player]})
+                                                           multiworld.player_types[slot], (), item_mapping.get(slot, {}))
+
                 precollected_items = {player: [item.code for item in world_precollected if type(item.code) == int]
                                       for player, world_precollected in multiworld.precollected_items.items()}
                 precollected_hints = {player: set() for player in range(1, multiworld.players + 1 + len(multiworld.groups))}
