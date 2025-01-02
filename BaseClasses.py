@@ -266,6 +266,7 @@ class MultiWorld():
         replacement_prio = [False, True, None]
         for player in self.player_ids:
             for item_link in self.worlds[player].options.item_links.value:
+                # TODO: this logic is bug prone - remove the duplication
                 if item_link["name"] in item_links:
                     current_link = item_links[item_link["name"]]
                     current_link["replacement_item"][player] = item_link["replacement_item"]
@@ -289,7 +290,7 @@ class MultiWorld():
                         "replacement_item": {player: item_link["replacement_item"]},
                         "item_mapping": {player: item_mapping},
                         "item_pool": set(item_mapping.get(item, item) for item in item_link["item_pool"]),
-                        "item_pool_by_player": {player: item_link["item_pool"]},
+                        "item_pool_by_player": {player: set(item_mapping.get(item, item) for item in item_link["item_pool"])},
                         "exclude": set(item_mapping.get(item, item) for item in item_link.get("exclude", [])),
                         "game": self.game[player],
                         "local_items": set(item_mapping.get(item, item) for item in item_link.get("local_items", [])),
@@ -314,7 +315,6 @@ class MultiWorld():
             for item in pool:
                 if sum(item in item_link["item_pool_by_player"][player] for player in player_ids) <= 1:
                     single_player_items.add(item)
-            print("remove", single_player_items)
             pool -= single_player_items
             # Note that this isn't quite correct - if we end up with zero items in the pool for other players but not one,
             # we will still pointlessly item link
