@@ -1366,6 +1366,7 @@ class ItemLinks(OptionList):
             Optional("local_items"): [And(str, len)],
             Optional("non_local_items"): [And(str, len)],
             Optional("link_replacement"): Or(None, bool),
+            Optional("item_mapping"): dict[str, str],
         }
     ])
 
@@ -1396,6 +1397,10 @@ class ItemLinks(OptionList):
             if link["name"] in existing_links:
                 raise Exception(f"You cannot have more than one link named {link['name']}.")
             existing_links.add(link["name"])
+
+            if "item_mapping" not in link:
+                link["item_mapping"] = dict()            
+            # TODO: verify unique values, valid items
 
             pool = self.verify_items(link["item_pool"], link["name"], "item_pool", world)
             local_items = set()

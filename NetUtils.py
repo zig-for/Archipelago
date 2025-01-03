@@ -83,6 +83,7 @@ class NetworkSlot(typing.NamedTuple):
     game: str
     type: SlotType
     group_members: typing.Union[typing.List[int], typing.Tuple] = ()  # only populated if type == group
+    item_mapping: typing.Optional[dict[str, dict[str, str]]] = None # only populated if slot in group and has item link maps set
 
 
 class NetworkItem(typing.NamedTuple):

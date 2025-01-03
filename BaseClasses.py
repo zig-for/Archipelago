@@ -54,6 +54,30 @@ class HasNameAndPlayer(Protocol):
     player: int
 
 
+def create_group_world(group_name: str, group_idx: int):
+    from worlds import AutoWorld
+    # Create an entirely new world instance per group
+    # Very minimal implementation of a world
+    class GroupWorld(AutoWorld.World):
+        game: str = "group_" + group_name
+        item_name_to_id = {}
+        location_name_to_id = {}
+        item_index: int = group_idx * -100000
+
+        def create_item(self, name: str) -> Item:
+            # If we haven't seen this item before, create a new one
+            if name not in self.item_name_to_id:
+                # It's likely we need to do more than this to support all external access to this class
+                self.item_name_to_id[name] = self.item_index
+                self.item_id_to_name[self.item_index] = name
+                self.item_index -= 1
+            return GroupWorldItem(name, ItemClassification.filler, self.item_name_to_id[name], self.player)
+
+    return GroupWorld
+        
+
+
+
 class MultiWorld():
     debug_types = False
     player_name: Dict[int, str]
@@ -189,10 +213,10 @@ class MultiWorld():
         new_id: int = self.players + len(self.groups) + 1
 
         self.regions.add_group(new_id)
-        self.game[new_id] = game
         self.player_types[new_id] = NetUtils.SlotType.group
-        world_type = AutoWorld.AutoWorldRegister.world_types[game]
+        world_type = create_group_world(name, new_id)
         self.worlds[new_id] = world_type.create_group(self, new_id, players)
+        self.game[new_id] = self.worlds[new_id].game
         self.worlds[new_id].collect_item = AutoWorld.World.collect_item.__get__(self.worlds[new_id])
         self.worlds[new_id].collect = AutoWorld.World.collect.__get__(self.worlds[new_id])
         self.worlds[new_id].remove = AutoWorld.World.remove.__get__(self.worlds[new_id])
@@ -241,40 +265,59 @@ class MultiWorld():
         replacement_prio = [False, True, None]
         for player in self.player_ids:
             for item_link in self.worlds[player].options.item_links.value:
+                # TODO: this logic is bug prone - remove the duplication
                 if item_link["name"] in item_links:
-                    if item_links[item_link["name"]]["game"] != self.game[player]:
-                        raise Exception(f"Cannot ItemLink across games. Link: {item_link['name']}")
                     current_link = item_links[item_link["name"]]
-                    current_link["players"][player] = item_link["replacement_item"]
-                    current_link["item_pool"] &= set(item_link["item_pool"])
-                    current_link["exclude"] |= set(item_link.get("exclude", []))
-                    current_link["local_items"] &= set(item_link.get("local_items", []))
-                    current_link["non_local_items"] &= set(item_link.get("non_local_items", []))
+                    current_link["replacement_item"][player] = item_link["replacement_item"]
+                    current_item_mapping = item_link["item_mapping"]
+                    current_link["item_mapping"][player] = current_item_mapping
+                    current_link["item_pool_by_player"][player] = set(current_item_mapping.get(item, item) for item in item_link["item_pool"])
+                    current_link["item_pool"] |= current_link["item_pool_by_player"][player]
+                    current_link["exclude"] |= set(current_item_mapping.get(item, item) for item in item_link.get("exclude", []))
+                    # TODO: this is likely wrong, how is one supposed to use this??
+                    current_link["local_items"] &= set(current_item_mapping.get(item, item) for item in item_link.get("local_items", []))
+                    current_link["non_local_items"] &= set(current_item_mapping.get(item, item) for item in item_link.get("non_local_items", []))
+                    # TODO: not implemented for item mapping lol
                     current_link["link_replacement"] = min(current_link["link_replacement"],
                                                            replacement_prio.index(item_link["link_replacement"]))
                 else:
                     if item_link["name"] in self.player_name.values():
                         raise Exception(f"Cannot name a ItemLink group the same as a player ({item_link['name']}) "
                                         f"({self.get_player_name(player)}).")
+                    item_mapping = item_link["item_mapping"]
                     item_links[item_link["name"]] = {
-                        "players": {player: item_link["replacement_item"]},
-                        "item_pool": set(item_link["item_pool"]),
-                        "exclude": set(item_link.get("exclude", [])),
+                        "replacement_item": {player: item_link["replacement_item"]},
+                        "item_mapping": {player: item_mapping},
+                        "item_pool": set(item_mapping.get(item, item) for item in item_link["item_pool"]),
+                        "item_pool_by_player": {player: set(item_mapping.get(item, item) for item in item_link["item_pool"])},
+                        "exclude": set(item_mapping.get(item, item) for item in item_link.get("exclude", [])),
                         "game": self.game[player],
-                        "local_items": set(item_link.get("local_items", [])),
-                        "non_local_items": set(item_link.get("non_local_items", [])),
+                        "local_items": set(item_mapping.get(item, item) for item in item_link.get("local_items", [])),
+                        "non_local_items": set(item_mapping.get(item, item) for item in item_link.get("non_local_items", [])),
                         "link_replacement": replacement_prio.index(item_link["link_replacement"]),
                     }
 
         for _name, item_link in item_links.items():
             current_item_name_groups = AutoWorld.AutoWorldRegister.world_types[item_link["game"]].item_name_groups
+            player_ids = set(item_link["replacement_item"])
             pool = set()
             local_items = set()
             non_local_items = set()
             for item in item_link["item_pool"]:
                 pool |= current_item_name_groups.get(item, {item})
+            # TODO: this should be keyed/run per player, now
             for item in item_link["exclude"]:
                 pool -= current_item_name_groups.get(item, {item})
+
+            # Filter out items in the pool where there's only one player
+            single_player_items = set()
+            for item in pool:
+                if sum(item in item_link["item_pool_by_player"][player] for player in player_ids) <= 1:
+                    single_player_items.add(item)
+            pool -= single_player_items
+            # Note that this isn't quite correct - if we end up with zero items in the pool for other players but not one,
+            # we will still pointlessly item link
+
             for item in item_link["local_items"]:
                 local_items |= current_item_name_groups.get(item, {item})
             for item in item_link["non_local_items"]:
@@ -287,50 +330,76 @@ class MultiWorld():
 
         for group_name, item_link in item_links.items():
             game = item_link["game"]
-            group_id, group = self.add_group(group_name, game, set(item_link["players"]))
+            group_id, group = self.add_group(group_name, game, player_ids)
 
             group["item_pool"] = item_link["item_pool"]
-            group["replacement_items"] = item_link["players"]
+            group["item_pool_by_player"] = item_link["item_pool_by_player"]
+            group["replacement_items"] = item_link["replacement_item"]
             group["local_items"] = item_link["local_items"]
             group["non_local_items"] = item_link["non_local_items"]
             group["link_replacement"] = replacement_prio[item_link["link_replacement"]]
+            group["item_mapping"] = item_link["item_mapping"]
 
     def link_items(self) -> None:
         """Called to link together items in the itempool related to the registered item link groups."""
         from worlds import AutoWorld
 
         for group_id, group in self.groups.items():
-            def find_common_pool(players: Set[int], shared_pool: Set[str]) -> Tuple[
-                Optional[Dict[int, Dict[str, int]]], Optional[Dict[str, int]]
+            def find_common_pool(players_item_mapping: Set[int], shared_pool: Set[str], player_pools: Dict[int, Set[str]]) -> Tuple[
+                Optional[Dict[int, Dict[str, int]]], Optional[Dict[str, int]] # TODO: fix return val
             ]:
                 classifications: Dict[str, int] = collections.defaultdict(int)
-                counters = {player: {name: 0 for name in shared_pool} for player in players}
+                counters = {player: {name: 0 for name in shared_pool} for player in players_item_mapping.keys()}
+                reverse_players_item_mapping = {}
+                for player, item_mapping in players_item_mapping.items():
+                    reverse_players_item_mapping[player] = {
+                        v: k for k, v in item_mapping.items()
+                    }
+                print(reverse_players_item_mapping)
                 for item in self.itempool:
-                    if item.player in counters and item.name in shared_pool:
-                        counters[item.player][item.name] += 1
-                        classifications[item.name] |= item.classification
+                    if item.player in counters:
+                        mapped_name = players_item_mapping[item.player].get(item.name, item.name)
+                        if mapped_name in shared_pool:
+                            counters[item.player][mapped_name] += 1
+                            classifications[mapped_name] |= item.classification
+                # TODO: optimization - we still want to add items if we are maximimizing item counts
+                # for player in players_item_mapping.copy().keys():
+                #     if all([counters[player][item] == 0 for item in shared_pool]):
+                #         del (players_item_mapping[player])
+                #         del (counters[player])
 
-                for player in players.copy():
-                    if all([counters[player][item] == 0 for item in shared_pool]):
-                        players.remove(player)
-                        del (counters[player])
-
-                if not players:
+                if not players_item_mapping:
                     return None, None
 
+                additional_items = {player: {} for player in counters.keys()}
+                print(counters)
                 for item in shared_pool:
-                    count = min(counters[player][item] for player in players)
+                    # Note: this needs to be recalculated per player instead - if they want to maximize or minimize
+                    # the item count
+                    USE_MAX_INSTEAD=True
+                    if USE_MAX_INSTEAD:
+                        count = max(counters[player][item] for player in players_item_mapping.keys())
+                    else:
+                        count = min(counters[player][item] for player in players_item_mapping.keys())
                     if count:
-                        for player in players:
+                        for player in players_item_mapping.keys():
+                            if USE_MAX_INSTEAD:
+                                if count != counters[player][item]:
+                                    if item in player_pools[player]:
+                                        reversed_item_name = reverse_players_item_mapping[player].get(item, item)
+                                        additional_items[player][reversed_item_name] = count - counters[player][item]
+                                        print("Added", additional_items[player][reversed_item_name], reversed_item_name, "for", player)
                             counters[player][item] = count
                     else:
-                        for player in players:
+                        for player in players_item_mapping.keys():
                             del (counters[player][item])
-                return counters, classifications
+                return counters, classifications, additional_items
 
-            common_item_count, classifications = find_common_pool(group["players"], group["item_pool"])
+            common_item_count, classifications, player_additional_items = find_common_pool(group["item_mapping"], group["item_pool"], group["item_pool_by_player"])
             if not common_item_count:
                 continue
+
+            group_items = collections.defaultdict(list)
 
             new_itempool: List[Item] = []
             for item_name, item_count in next(iter(common_item_count.values())).items():
@@ -339,29 +408,46 @@ class MultiWorld():
                     # mangle together all original classification bits
                     new_item.classification |= classifications[item_name]
                     new_itempool.append(new_item)
+                    group_items[item_name].append(new_item)
+            
+            for player, additional_items in player_additional_items.items():
+                for item, count in additional_items.items():
+                    for i in range(count):
+                        self.itempool.append(AutoWorld.call_single(self, "create_item", player, item))
+                        print("Created", player, item)
 
             region = Region(group["world"].origin_region_name, group_id, self, "ItemLink")
             self.regions.append(region)
             locations = region.locations
             # ensure that progression items are linked first, then non-progression
             self.itempool.sort(key=lambda item: item.advancement)
-            for item in self.itempool:
-                count = common_item_count.get(item.player, {}).get(item.name, 0)
-                if count:
-                    loc = Location(group_id, f"Item Link: {item.name} -> {self.player_name[item.player]} {count}",
-                        None, region)
-                    loc.access_rule = lambda state, item_name = item.name, group_id_ = group_id, count_ = count: \
-                        state.has(item_name, group_id_, count_)
 
+            # created_by_player = {player: 0 for player in common_item_count.keys()}
+
+            for item in self.itempool:
+                mapped_item_name = group["item_mapping"].get(item.player, {}).get(item.name, item.name)
+                count = common_item_count.get(item.player, {}).get(mapped_item_name, 0)
+
+                if count:
+                    player_item = AutoWorld.call_single(self, "create_item", item.player, item.name)
+
+                    loc = Location(group_id, f"Item Link: {mapped_item_name} -> {self.player_name[item.player]} {count}",
+                        None, region)
+                    loc.access_rule = lambda state, item_name = mapped_item_name, group_id_ = group_id, count_ = count: \
+                        state.has(item_name, group_id_, count_)
+                    print("Created", loc.name, mapped_item_name, item.name, player_item)
                     locations.append(loc)
-                    loc.place_locked_item(item)
-                    common_item_count[item.player][item.name] -= 1
+                    loc.place_locked_item(player_item)
+                    common_item_count[item.player][mapped_item_name] -= 1
+                    group_items[mapped_item_name][common_item_count[item.player][mapped_item_name]].items_by_player[item.player] = player_item
                 else:
                     new_itempool.append(item)
+
 
             itemcount = len(self.itempool)
             self.itempool = new_itempool
 
+            itemcount -= sum(sum(i.values()) for i in player_additional_items.values())
             while itemcount > len(self.itempool):
                 items_to_add = []
                 for player in group["players"]:
@@ -1408,6 +1494,15 @@ class Item:
             return self.location.parent_region.multiworld.get_name_string_for_object(self)
         return f"{self.name} (Player {self.player})"
 
+
+
+class GroupWorldItem(Item):
+    items_by_player: Dict[int, Item]
+    # Maybe items_by_game also?
+    
+    def __init__(self, name: str, classification: ItemClassification, code: int, player: int):
+        Item.__init__(self, name, classification, code, player)
+        self.items_by_player = {}
 
 class EntranceInfo(TypedDict, total=False):
     player: int
