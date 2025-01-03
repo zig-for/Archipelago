@@ -54,7 +54,6 @@ class HasNameAndPlayer(Protocol):
     player: int
 
 
-
 def create_group_world(group_name: str, group_idx: int):
     from worlds import AutoWorld
     # Create an entirely new world instance per group
@@ -72,7 +71,7 @@ def create_group_world(group_name: str, group_idx: int):
                 self.item_name_to_id[name] = self.item_index
                 self.item_id_to_name[self.item_index] = name
                 self.item_index -= 1
-            return Item(name, ItemClassification.filler, self.item_name_to_id[name], self.player)
+            return GroupWorldItem(name, ItemClassification.filler, self.item_name_to_id[name], self.player)
 
     return GroupWorld
         
@@ -400,6 +399,8 @@ class MultiWorld():
             if not common_item_count:
                 continue
 
+            group_items = collections.defaultdict(list)
+
             new_itempool: List[Item] = []
             for item_name, item_count in next(iter(common_item_count.values())).items():
                 for _ in range(item_count):
@@ -407,6 +408,7 @@ class MultiWorld():
                     # mangle together all original classification bits
                     new_item.classification |= classifications[item_name]
                     new_itempool.append(new_item)
+                    group_items[item_name].append(new_item)
             
             for player, additional_items in player_additional_items.items():
                 for item, count in additional_items.items():
@@ -419,6 +421,8 @@ class MultiWorld():
             locations = region.locations
             # ensure that progression items are linked first, then non-progression
             self.itempool.sort(key=lambda item: item.advancement)
+
+            # created_by_player = {player: 0 for player in common_item_count.keys()}
 
             for item in self.itempool:
                 mapped_item_name = group["item_mapping"].get(item.player, {}).get(item.name, item.name)
@@ -435,6 +439,7 @@ class MultiWorld():
                     locations.append(loc)
                     loc.place_locked_item(player_item)
                     common_item_count[item.player][mapped_item_name] -= 1
+                    group_items[mapped_item_name][common_item_count[item.player][mapped_item_name]].items_by_player[item.player] = player_item
                 else:
                     new_itempool.append(item)
 
@@ -1489,6 +1494,15 @@ class Item:
             return self.location.parent_region.multiworld.get_name_string_for_object(self)
         return f"{self.name} (Player {self.player})"
 
+
+
+class GroupWorldItem(Item):
+    items_by_player: Dict[int, Item]
+    # Maybe items_by_game also?
+    
+    def __init__(self, name: str, classification: ItemClassification, code: int, player: int):
+        Item.__init__(self, name, classification, code, player)
+        self.items_by_player = {}
 
 class EntranceInfo(TypedDict, total=False):
     player: int
