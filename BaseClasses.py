@@ -463,6 +463,7 @@ class MultiWorld():
                 self.random.shuffle(items_to_add)
                 self.itempool.extend(items_to_add[:itemcount - len(self.itempool)])
 
+            # TODO: at this point, punt out the used items into "item_mapping", for the slot data
     def secure(self):
         self.random = ThreadBarrierProxy(secrets.SystemRandom())
         self.is_race = True

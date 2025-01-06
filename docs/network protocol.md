@@ -648,6 +648,7 @@ class NetworkSlot(typing.NamedTuple):
    game: str
    type: SlotType
    group_members: typing.List[int] = []  # only populated if type == group
+   #TODO: docs
 ```
 
 ### Permission

@@ -701,7 +701,7 @@ class Context:
     def slot_set(self, slot) -> typing.Set[int]:
         """Returns the slot IDs that concern that slot,
         as in expands groups out and returns back the input for solo."""
-        return self.groups.get(slot, {slot})
+        return set(self.groups.get(slot, {slot}))
 
     def _set_options(self, server_options: dict):
         for key, value in server_options.items():
