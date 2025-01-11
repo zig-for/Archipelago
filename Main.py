@@ -256,8 +256,17 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                     games[slot] = multiworld.game[slot]
                     slot_info[slot] = NetUtils.NetworkSlot(group["name"], multiworld.game[slot], multiworld.player_types[slot],
                                                            group_members=sorted(group["players"]))
+                    print(group["name"], slot_info[slot].group_members)
                     for player in slot_info[slot].group_members:
-                        item_mapping[player] = item_mapping.get(player, {}) | {group["name"]: group["item_mapping"].get(player, {})}
+                        item_mapping = group["item_mapping"][player]
+                        reverse_item_mapping = {v: k for k, v in item_mapping.items()}
+
+                        group_item_to_player = {
+                            group_item_name: reverse_item_mapping[group_item_name]
+                            for group_item_name, count in group["linked_items_by_player"].get(player, {}).items() if count and group_item_name in reverse_item_mapping
+                        }
+                        print(player, group_item_to_player)
+                        item_mapping[player] = item_mapping.get(player, {}) | {group["name"]: group_item_to_player}
         
                 for slot in multiworld.player_ids:
                     player_world: AutoWorld.World = multiworld.worlds[slot]

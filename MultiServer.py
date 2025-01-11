@@ -1053,24 +1053,20 @@ def get_remaining(ctx: Context, team: int, slot: int) -> typing.List[typing.Tupl
 def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem):
     print("send_items_to", team, target_slot)
     print(ctx.slot_info)
+    is_group_send = ctx.slot_info[target_slot].group_members
     for target in ctx.slot_set(target_slot):
         for item in items:
             mapped_item = item
-            if ctx.slot_info[target_slot].group_members and target_slot != target:
+            if is_group_send and target_slot != target:
                 # This should always be an item link item name
                 item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
-                group_name = ctx.slot_info[target_slot].name
-                # Reverse lookup the item name
-                mapped_item_name = item_name
-                if ctx.slot_info[target].item_mapping:
-                    for k, v in ctx.slot_info[target].item_mapping.get(group_name, {}).items():
-                        if v == item_name:
-                            mapped_item_name = k
-                            break
-                # Get the new game
-                mapped_game = ctx.slot_info[target].game 
+                
+                # If this player not participating in this item, skip
+                if item_name not in ctx.slot_info[target].item_mapping[target]:
+                    continue
+
                 # Translate the item
-                mapped_item_id = ctx.item_names_for_game(mapped_game).get(mapped_item_name)
+                mapped_item_id = ctx.slot_info[target].item_mapping[item_name]
 
                 if mapped_item_id:
                     mapped_item = NetworkItem(mapped_item_id, item.location, item.player, item.flags)
