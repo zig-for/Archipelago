@@ -1061,16 +1061,23 @@ def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem
                 # This should always be an item link item name
                 item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
                 
+                print(item_name, ctx.slot_info[target].item_mapping)
+
+                item_mapping = ctx.slot_info[target].item_mapping[ctx.slot_info[target_slot].name]
                 # If this player not participating in this item, skip
-                if item_name not in ctx.slot_info[target].item_mapping[target]:
+                if item_name not in item_mapping:
+                    print("skipped for ", target)
                     continue
 
                 # Translate the item
-                mapped_item_id = ctx.slot_info[target].item_mapping[item_name]
-
+                mapped_item_name = item_mapping[item_name]
+                # GDI forgot to write the actual ID :(
+                mapped_item_id = ctx.item_names_for_game(ctx.slot_info[target].game)[mapped_item_name]
+                print("translated to ", mapped_item_id)
                 if mapped_item_id:
                     mapped_item = NetworkItem(mapped_item_id, item.location, item.player, item.flags)
-                
+                print(mapped_item, ctx.slot_info[target].name)
+            print("will send ", mapped_item)
             if item.player != target_slot:
                 get_received_items(ctx, team, target, False).append(mapped_item)
             get_received_items(ctx, team, target, True).append(mapped_item)
