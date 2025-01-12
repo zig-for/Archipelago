@@ -20,7 +20,7 @@ import concurrent.futures
 import bsdiff4
 from typing import Collection, Optional, List, SupportsIndex
 
-from BaseClasses import CollectionState, Region, Location, MultiWorld
+from BaseClasses import CollectionState, Region, Location, MultiWorld, GroupWorldItem
 from Utils import local_path, user_path, int16_as_bytes, int32_as_bytes, snes_to_pc, is_frozen, parse_yaml, read_snes_rom
 
 from .Shops import ShopType, ShopPriceType
@@ -799,6 +799,11 @@ def patch_rom(world: MultiWorld, rom: LocalRom, player: int, enemized: bool):
                 if not location.native_item:
                     if location.item.trap:
                         itemid = 0x5A  # Nothing, which disguises
+                    elif type(location.item) is GroupWorldItem and player in location.item.items_by_player:
+                        # for item link, if it's our item, use our sprite/item code
+                        # this doesn't really handle the is_dungeon_item cose below, but 
+                        # the remote item will do the right thing anyhow
+                        itemid = location.item.items_by_player[player].code
                     else:
                         itemid = get_nonnative_item_sprite(location.item.code)
                 # Keys in their native dungeon should use the orignal item code for keys

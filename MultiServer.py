@@ -701,7 +701,7 @@ class Context:
     def slot_set(self, slot) -> typing.Set[int]:
         """Returns the slot IDs that concern that slot,
         as in expands groups out and returns back the input for solo."""
-        return self.groups.get(slot, {slot})
+        return set(self.groups.get(slot, {slot}))
 
     def _set_options(self, server_options: dict):
         for key, value in server_options.items():
@@ -986,7 +986,8 @@ def get_status_string(ctx: Context, team: int, tag: str):
 
 
 def get_received_items(ctx: Context, team: int, player: int, remote_items: bool) -> typing.List[NetworkItem]:
-    return ctx.received_items.setdefault((team, player, remote_items), [])
+    items = ctx.received_items.setdefault((team, player, remote_items), [])
+    return items
 
 
 def get_start_inventory(ctx: Context, player: int, remote_start_inventory: bool) -> typing.List[NetworkItem]:
@@ -1050,11 +1051,36 @@ def get_remaining(ctx: Context, team: int, slot: int) -> typing.List[typing.Tupl
 
 
 def send_items_to(ctx: Context, team: int, target_slot: int, *items: NetworkItem):
+    print("send_items_to", team, target_slot)
+    print(ctx.slot_info)
+    is_group_send = ctx.slot_info[target_slot].group_members
     for target in ctx.slot_set(target_slot):
         for item in items:
+            mapped_item = item
+            if is_group_send and target_slot != target:
+                # This should always be an item link item name
+                item_name = ctx.item_names[ctx.slot_info[target_slot].game][item.item]
+                
+                print(item_name, ctx.slot_info[target].item_mapping)
+
+                item_mapping = ctx.slot_info[target].item_mapping[ctx.slot_info[target_slot].name]
+                # If this player not participating in this item, skip
+                if item_name not in item_mapping:
+                    print("skipped for ", target)
+                    continue
+
+                # Translate the item
+                mapped_item_name = item_mapping[item_name]
+                # GDI forgot to write the actual ID :(
+                mapped_item_id = ctx.item_names_for_game(ctx.slot_info[target].game)[mapped_item_name]
+                print("translated to ", mapped_item_id)
+                if mapped_item_id:
+                    mapped_item = NetworkItem(mapped_item_id, item.location, item.player, item.flags)
+                print(mapped_item, ctx.slot_info[target].name)
+            print("will send ", mapped_item)
             if item.player != target_slot:
-                get_received_items(ctx, team, target, False).append(item)
-            get_received_items(ctx, team, target, True).append(item)
+                get_received_items(ctx, team, target, False).append(mapped_item)
+            get_received_items(ctx, team, target, True).append(mapped_item)
 
 
 def register_location_checks(ctx: Context, team: int, slot: int, locations: typing.Iterable[int],

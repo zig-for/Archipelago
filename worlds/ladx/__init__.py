@@ -291,7 +291,9 @@ class LinksAwakeningWorld(World):
                     location.dungeon = r.dungeon_index
 
         # For now, special case first item
-        FORCE_START_ITEM = True
+        # We really should have merged the start item stuff by now, sad
+        # Disable this for item link :)
+        FORCE_START_ITEM = False
         if FORCE_START_ITEM:
             self.force_start_item()
 

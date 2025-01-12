@@ -249,17 +249,31 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                 minimum_versions = {"server": AutoWorld.World.required_server_version, "clients": client_versions}
                 slot_info = {}
                 names = [[name for player, name in sorted(multiworld.player_name.items())]]
+
+                all_item_mapping = {}
+
+                for slot, group in multiworld.groups.items():
+                    games[slot] = multiworld.game[slot]
+                    slot_info[slot] = NetUtils.NetworkSlot(group["name"], multiworld.game[slot], multiworld.player_types[slot],
+                                                           group_members=sorted(group["players"]))
+                    for player in slot_info[slot].group_members:
+                        item_mapping = group["item_mapping"][player]
+                        reverse_item_mapping = {v: k for k, v in item_mapping.items()}
+
+                        group_item_to_player = {
+                            group_item_name: reverse_item_mapping[group_item_name]
+                            for group_item_name, count in group["linked_items_by_player"].get(player, {}).items() if count and group_item_name in reverse_item_mapping
+                        }
+                        all_item_mapping[player] = all_item_mapping.get(player, {}) | {group["name"]: group_item_to_player}
                 for slot in multiworld.player_ids:
                     player_world: AutoWorld.World = multiworld.worlds[slot]
                     minimum_versions["server"] = max(minimum_versions["server"], player_world.required_server_version)
                     client_versions[slot] = player_world.required_client_version
                     games[slot] = multiworld.game[slot]
+                    print("set item_mapping", all_item_mapping.get(slot, {}))
                     slot_info[slot] = NetUtils.NetworkSlot(names[0][slot - 1], multiworld.game[slot],
-                                                           multiworld.player_types[slot])
-                for slot, group in multiworld.groups.items():
-                    games[slot] = multiworld.game[slot]
-                    slot_info[slot] = NetUtils.NetworkSlot(group["name"], multiworld.game[slot], multiworld.player_types[slot],
-                                                           group_members=sorted(group["players"]))
+                                                           multiworld.player_types[slot], (), all_item_mapping.get(slot, {}))
+
                 precollected_items = {player: [item.code for item in world_precollected if type(item.code) == int]
                                       for player, world_precollected in multiworld.precollected_items.items()}
                 precollected_hints = {player: set() for player in range(1, multiworld.players + 1 + len(multiworld.groups))}
@@ -299,6 +313,12 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
                         elif any([location.item.name in multiworld.worlds[player].options.start_hints
                                   for player in multiworld.groups.get(location.item.player, {}).get("players", [])]):
                             precollect_hint(location, auto_status)
+
+                # Hydrate the data package for the group worlds
+                for group in multiworld.groups.values():
+                    worlds.network_data_package["games"][group['world'].game] = group['world'].get_data_package_data()
+                    print(group['world'].game)
+                    print(group['world'].get_data_package_data())
 
                 # embedded data package
                 data_package = {
